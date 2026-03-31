@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Model xmi:id="_0" name="TiendaOnline">
+    <packagedElement xmi:type="uml:Class" xmi:id="_Cliente" name="Cliente" visibility="public">
+      <ownedAttribute xmi:id="_Cliente_id" name="id" visibility="private" type="_int">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Int"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Cliente_nombre" name="nombre" visibility="private" type="_String">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Cliente_email" name="email" visibility="private" type="_String">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedOperation xmi:id="_Cliente_getId" name="getId" visibility="public">
+        <ownedParameter xmi:id="_Cliente_getId_return" name="return" direction="return" type="_int"/>
+      </ownedOperation>
+      <ownedOperation xmi:id="_Cliente_setNombre" name="setNombre" visibility="public">
+        <ownedParameter xmi:id="_Cliente_setNombre_nombre" name="nombre" type="_String"/>
+      </ownedOperation>
+      <ownedOperation xmi:id="_Cliente_getEmail" name="getEmail" visibility="public">
+        <ownedParameter xmi:id="_Cliente_getEmail_return" name="return" direction="return" type="_String"/>
+      </ownedOperation>
+    </packagedElement>
+    
+    <packagedElement xmi:type="uml:Class" xmi:id="_Producto" name="Producto" visibility="public">
+      <ownedAttribute xmi:id="_Producto_id" name="id" visibility="private" type="_int">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Int"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Producto_nombre" name="nombre" visibility="private" type="_String">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Producto_precio" name="precio" visibility="private" type="_double">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Real"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Producto_stock" name="stock" visibility="private" type="_int">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Int"/>
+      </ownedAttribute>
+      <ownedOperation xmi:id="_Producto_getPrecio" name="getPrecio" visibility="public">
+        <ownedParameter xmi:id="_Producto_getPrecio_return" name="return" direction="return" type="_double"/>
+      </ownedOperation>
+      <ownedOperation xmi:id="_Producto_actualizarStock" name="actualizarStock" visibility="public">
+        <ownedParameter xmi:id="_Producto_actualizarStock_cantidad" name="cantidad" type="_int"/>
+      </ownedOperation>
+    </packagedElement>
+    
+    <packagedElement xmi:type="uml:Class" xmi:id="_Pedido" name="Pedido" visibility="public">
+      <ownedAttribute xmi:id="_Pedido_id" name="id" visibility="private" type="_int">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Int"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Pedido_fecha" name="fecha" visibility="private" type="_Date">
+        <type xmi:type="uml:Class" href="pathmap://UML_LIBRARIES/JavaPrimitiveTypes.library.uml#Date"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Pedido_total" name="total" visibility="private" type="_double">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Real"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Pedido_estado" name="estado" visibility="private" type="_String">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedOperation xmi:id="_Pedido_calcularTotal" name="calcularTotal" visibility="public">
+        <ownedParameter xmi:id="_Pedido_calcularTotal_return" name="return" direction="return" type="_double"/>
+      </ownedOperation>
+      <ownedOperation xmi:id="_Pedido_agregarItem" name="agregarItem" visibility="public">
+        <ownedParameter xmi:id="_Pedido_agregarItem_producto" name="producto" type="_Producto"/>
+        <ownedParameter xmi:id="_Pedido_agregarItem_cantidad" name="cantidad" type="_int"/>
+      </ownedOperation>
+    </packagedElement>
+    
+    <packagedElement xmi:type="uml:Association" xmi:id="_Assoc_Cliente_Pedido" name="realiza" memberEnd="_Assoc_Cliente_Pedido_end1 _Assoc_Cliente_Pedido_end2">
+      <ownedEnd xmi:id="_Assoc_Cliente_Pedido_end1" name="cliente" type="_Cliente" association="_Assoc_Cliente_Pedido">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Assoc_Cliente_Pedido_end1_upper" value="1"/>
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Assoc_Cliente_Pedido_end1_lower" value="1"/>
+      </ownedEnd>
+      <ownedEnd xmi:id="_Assoc_Cliente_Pedido_end2" name="pedidos" type="_Pedido" association="_Assoc_Cliente_Pedido">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Assoc_Cliente_Pedido_end2_upper" value="*"/>
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Assoc_Cliente_Pedido_end2_lower" value="0"/>
+      </ownedEnd>
+    </packagedElement>
+    
+    <packagedElement xmi:type="uml:Association" xmi:id="_Assoc_Pedido_Producto" name="contiene" memberEnd="_Assoc_Pedido_Producto_end1 _Assoc_Pedido_Producto_end2">
+      <ownedEnd xmi:id="_Assoc_Pedido_Producto_end1" name="pedido" type="_Pedido" association="_Assoc_Pedido_Producto">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Assoc_Pedido_Producto_end1_upper" value="1"/>
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Assoc_Pedido_Producto_end1_lower" value="1"/>
+      </ownedEnd>
+      <ownedEnd xmi:id="_Assoc_Pedido_Producto_end2" name="productos" type="_Producto" association="_Assoc_Pedido_Producto">
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Assoc_Pedido_Producto_end2_upper" value="*"/>
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Assoc_Pedido_Producto_end2_lower" value="0"/>
+      </ownedEnd>
+    </packagedElement>
+    
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_int" name="int"/>
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_String" name="String"/>
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_double" name="double"/>
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_Date" name="Date"/>
+  </uml:Model>
+</xmi:XMI>

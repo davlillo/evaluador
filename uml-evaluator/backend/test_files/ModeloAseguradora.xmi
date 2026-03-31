@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:uml="http://www.omg.org/spec/UML/20110701" xmlns:xmi="http://www.omg.org/spec/XMI/20110701">
+  <uml:Model name="SolucionCasoPracticoModuloI" xmi:id="_OxqHoBdGEfG2Vf3tHJPijA">
+    <packagedElement name="Empleado" xmi:id="_Oxr80BdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtLFRdGEfG2Vf3tHJPijA" name="" type="_Oxr82xdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr80RdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLFhdGEfG2Vf3tHJPijA" name="" type="_Oxsj4xdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr80hdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLFxdGEfG2Vf3tHJPijA" name="" type="_Oxsj6hdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr80xdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLGRdGEfG2Vf3tHJPijA" name="" type="_Oxsj7RdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr81BdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLGhdGEfG2Vf3tHJPijA" name="" type="_Oxr82RdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr81RdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtyABdGEfG2Vf3tHJPijA" name="" type="_Oxsj8BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr81hdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtyARdGEfG2Vf3tHJPijA" name="" type="_Oxsj5xdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr81xdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtyAhdGEfG2Vf3tHJPijA" name="" type="_Oxsj4RdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr82BdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Login" xmi:id="_Oxr82RdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtLGhdGEfG2Vf3tHJPijA" name="" type="_Oxr80BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxr82hdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Principal" xmi:id="_Oxr82xdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtLFRdGEfG2Vf3tHJPijA" name="" type="_Oxr80BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj4BdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Consultar póliza" xmi:id="_Oxsj4RdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtyAhdGEfG2Vf3tHJPijA" name="" type="_Oxr80BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj4hdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Agregar/Editar póliza" xmi:id="_Oxsj4xdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtLFhdGEfG2Vf3tHJPijA" name="" type="_Oxr80BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj5BdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Ver detalle póliza" xmi:id="_Oxsj5RdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="Agregar/Editar asegurado/beneficiario" xmi:id="_Oxsj5hdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="Consultar usuarios" xmi:id="_Oxsj5xdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtyARdGEfG2Vf3tHJPijA" name="" type="_Oxr80BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj6BdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Agregar/Editar usuario" xmi:id="_Oxsj6RdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="Consultar estados de póliza" xmi:id="_Oxsj6hdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtLFxdGEfG2Vf3tHJPijA" name="" type="_Oxr80BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj6xdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Agregar/Editar estado de póliza" xmi:id="_Oxsj7BdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="Consultar tipos de documentos" xmi:id="_Oxsj7RdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtLGRdGEfG2Vf3tHJPijA" name="" type="_Oxr80BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj7hdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Agregar/Editar tipo de documento" xmi:id="_Oxsj7xdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="Consultar tipo de relación" xmi:id="_Oxsj8BdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute association="_OxtyABdGEfG2Vf3tHJPijA" name="" type="_Oxr80BdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj8RdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Agregar/Editar tipo de relación" xmi:id="_Oxsj8hdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="Poliza" xmi:id="_Oxsj8xdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute name="idPoliza: Integer" type="_OxtLEBdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj9BdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="numPoliza" type="_OxtLERdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj9RdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="fechaEmision" type="_OxtLEhdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj9hdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="fechaInicio" type="_OxtLEhdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj9xdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="fechaFin" type="_OxtLEhdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj-BdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="valor" type="_OxtLExdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj-RdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLGxdGEfG2Vf3tHJPijA" name="" type="_OxtK-xdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj-hdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLBxdGEfG2Vf3tHJPijA" name="" type="_Oxsj_hdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj-xdGEfG2Vf3tHJPijA" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_Oxsj_BdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_Oxsj_RdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement name="Persona" xmi:id="_Oxsj_hdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute name="idPersona" type="_OxtLEBdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_Oxsj_xdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="docIdentidad" type="_OxtLERdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxskABdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="nombreCompleto" type="_OxtLERdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxskARdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="fechaNac" type="_OxtLEhdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxskAhdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLDBdGEfG2Vf3tHJPijA" name="" type="_OxtLBxdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxskAxdGEfG2Vf3tHJPijA" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_OxskBBdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_OxtK8BdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+      <ownedAttribute association="_OxtyAxdGEfG2Vf3tHJPijA" name="" type="_OxtK9RdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtK8RdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLBxdGEfG2Vf3tHJPijA" name="" type="_Oxsj8xdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtK8hdGEfG2Vf3tHJPijA" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_OxtK8xdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_OxtK9BdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement name="TipoDocumento" xmi:id="_OxtK9RdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute name="idTipoDocumento" type="_OxtLEBdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtK9hdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="nombre" type="_OxtLERdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtK9xdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtyAxdGEfG2Vf3tHJPijA" name="" type="_Oxsj_hdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtK-BdGEfG2Vf3tHJPijA" xmi:type="uml:Property">
+        <lowerValue xmi:id="_OxtK-RdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_OxtK-hdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement name="EstadoPoliza" xmi:id="_OxtK-xdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute name="idEstadoPoliza" type="_OxtLEBdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtK_BdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="nombre" type="_OxtLERdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtK_RdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLGxdGEfG2Vf3tHJPijA" name="" type="_Oxsj8xdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtK_hdGEfG2Vf3tHJPijA" xmi:type="uml:Property">
+        <lowerValue xmi:id="_OxtK_xdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_OxtLABdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement name="TipoRelacion" xmi:id="_OxtLARdGEfG2Vf3tHJPijA" xmi:type="uml:Class">
+      <ownedAttribute name="idTipoRelacion" type="_OxtLEBdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtLAhdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="nombre" type="_OxtLERdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtLAxdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLGBdGEfG2Vf3tHJPijA" name="" type="_OxtLDBdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtLBBdGEfG2Vf3tHJPijA" xmi:type="uml:Property">
+        <lowerValue xmi:id="_OxtLBRdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_OxtLBhdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement memberEnd="_OxtK8hdGEfG2Vf3tHJPijA _Oxsj-xdGEfG2Vf3tHJPijA" name="Asegurado" xmi:id="_OxtLBxdGEfG2Vf3tHJPijA" xmi:type="uml:AssociationClass">
+      <ownedAttribute name="idAsegurado" type="_OxtLERdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtLCBdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLDBdGEfG2Vf3tHJPijA" name="" type="_Oxsj_hdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtLCRdGEfG2Vf3tHJPijA" xmi:type="uml:Property">
+        <lowerValue xmi:id="_OxtLChdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_OxtLCxdGEfG2Vf3tHJPijA" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement memberEnd="_OxskAxdGEfG2Vf3tHJPijA _OxtLCRdGEfG2Vf3tHJPijA" name="Beneficiario" xmi:id="_OxtLDBdGEfG2Vf3tHJPijA" xmi:type="uml:AssociationClass">
+      <ownedAttribute name="idBeneficiario" type="_OxtLEBdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtLDRdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute name="porcentaje" type="_OxtLExdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtLDhdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+      <ownedAttribute association="_OxtLGBdGEfG2Vf3tHJPijA" name="" type="_OxtLARdGEfG2Vf3tHJPijA" visibility="private" xmi:id="_OxtLDxdGEfG2Vf3tHJPijA" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="Integer" xmi:id="_OxtLEBdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="String" xmi:id="_OxtLERdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="LocalDate" xmi:id="_OxtLEhdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="Double" xmi:id="_OxtLExdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement name="List" xmi:id="_OxtLFBdGEfG2Vf3tHJPijA" xmi:type="uml:Class"/>
+    <packagedElement memberEnd="_Oxsj4BdGEfG2Vf3tHJPijA _Oxr80RdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtLFRdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_Oxsj5BdGEfG2Vf3tHJPijA _Oxr80hdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtLFhdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_Oxsj6xdGEfG2Vf3tHJPijA _Oxr80xdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtLFxdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_OxtLDxdGEfG2Vf3tHJPijA _OxtLBBdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtLGBdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_Oxsj7hdGEfG2Vf3tHJPijA _Oxr81BdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtLGRdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_Oxr82hdGEfG2Vf3tHJPijA _Oxr81RdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtLGhdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_Oxsj-hdGEfG2Vf3tHJPijA _OxtK_hdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtLGxdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_Oxsj8RdGEfG2Vf3tHJPijA _Oxr81hdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtyABdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_Oxsj6BdGEfG2Vf3tHJPijA _Oxr81xdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtyARdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_Oxsj4hdGEfG2Vf3tHJPijA _Oxr82BdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtyAhdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_OxtK8RdGEfG2Vf3tHJPijA _OxtK-BdGEfG2Vf3tHJPijA" name="" xmi:id="_OxtyAxdGEfG2Vf3tHJPijA" xmi:type="uml:Association"/>
+    <packagedElement name="PrimitiveTypes" xmi:id="_OxtyBBdGEfG2Vf3tHJPijA" xmi:type="uml:Package"/>
+  </uml:Model>
+</xmi:XMI>

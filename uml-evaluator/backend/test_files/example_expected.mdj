@@ -1,0 +1,228 @@
+{
+  "_type": "Project",
+  "_id": "AAAAAAFF+h6SjaM2Hec=",
+  "name": "Ejemplo Tienda Online",
+  "ownedElements": [
+    {
+      "_type": "UMLModel",
+      "_id": "AAAAAAFF+qBWK6M3Z8Y=",
+      "name": "Modelo de Clases",
+      "ownedElements": [
+        {
+          "_type": "UMLClass",
+          "_id": "AAAAAAGVf1K9aXy1234=",
+          "name": "Cliente",
+          "attributes": [
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1235=",
+              "name": "id",
+              "visibility": "private",
+              "type": "int"
+            },
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1236=",
+              "name": "nombre",
+              "visibility": "private",
+              "type": "String"
+            },
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1237=",
+              "name": "email",
+              "visibility": "private",
+              "type": "String"
+            }
+          ],
+          "operations": [
+            {
+              "_type": "UMLOperation",
+              "_id": "AAAAAAGVf1K9aXy1238=",
+              "name": "getId",
+              "visibility": "public",
+              "type": "int"
+            },
+            {
+              "_type": "UMLOperation",
+              "_id": "AAAAAAGVf1K9aXy1239=",
+              "name": "setNombre",
+              "visibility": "public",
+              "parameters": [
+                {
+                  "_type": "UMLParameter",
+                  "_id": "AAAAAAGVf1K9aXy1240=",
+                  "name": "nombre",
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "_type": "UMLOperation",
+              "_id": "AAAAAAGVf1K9aXy1241=",
+              "name": "getEmail",
+              "visibility": "public",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "AAAAAAGVf1K9aXy1242=",
+          "name": "Producto",
+          "attributes": [
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1243=",
+              "name": "id",
+              "visibility": "private",
+              "type": "int"
+            },
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1244=",
+              "name": "nombre",
+              "visibility": "private",
+              "type": "String"
+            },
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1245=",
+              "name": "precio",
+              "visibility": "private",
+              "type": "double"
+            },
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1246=",
+              "name": "stock",
+              "visibility": "private",
+              "type": "int"
+            }
+          ],
+          "operations": [
+            {
+              "_type": "UMLOperation",
+              "_id": "AAAAAAGVf1K9aXy1247=",
+              "name": "getPrecio",
+              "visibility": "public",
+              "type": "double"
+            },
+            {
+              "_type": "UMLOperation",
+              "_id": "AAAAAAGVf1K9aXy1248=",
+              "name": "actualizarStock",
+              "visibility": "public",
+              "parameters": [
+                {
+                  "_type": "UMLParameter",
+                  "_id": "AAAAAAGVf1K9aXy1249=",
+                  "name": "cantidad",
+                  "type": "int"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "AAAAAAGVf1K9aXy1250=",
+          "name": "Pedido",
+          "attributes": [
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1251=",
+              "name": "id",
+              "visibility": "private",
+              "type": "int"
+            },
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1252=",
+              "name": "fecha",
+              "visibility": "private",
+              "type": "Date"
+            },
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1253=",
+              "name": "total",
+              "visibility": "private",
+              "type": "double"
+            },
+            {
+              "_type": "UMLAttribute",
+              "_id": "AAAAAAGVf1K9aXy1254=",
+              "name": "estado",
+              "visibility": "private",
+              "type": "String"
+            }
+          ],
+          "operations": [
+            {
+              "_type": "UMLOperation",
+              "_id": "AAAAAAGVf1K9aXy1255=",
+              "name": "calcularTotal",
+              "visibility": "public",
+              "type": "double"
+            },
+            {
+              "_type": "UMLOperation",
+              "_id": "AAAAAAGVf1K9aXy1256=",
+              "name": "agregarItem",
+              "visibility": "public",
+              "parameters": [
+                {
+                  "_type": "UMLParameter",
+                  "_id": "AAAAAAGVf1K9aXy1257=",
+                  "name": "producto",
+                  "type": "Producto"
+                },
+                {
+                  "_type": "UMLParameter",
+                  "_id": "AAAAAAGVf1K9aXy1258=",
+                  "name": "cantidad",
+                  "type": "int"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "_type": "UMLAssociation",
+          "_id": "AAAAAAGVf1K9aXy1259=",
+          "name": "realiza",
+          "end1": {
+            "_type": "UMLAssociationEnd",
+            "_id": "AAAAAAGVf1K9aXy1260=",
+            "reference": "AAAAAAGVf1K9aXy1234=",
+            "multiplicity": "1"
+          },
+          "end2": {
+            "_type": "UMLAssociationEnd",
+            "_id": "AAAAAAGVf1K9aXy1261=",
+            "reference": "AAAAAAGVf1K9aXy1250=",
+            "multiplicity": "*"
+          }
+        },
+        {
+          "_type": "UMLAssociation",
+          "_id": "AAAAAAGVf1K9aXy1262=",
+          "name": "contiene",
+          "end1": {
+            "_type": "UMLAssociationEnd",
+            "_id": "AAAAAAGVf1K9aXy1263=",
+            "reference": "AAAAAAGVf1K9aXy1250=",
+            "multiplicity": "1"
+          },
+          "end2": {
+            "_type": "UMLAssociationEnd",
+            "_id": "AAAAAAGVf1K9aXy1264=",
+            "reference": "AAAAAAGVf1K9aXy1242=",
+            "multiplicity": "*"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:uml="http://www.omg.org/spec/UML/20110701" xmlns:xmi="http://www.omg.org/spec/XMI/20110701">
+  <uml:Model name="no_title" xmi:id="_C_DokCQFEfGsBexF1GtwTQ">
+    <packagedElement name="Persona" xmi:id="_C_DokSQFEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <ownedAttribute name="edad" type="_C_DosCQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DokiQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="nombre" type="_C_DolyQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DokyQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="nacionalidad" type="_C_DolyQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DolCQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearPersona" visibility="public" xmi:id="_C_DolSQFEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_C_DosSQFEfGsBexF1GtwTQ" xmi:id="_C_DoliQFEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="String" xmi:id="_C_DolyQFEfGsBexF1GtwTQ" xmi:type="uml:Class"/>
+    <packagedElement name="Docente" xmi:id="_C_DomCQFEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <generalization general="_C_DokSQFEfGsBexF1GtwTQ" xmi:id="_C_DomSQFEfGsBexF1GtwTQ" xmi:type="uml:Generalization"/>
+      <ownedAttribute name="id_empleado" type="_C_DolyQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DomiQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="cargo_empleado" type="_C_DolyQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DomyQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute association="_C_DorSQFEfGsBexF1GtwTQ" name="" type="_C_DonyQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DonCQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearDocente" visibility="public" xmi:id="_C_DonSQFEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_C_DosSQFEfGsBexF1GtwTQ" xmi:id="_C_DoniQFEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="Alumno" xmi:id="_C_DonyQFEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <generalization general="_C_DokSQFEfGsBexF1GtwTQ" xmi:id="_C_DooCQFEfGsBexF1GtwTQ" xmi:type="uml:Generalization"/>
+      <ownedAttribute name="id_alumno" type="_C_DosCQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DooSQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute association="_C_DoriQFEfGsBexF1GtwTQ" name="" type="_C_DopiQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DooiQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute association="_C_DorSQFEfGsBexF1GtwTQ" name="" type="_C_DomCQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DooyQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearAlumno" visibility="public" xmi:id="_C_DopCQFEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_C_DosSQFEfGsBexF1GtwTQ" xmi:id="_C_DopSQFEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="Materias" xmi:id="_C_DopiQFEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <ownedAttribute name="id_materia" type="_C_DosCQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DopyQFEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute association="_C_DoriQFEfGsBexF1GtwTQ" name="" type="_C_DonyQFEfGsBexF1GtwTQ" visibility="private" xmi:id="_C_DoqCQFEfGsBexF1GtwTQ" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_C_DoqSQFEfGsBexF1GtwTQ" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_C_DoqiQFEfGsBexF1GtwTQ" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+      <ownedOperation name="crearMateria" visibility="public" xmi:id="_C_DoqyQFEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_C_DosSQFEfGsBexF1GtwTQ" xmi:id="_C_DorCQFEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement memberEnd="_C_DooyQFEfGsBexF1GtwTQ _C_DonCQFEfGsBexF1GtwTQ" name="claseasociacion" xmi:id="_C_DorSQFEfGsBexF1GtwTQ" xmi:type="uml:AssociationClass"/>
+    <packagedElement memberEnd="_C_DoqCQFEfGsBexF1GtwTQ _C_DooiQFEfGsBexF1GtwTQ" name="" xmi:id="_C_DoriQFEfGsBexF1GtwTQ" xmi:type="uml:Association"/>
+    <packagedElement name="PrimitiveTypes" xmi:id="_C_DoryQFEfGsBexF1GtwTQ" xmi:type="uml:Package">
+      <packagedElement name="int" xmi:id="_C_DosCQFEfGsBexF1GtwTQ" xmi:type="uml:PrimitiveType"/>
+      <packagedElement name="void" xmi:id="_C_DosSQFEfGsBexF1GtwTQ" xmi:type="uml:PrimitiveType"/>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

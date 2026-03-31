@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:uml="http://www.omg.org/spec/UML/20110701" xmlns:xmi="http://www.omg.org/spec/XMI/20110701">
+  <uml:Model name="no_title" xmi:id="_EARtoCQIEfGsBexF1GtwTQ">
+    <packagedElement name="Persona" xmi:id="_EARtoSQIEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <ownedAttribute name="edad" type="_EARtyiQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtoiQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="nombre" type="_EARtpyQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtoyQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="nacionalidad" type="_EARtpyQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtpCQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearPersona" visibility="public" xmi:id="_EARtpSQIEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_EARtySQIEfGsBexF1GtwTQ" xmi:id="_EARtpiQIEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="String" xmi:id="_EARtpyQIEfGsBexF1GtwTQ" xmi:type="uml:Class"/>
+    <packagedElement name="Docente" xmi:id="_EARtqCQIEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <generalization general="_EARtoSQIEfGsBexF1GtwTQ" xmi:id="_EARtqSQIEfGsBexF1GtwTQ" xmi:type="uml:Generalization"/>
+      <ownedAttribute name="id_empleado" type="_EARtpyQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtqiQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="cargo_empleado" type="_EARtpyQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtqyQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute association="_EARtvSQIEfGsBexF1GtwTQ" name="" type="_EARtryQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtrCQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearDocente" visibility="public" xmi:id="_EARtrSQIEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_EARtySQIEfGsBexF1GtwTQ" xmi:id="_EARtriQIEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="Alumno" xmi:id="_EARtryQIEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <generalization general="_EARtoSQIEfGsBexF1GtwTQ" xmi:id="_EARtsCQIEfGsBexF1GtwTQ" xmi:type="uml:Generalization"/>
+      <ownedAttribute name="id_alumno" type="_EARtyiQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtsSQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute association="_EARtxiQIEfGsBexF1GtwTQ" name="" type="_EARttiQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtsiQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute association="_EARtvSQIEfGsBexF1GtwTQ" name="" type="_EARtqCQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtsyQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearAlumno" visibility="public" xmi:id="_EARttCQIEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_EARtySQIEfGsBexF1GtwTQ" xmi:id="_EARttSQIEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="Materias" xmi:id="_EARttiQIEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <ownedAttribute name="id_materia" type="_EARtyiQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARttyQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute association="_EARtxiQIEfGsBexF1GtwTQ" name="" type="_EARtryQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtuCQIEfGsBexF1GtwTQ" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_EARtuSQIEfGsBexF1GtwTQ" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_EARtuiQIEfGsBexF1GtwTQ" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+      <ownedOperation name="crearMateria" visibility="public" xmi:id="_EARtuyQIEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_EARtySQIEfGsBexF1GtwTQ" xmi:id="_EARtvCQIEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement memberEnd="_EARtsyQIEfGsBexF1GtwTQ _EARtrCQIEfGsBexF1GtwTQ" name="claseasociacion" xmi:id="_EARtvSQIEfGsBexF1GtwTQ" xmi:type="uml:AssociationClass"/>
+    <packagedElement name="Actor1" xmi:id="_EARtviQIEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <ownedAttribute association="_EARtxyQIEfGsBexF1GtwTQ" name="" type="_EARtwCQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtvyQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="gestionar carros" xmi:id="_EARtwCQIEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <ownedAttribute association="_EARtxyQIEfGsBexF1GtwTQ" name="" type="_EARtviQIEfGsBexF1GtwTQ" visibility="private" xmi:id="_EARtwSQIEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+    </packagedElement>
+    <packagedElement name="crear carros" xmi:id="_EARtwiQIEfGsBexF1GtwTQ" xmi:type="uml:Class"/>
+    <packagedElement name="buscar carros" xmi:id="_EARtwyQIEfGsBexF1GtwTQ" xmi:type="uml:Class"/>
+    <packagedElement name="editar carros" xmi:id="_EARtxCQIEfGsBexF1GtwTQ" xmi:type="uml:Class"/>
+    <packagedElement name="eliminar carros" xmi:id="_EARtxSQIEfGsBexF1GtwTQ" xmi:type="uml:Class"/>
+    <packagedElement memberEnd="_EARtuCQIEfGsBexF1GtwTQ _EARtsiQIEfGsBexF1GtwTQ" name="" xmi:id="_EARtxiQIEfGsBexF1GtwTQ" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_EARtwSQIEfGsBexF1GtwTQ _EARtvyQIEfGsBexF1GtwTQ" name="" xmi:id="_EARtxyQIEfGsBexF1GtwTQ" xmi:type="uml:Association"/>
+    <packagedElement name="PrimitiveTypes" xmi:id="_EARtyCQIEfGsBexF1GtwTQ" xmi:type="uml:Package">
+      <packagedElement name="void" xmi:id="_EARtySQIEfGsBexF1GtwTQ" xmi:type="uml:PrimitiveType"/>
+      <packagedElement name="int" xmi:id="_EARtyiQIEfGsBexF1GtwTQ" xmi:type="uml:PrimitiveType"/>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

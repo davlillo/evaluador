@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Model xmi:id="_0" name="TiendaOnlineEstudiante">
+    <packagedElement xmi:type="uml:Class" xmi:id="_Cliente" name="Cliente" visibility="public">
+      <ownedAttribute xmi:id="_Cliente_id" name="id" visibility="private" type="_int">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Int"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Cliente_nombre" name="nombre" visibility="private" type="_String">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <!-- Falta el atributo email -->
+      <ownedOperation xmi:id="_Cliente_getId" name="getId" visibility="public">
+        <ownedParameter xmi:id="_Cliente_getId_return" name="return" direction="return" type="_int"/>
+      </ownedOperation>
+      <!-- Falta setNombre y getEmail -->
+    </packagedElement>
+    
+    <packagedElement xmi:type="uml:Class" xmi:id="_Producto" name="Producto" visibility="public">
+      <ownedAttribute xmi:id="_Producto_id" name="id" visibility="private" type="_int">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Int"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Producto_nombre" name="nombre" visibility="private" type="_String">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:id="_Producto_precio" name="precio" visibility="private" type="_double">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Real"/>
+      </ownedAttribute>
+      <!-- Falta el atributo stock -->
+      <ownedOperation xmi:id="_Producto_getPrecio" name="getPrecio" visibility="public">
+        <ownedParameter xmi:id="_Producto_getPrecio_return" name="return" direction="return" type="_double"/>
+      </ownedOperation>
+      <!-- Falta actualizarStock -->
+    </packagedElement>
+    
+    <!-- Falta la clase Pedido completamente -->
+    
+    <!-- Clase extra que no debería estar -->
+    <packagedElement xmi:type="uml:Class" xmi:id="_Carrito" name="Carrito" visibility="public">
+      <ownedAttribute xmi:id="_Carrito_items" name="items" visibility="private" type="_int">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Int"/>
+      </ownedAttribute>
+      <ownedOperation xmi:id="_Carrito_agregar" name="agregar" visibility="public">
+        <ownedParameter xmi:id="_Carrito_agregar_producto" name="producto" type="_Producto"/>
+      </ownedOperation>
+    </packagedElement>
+    
+    <!-- Falta la asociación Cliente-Pedido -->
+    <!-- Falta la asociación Pedido-Producto -->
+    
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_int" name="int"/>
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_String" name="String"/>
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_double" name="double"/>
+  </uml:Model>
+</xmi:XMI>

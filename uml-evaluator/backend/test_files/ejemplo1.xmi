@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:uml="http://www.omg.org/spec/UML/20110701" xmlns:xmi="http://www.omg.org/spec/XMI/20110701">
+  <uml:Model name="no_title" xmi:id="_2s6B0CQBEfGsBexF1GtwTQ">
+    <packagedElement name="Persona" xmi:id="_2s7P8CQBEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <ownedAttribute name="edad" type="_2s7QAyQBEfGsBexF1GtwTQ" visibility="private" xmi:id="_2s7P8SQBEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="nombre" type="_2s7P9iQBEfGsBexF1GtwTQ" visibility="private" xmi:id="_2s7P8iQBEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="nacionalidad" type="_2s7P9iQBEfGsBexF1GtwTQ" visibility="private" xmi:id="_2s7P8yQBEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearPersona" visibility="public" xmi:id="_2s7P9CQBEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_2s7QBCQBEfGsBexF1GtwTQ" xmi:id="_2s7P9SQBEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="String" xmi:id="_2s7P9iQBEfGsBexF1GtwTQ" xmi:type="uml:Class"/>
+    <packagedElement name="Docente" xmi:id="_2s7P9yQBEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <generalization general="_2s7P8CQBEfGsBexF1GtwTQ" xmi:id="_2s7P-CQBEfGsBexF1GtwTQ" xmi:type="uml:Generalization"/>
+      <ownedAttribute name="id_empleado" type="_2s7P9iQBEfGsBexF1GtwTQ" visibility="private" xmi:id="_2s7P-SQBEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedAttribute name="cargo_empleado" type="_2s7P9iQBEfGsBexF1GtwTQ" visibility="private" xmi:id="_2s7P-iQBEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearDocente" visibility="public" xmi:id="_2s7P-yQBEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_2s7QBCQBEfGsBexF1GtwTQ" xmi:id="_2s7P_CQBEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="Alumno" xmi:id="_2s7P_SQBEfGsBexF1GtwTQ" xmi:type="uml:Class">
+      <generalization general="_2s7P8CQBEfGsBexF1GtwTQ" xmi:id="_2s7P_iQBEfGsBexF1GtwTQ" xmi:type="uml:Generalization"/>
+      <ownedAttribute name="id_alumno" type="_2s7QAyQBEfGsBexF1GtwTQ" visibility="private" xmi:id="_2s7P_yQBEfGsBexF1GtwTQ" xmi:type="uml:Property"/>
+      <ownedOperation name="crearAlumno" visibility="public" xmi:id="_2s7QACQBEfGsBexF1GtwTQ" xmi:type="uml:Operation">
+        <ownedParameter direction="return" type="_2s7QBCQBEfGsBexF1GtwTQ" xmi:id="_2s7QASQBEfGsBexF1GtwTQ" xmi:type="uml:Parameter"/>
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement name="PrimitiveTypes" xmi:id="_2s7QAiQBEfGsBexF1GtwTQ" xmi:type="uml:Package">
+      <packagedElement name="int" xmi:id="_2s7QAyQBEfGsBexF1GtwTQ" xmi:type="uml:PrimitiveType"/>
+      <packagedElement name="void" xmi:id="_2s7QBCQBEfGsBexF1GtwTQ" xmi:type="uml:PrimitiveType"/>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>
