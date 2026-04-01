@@ -110,6 +110,8 @@ export interface DiagramRelationship {
   target: string;
   relationship_type: string;
   name: string | null;
+  source_multiplicity?: string;
+  target_multiplicity?: string;
 }
 
 export interface DiagramInfo {
@@ -156,4 +158,11 @@ export interface ParsedDiagram {
       relationship_type: string;
     }[];
   };
+}
+
+export interface Weights {
+  classes: number;
+  attributes: number;
+  methods: number;
+  relationships: number;
 }

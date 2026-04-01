@@ -682,9 +682,12 @@ class XMIParser:
         self, elem: ET.Element, rel_type: RelationshipType,
         id_to_name: Dict[str, str], valid_names: set,
     ) -> Optional[UMLRelationship]:
-        """Parsea una asociación con soporte multi-formato."""
+        """Parsea una asociacion con soporte multi-formato, cardinalidad y direccion."""
         source_name = None
         target_name = None
+        source_mult = None
+        target_mult = None
+        determined_rel_type = rel_type
 
         # Estrategia 1: ownedEnd con atributo type (Eclipse/StarUML)
         owned_ends = []
@@ -692,26 +695,147 @@ class XMIParser:
             tag_local = child.tag.split('}')[-1] if '}' in child.tag else child.tag
             if tag_local == 'ownedEnd':
                 type_ref = child.get('type', '')
-                if type_ref:
-                    owned_ends.append(id_to_name.get(type_ref, type_ref))
+                resolved_name = id_to_name.get(type_ref, type_ref) if type_ref else None
+
+                # Extraer cardinalidad de <lowerValue> y <upperValue>
+                lower = None
+                upper = None
+                for gc in child:
+                    gc_tag = gc.tag.split('}')[-1] if '}' in gc.tag else gc.tag
+                    if gc_tag == 'lowerValue':
+                        lower = gc.get('value')
+                    elif gc_tag == 'upperValue':
+                        upper = gc.get('value')
+                multiplicity = self._format_multiplicity(lower, upper)
+
+                # Detectar aggregation en el ownedEnd
+                agg = child.get('aggregation', '')
+                if agg == 'composite':
+                    determined_rel_type = RelationshipType.COMPOSITION
+                elif agg == 'shared':
+                    determined_rel_type = RelationshipType.AGGREGATION
+
+                # Detectar navigability
+                is_navigable = child.get('isNavigable', 'true')
+                owned_ends.append({
+                    'name': resolved_name,
+                    'type_ref': type_ref,
+                    'multiplicity': multiplicity,
+                    'is_navigable': is_navigable != 'false',
+                    'aggregation': agg,
+                })
 
         if len(owned_ends) >= 2:
-            source_name, target_name = owned_ends[0], owned_ends[1]
+            nav_ends = [e for e in owned_ends if e['is_navigable']]
+            non_nav_ends = [e for e in owned_ends if not e['is_navigable']]
 
-        # Estrategia 2: memberEnd + property_owner_map (Astah)
+            if non_nav_ends and nav_ends:
+                source_name = non_nav_ends[0]['name']
+                target_name = nav_ends[0]['name']
+                source_mult = non_nav_ends[0]['multiplicity']
+                target_mult = nav_ends[0]['multiplicity']
+            elif len(owned_ends) >= 2:
+                # Ambos navegables: usar cardinalidad para inferir dirección
+                # En UML la flecha va del lado "uno" al lado "muchos"
+                # source = lado con menor cardinalidad, target = lado con mayor cardinalidad
+                def cardinality_weight(mult):
+                    if mult is None:
+                        return 0
+                    if '*' in mult:
+                        if mult.startswith('0'):
+                            return 3  # 0..*
+                        return 2  # 1..*
+                    try:
+                        val = int(mult)
+                        return val  # 1, 2, etc.
+                    except ValueError:
+                        return 1
+
+                w0 = cardinality_weight(owned_ends[0]['multiplicity'])
+                w1 = cardinality_weight(owned_ends[1]['multiplicity'])
+
+                if w0 < w1:
+                    # End 0 tiene menor cardinalidad → source
+                    source_name = owned_ends[0]['name']
+                    target_name = owned_ends[1]['name']
+                    source_mult = owned_ends[0]['multiplicity']
+                    target_mult = owned_ends[1]['multiplicity']
+                elif w1 < w0:
+                    # End 1 tiene menor cardinalidad → source
+                    source_name = owned_ends[1]['name']
+                    target_name = owned_ends[0]['name']
+                    source_mult = owned_ends[1]['multiplicity']
+                    target_mult = owned_ends[0]['multiplicity']
+                else:
+                    # Misma cardinalidad: usar orden XML
+                    source_name = owned_ends[0]['name']
+                    target_name = owned_ends[1]['name']
+                    source_mult = owned_ends[0]['multiplicity']
+                    target_mult = owned_ends[1]['multiplicity']
+
+        # Estrategia 2: memberEnd + property_owner_map (Astah/StarUML)
         if not source_name or not target_name:
             member_end = elem.get('memberEnd', '')
             if member_end:
                 ends = member_end.split()
                 if len(ends) >= 2:
-                    source_name = (
-                        self.property_owner_map.get(ends[0])
-                        or id_to_name.get(ends[0], '')
-                    )
-                    target_name = (
-                        self.property_owner_map.get(ends[1])
-                        or id_to_name.get(ends[1], '')
-                    )
+                    # En StarUML, la cardinalidad en un ownedAttribute representa
+                    # la multiplicidad del extremo OPUESTO (el type), no del owner.
+                    # end[0] owned by A, type=B, card=X → mult at B end = X
+                    # end[1] owned by B, type=A, card=Y → mult at A end = Y
+                    end_data = []
+                    for end_id in ends[:2]:
+                        owner = self.property_owner_map.get(end_id) or id_to_name.get(end_id, '')
+                        end_elem = self.all_elements_by_id.get(end_id)
+                        lower = None
+                        upper = None
+                        if end_elem:
+                            for gc in end_elem:
+                                gc_tag = gc.tag.split('}')[-1] if '}' in gc.tag else gc.tag
+                                if gc_tag == 'lowerValue':
+                                    lower = gc.get('value')
+                                elif gc_tag == 'upperValue':
+                                    upper = gc.get('value')
+                        mult = self._format_multiplicity(lower, upper)
+                        end_data.append({'owner': owner, 'mult': mult})
+
+                    if len(end_data) >= 2:
+                        # La cardinalidad en end[i] es la mult del OTRO extremo
+                        # mult at end_data[0].owner end = end_data[1].mult
+                        # mult at end_data[1].owner end = end_data[0].mult
+                        mult_at_0 = end_data[1]['mult']  # mult at owner of end[0]
+                        mult_at_1 = end_data[0]['mult']  # mult at owner of end[1]
+
+                        def cardinality_weight(mult):
+                            if mult is None:
+                                return 0
+                            if '*' in mult:
+                                if mult.startswith('0'):
+                                    return 3
+                                return 2
+                            try:
+                                return int(mult)
+                            except ValueError:
+                                return 1
+
+                        w0 = cardinality_weight(mult_at_0)
+                        w1 = cardinality_weight(mult_at_1)
+
+                        if w0 < w1:
+                            source_name = end_data[0]['owner']
+                            target_name = end_data[1]['owner']
+                            source_mult = mult_at_0
+                            target_mult = mult_at_1
+                        elif w1 < w0:
+                            source_name = end_data[1]['owner']
+                            target_name = end_data[0]['owner']
+                            source_mult = mult_at_1
+                            target_mult = mult_at_0
+                        else:
+                            source_name = end_data[0]['owner']
+                            target_name = end_data[1]['owner']
+                            source_mult = mult_at_0
+                            target_mult = mult_at_1
 
         # Estrategia 3: atributos source/target directos
         if not source_name or not target_name:
@@ -730,10 +854,24 @@ class XMIParser:
             return UMLRelationship(
                 source=source_name,
                 target=target_name,
-                relationship_type=rel_type,
+                relationship_type=determined_rel_type,
                 name=elem.get('name'),
+                source_multiplicity=source_mult,
+                target_multiplicity=target_mult,
             )
         return None
+
+    def _format_multiplicity(self, lower, upper):
+        """Formatea los valores lower/upper en notacion de multiplicidad UML."""
+        if lower is None and upper is None:
+            return None
+        if lower == upper:
+            return lower
+        if lower is None:
+            return upper
+        if upper is None:
+            return lower
+        return f'{lower}..{upper}'
 
     def _make_rel(
         self, src_id: str, tgt_id: str,

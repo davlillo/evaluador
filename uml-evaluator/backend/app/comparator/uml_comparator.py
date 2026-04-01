@@ -805,7 +805,9 @@ class UMLComparator:
             key = (
                 self._normalize_name(rel.source),
                 self._normalize_name(rel.target),
-                rel.relationship_type.value
+                rel.relationship_type.value,
+                rel.source_multiplicity or '',
+                rel.target_multiplicity or '',
             )
             expected_normalized.add((key, rel))
         
@@ -814,7 +816,9 @@ class UMLComparator:
             key = (
                 self._normalize_name(rel.source),
                 self._normalize_name(rel.target),
-                rel.relationship_type.value
+                rel.relationship_type.value,
+                rel.source_multiplicity or '',
+                rel.target_multiplicity or '',
             )
             student_normalized.add((key, rel))
         

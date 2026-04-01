@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:uml="http://www.omg.org/spec/UML/20110701" xmlns:xmi="http://www.omg.org/spec/XMI/20110701">
+  <uml:Model name="no_title" xmi:id="_K5P5UC4IEfGUu4hwwW7T6w">
+    <packagedElement name="mascota" xmi:id="_K5RugC4IEfGUu4hwwW7T6w" xmi:type="uml:Class">
+      <ownedAttribute name="nombreMascota" type="_K5SVlC4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5RugS4IEfGUu4hwwW7T6w" xmi:type="uml:Property"/>
+      <ownedAttribute association="_K5SVkC4IEfGUu4hwwW7T6w" name="" type="_K5RuiC4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5Rugi4IEfGUu4hwwW7T6w" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_K5Rugy4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="1" xmi:id="_K5RuhC4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+      <ownedAttribute association="_K5SVkS4IEfGUu4hwwW7T6w" name="" type="_K5Ruki4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5RuhS4IEfGUu4hwwW7T6w" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_K5Ruhi4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_K5Ruhy4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement name="dueño" xmi:id="_K5RuiC4IEfGUu4hwwW7T6w" xmi:type="uml:Class">
+      <ownedAttribute name="NombreDueño" type="_K5SVlC4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5RuiS4IEfGUu4hwwW7T6w" xmi:type="uml:Property"/>
+      <ownedAttribute association="_K5SVkC4IEfGUu4hwwW7T6w" name="" type="_K5RugC4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5Ruii4IEfGUu4hwwW7T6w" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_K5Ruiy4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="1" xmi:id="_K5RujC4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement name="doctora" xmi:id="_K5RujS4IEfGUu4hwwW7T6w" xmi:type="uml:Class">
+      <ownedAttribute name="NombreDoctora" type="_K5SVlC4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5Ruji4IEfGUu4hwwW7T6w" xmi:type="uml:Property"/>
+      <ownedAttribute association="_K5SVki4IEfGUu4hwwW7T6w" name="" type="_K5Ruki4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5Rujy4IEfGUu4hwwW7T6w" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_K5RukC4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="*" xmi:id="_K5RukS4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement name="servicio" xmi:id="_K5Ruki4IEfGUu4hwwW7T6w" xmi:type="uml:Class">
+      <ownedAttribute name="NombreServicio" type="_K5SVlC4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5Ruky4IEfGUu4hwwW7T6w" xmi:type="uml:Property"/>
+      <ownedAttribute association="_K5SVkS4IEfGUu4hwwW7T6w" name="" type="_K5RugC4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5RulC4IEfGUu4hwwW7T6w" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_K5RulS4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="1" xmi:id="_K5Ruli4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+      <ownedAttribute association="_K5SVki4IEfGUu4hwwW7T6w" name="" type="_K5RujS4IEfGUu4hwwW7T6w" visibility="private" xmi:id="_K5Ruly4IEfGUu4hwwW7T6w" xmi:type="uml:Property">
+        <lowerValue value="1" xmi:id="_K5RumC4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralInteger"/>
+        <upperValue value="1" xmi:id="_K5RumS4IEfGUu4hwwW7T6w" xmi:type="uml:LiteralUnlimitedNatural"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement memberEnd="_K5Ruii4IEfGUu4hwwW7T6w _K5Rugi4IEfGUu4hwwW7T6w" name="tiene" xmi:id="_K5SVkC4IEfGUu4hwwW7T6w" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_K5RulC4IEfGUu4hwwW7T6w _K5RuhS4IEfGUu4hwwW7T6w" name="recibe" xmi:id="_K5SVkS4IEfGUu4hwwW7T6w" xmi:type="uml:Association"/>
+    <packagedElement memberEnd="_K5Ruly4IEfGUu4hwwW7T6w _K5Rujy4IEfGUu4hwwW7T6w" name="brinda" xmi:id="_K5SVki4IEfGUu4hwwW7T6w" xmi:type="uml:Association"/>
+    <packagedElement name="PrimitiveTypes" xmi:id="_K5SVky4IEfGUu4hwwW7T6w" xmi:type="uml:Package">
+      <packagedElement name="int" xmi:id="_K5SVlC4IEfGUu4hwwW7T6w" xmi:type="uml:PrimitiveType"/>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>
