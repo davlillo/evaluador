@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 from app.models.uml_elements import (
     UMLDiagram, UMLClass, UMLAttribute, UMLMethod,
-    UMLRelationship, Visibility,
+    UMLRelationship, Visibility, RelationshipType,
     UMLActor, UMLUseCase, UMLLifeline, UMLMessage,
 )
 
@@ -67,6 +67,8 @@ class ComparisonResult:
     diagram_type: str = "class"
     missing_classes: List[str] = field(default_factory=list)
     extra_classes: List[str] = field(default_factory=list)
+    missing_use_cases: List[str] = field(default_factory=list)
+    extra_use_cases: List[str] = field(default_factory=list)
     missing_relationships: List[str] = field(default_factory=list)
     extra_relationships: List[str] = field(default_factory=list)
     class_results: List[ClassComparisonResult] = field(default_factory=list)
@@ -106,6 +108,8 @@ class ComparisonResult:
                     "expected": self.total_attributes_expected,
                     "found": self.total_attributes_found,
                     "correct": self.correct_attributes,
+                    "missing": self.missing_use_cases,
+                    "extra": self.extra_use_cases,
                 },
                 "relationships": {
                     "similarity": round(self.relationship_similarity, 2),
@@ -308,7 +312,6 @@ class UMLComparator:
             result_missing_attr="missing_classes",
             result_extra_attr="extra_classes",
             result_similarity_attr="class_similarity",
-            total_expected=len(expected.actors),
             result=result,
         )
 
@@ -316,33 +319,69 @@ class UMLComparator:
             expected.use_cases, student.use_cases,
             element_type="use_case",
             result_correct_attr="correct_attributes",
-            result_missing_attr=None,
-            result_extra_attr=None,
+            result_missing_attr="missing_use_cases",
+            result_extra_attr="extra_use_cases",
             result_similarity_attr="attribute_similarity",
-            total_expected=len(expected.use_cases),
             result=result,
         )
 
         self._compare_relationships(expected.relationships, student.relationships, result)
 
+        # Incluir siempre cada criterio con peso > 0. Si solo miráramos total_*_expected > 0,
+        # un docente con «0 actores» en el XMI ignoraría el 0% de similitud por actores extra
+        # del estudiante y la nota global quedaría inflada (p. ej. 100% solo con CU y relaciones).
         scores, weights = [], []
-        if result.total_classes_expected > 0:
+        w_act = self.weights.get('classes', 0.35)
+        if w_act > 0:
             scores.append(result.class_similarity)
-            weights.append(self.weights.get('classes', 0.35))
-        if result.total_attributes_expected > 0:
+            weights.append(w_act)
+        w_uc = self.weights.get('attributes', 0.25)
+        if w_uc > 0:
             scores.append(result.attribute_similarity)
-            weights.append(self.weights.get('attributes', 0.25))
-        if result.total_relationships_expected > 0:
+            weights.append(w_uc)
+        w_rel = self.weights.get('relationships', 0.40)
+        if w_rel > 0:
             scores.append(result.relationship_similarity)
-            weights.append(self.weights.get('relationships', 0.40))
+            weights.append(w_rel)
 
         if scores:
             total_w = sum(weights)
-            result.overall_similarity = sum(
-                s * w / total_w for s, w in zip(scores, weights)
-            )
+            if total_w > 0:
+                result.overall_similarity = sum(
+                    s * w / total_w for s, w in zip(scores, weights)
+                )
 
         return result
+
+    def _f1_similarity_counts(self, correct: int, n_expected: int, n_student: int) -> float:
+        """
+        F1 entre precisión (correct/student) y recall (correct/expected).
+        Penaliza elementos extra o faltantes (evita 100% solo por recall).
+        """
+        if n_expected == 0 and n_student == 0:
+            return 100.0
+        if n_expected == 0:
+            return 0.0 if n_student > 0 else 100.0
+        if n_student == 0:
+            return 0.0
+        if correct == 0:
+            return 0.0
+        p = correct / n_student
+        r = correct / n_expected
+        return 100.0 * (2 * p * r) / (p + r)
+
+    def _relationship_comparison_key(self, rel: UMLRelationship) -> tuple:
+        """Clave estable para comparar relaciones; asociaciones simples como no dirigidas."""
+        s = self._normalize_name(rel.source)
+        t = self._normalize_name(rel.target)
+        rt = rel.relationship_type.value
+        sm = rel.source_multiplicity or ''
+        tm = rel.target_multiplicity or ''
+        if rel.relationship_type == RelationshipType.ASSOCIATION:
+            if s > t:
+                s, t = t, s
+                sm, tm = tm, sm
+        return (s, t, rt, sm, tm)
 
     def _compare_named_list(
         self,
@@ -353,7 +392,6 @@ class UMLComparator:
         result_missing_attr: Optional[str],
         result_extra_attr: Optional[str],
         result_similarity_attr: str,
-        total_expected: int,
         result: ComparisonResult,
     ) -> None:
         """Compara dos listas de elementos con atributo 'name' (actores, casos de uso, lifelines)."""
@@ -369,8 +407,10 @@ class UMLComparator:
             setattr(result, result_missing_attr, missing)
         if result_extra_attr:
             setattr(result, result_extra_attr, extra)
-        if total_expected > 0:
-            setattr(result, result_similarity_attr, len(correct) / total_expected * 100)
+        n_exp = len(exp_map)
+        n_stu = len(stu_map)
+        sim = self._f1_similarity_counts(len(correct), n_exp, n_stu)
+        setattr(result, result_similarity_attr, sim)
 
         for name in missing:
             result.details.append(ComparisonDetail(
@@ -432,7 +472,6 @@ class UMLComparator:
             result_missing_attr="missing_classes",
             result_extra_attr="extra_classes",
             result_similarity_attr="class_similarity",
-            total_expected=len(expected.lifelines),
             result=result,
         )
 
@@ -440,18 +479,21 @@ class UMLComparator:
         self._compare_messages(expected.messages, student.messages, result)
 
         scores, weights = [], []
-        if result.total_classes_expected > 0:
+        w_ll = self.weights.get('classes', 0.40)
+        if w_ll > 0:
             scores.append(result.class_similarity)
-            weights.append(0.40)
-        if result.total_relationships_expected > 0:
+            weights.append(w_ll)
+        w_msg = self.weights.get('relationships', 0.60)
+        if w_msg > 0:
             scores.append(result.relationship_similarity)
-            weights.append(0.60)
+            weights.append(w_msg)
 
         if scores:
             total_w = sum(weights)
-            result.overall_similarity = sum(
-                s * w / total_w for s, w in zip(scores, weights)
-            )
+            if total_w > 0:
+                result.overall_similarity = sum(
+                    s * w / total_w for s, w in zip(scores, weights)
+                )
 
         return result
 
@@ -552,9 +594,12 @@ class UMLComparator:
         # Clases extra
         result.extra_classes = [student_map[name].name for name in (student_names - expected_names)]
         
-        # Calcular similitud de clases
-        if result.total_classes_expected > 0:
-            result.class_similarity = (result.correct_classes / result.total_classes_expected) * 100
+        # Similitud F1 entre clases (penaliza clases extra o faltantes)
+        result.class_similarity = self._f1_similarity_counts(
+            result.correct_classes,
+            len(expected_names),
+            len(student_names),
+        )
         
         # Comparar atributos y métodos de cada clase correcta
         total_attr_expected = 0
@@ -799,27 +844,15 @@ class UMLComparator:
                               result: ComparisonResult) -> None:
         """Compara las relaciones entre clases."""
         
-        # Normalizar relaciones para comparación
+        # Normalizar relaciones para comparación (asociaciones como pares no dirigidos)
         expected_normalized = set()
         for rel in expected:
-            key = (
-                self._normalize_name(rel.source),
-                self._normalize_name(rel.target),
-                rel.relationship_type.value,
-                rel.source_multiplicity or '',
-                rel.target_multiplicity or '',
-            )
+            key = self._relationship_comparison_key(rel)
             expected_normalized.add((key, rel))
         
         student_normalized = set()
         for rel in student:
-            key = (
-                self._normalize_name(rel.source),
-                self._normalize_name(rel.target),
-                rel.relationship_type.value,
-                rel.source_multiplicity or '',
-                rel.target_multiplicity or '',
-            )
+            key = self._relationship_comparison_key(rel)
             student_normalized.add((key, rel))
         
         expected_keys = {k for k, _ in expected_normalized}
@@ -859,9 +892,12 @@ class UMLComparator:
                 message=f"Relación correcta: {key[0]} -> {key[1]} ({key[2]})"
             ))
         
-        # Calcular similitud de relaciones
-        if result.total_relationships_expected > 0:
-            result.relationship_similarity = (result.correct_relationships / result.total_relationships_expected) * 100
+        # Similitud F1 (penaliza relaciones extra o faltantes)
+        n_exp = len(expected_keys)
+        n_stu = len(student_keys)
+        result.relationship_similarity = self._f1_similarity_counts(
+            result.correct_relationships, n_exp, n_stu
+        )
     
     def _calculate_overall_similarity(self, result: ComparisonResult) -> float:
         """Calcula la similitud global ponderada."""

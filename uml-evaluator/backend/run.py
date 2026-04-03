@@ -14,8 +14,8 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     host = os.environ.get("HOST", "0.0.0.0")
     
-    print(f"🚀 Iniciando UML Evaluator API en http://{host}:{port}")
-    print(f"📚 Documentación: http://{host}:{port}/docs")
+    print(f"Iniciando UML Evaluator API en http://{host}:{port}")
+    print(f"Documentación: http://{host}:{port}/docs")
     
     uvicorn.run(
         "app.api.main:app",

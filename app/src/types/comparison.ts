@@ -62,6 +62,28 @@ export interface Breakdown {
   relationships: RelationshipsBreakdown;
 }
 
+/** Desglose cuando diagram_type === 'usecase' (API). */
+export interface UseCaseSliceBreakdown {
+  similarity: number;
+  expected: number;
+  found: number;
+  correct: number;
+  missing?: string[];
+  extra?: string[];
+}
+
+export interface UseCaseBreakdown {
+  actors: UseCaseSliceBreakdown;
+  use_cases: UseCaseSliceBreakdown;
+  relationships: UseCaseSliceBreakdown;
+}
+
+export function isUseCaseBreakdown(
+  b: Breakdown | UseCaseBreakdown,
+): b is UseCaseBreakdown {
+  return 'actors' in b && 'use_cases' in b;
+}
+
 export interface ComparisonDetail {
   element_type: string;
   name: string;
@@ -114,17 +136,31 @@ export interface DiagramRelationship {
   target_multiplicity?: string;
 }
 
+/** Elemento en diagramas de casos de uso (respuesta del API). */
+export interface DiagramActor {
+  name: string;
+}
+
+export interface DiagramUseCaseItem {
+  name: string;
+}
+
 export interface DiagramInfo {
   name: string;
   diagram_type: string;
   classes: DiagramClass[];
   relationships: DiagramRelationship[];
   packages: string[];
+  /** Presente en diagramas de tipo usecase cuando el parser los incluye. */
+  actors?: DiagramActor[];
+  use_cases?: DiagramUseCaseItem[];
 }
 
 export interface ComparisonResult {
   overall_similarity: number;
-  breakdown: Breakdown;
+  /** Tipo detectado en el diagrama esperado: class | usecase | sequence */
+  diagram_type?: string;
+  breakdown: Breakdown | UseCaseBreakdown;
   class_details: ClassResult[];
   details: ComparisonDetail[];
   weights_used?: WeightsUsed;

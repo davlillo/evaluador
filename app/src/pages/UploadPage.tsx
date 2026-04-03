@@ -1,20 +1,25 @@
 ﻿import {
   useState,
   useCallback,
+  useEffect,
 } from 'react';
-import { Upload, FileCode, CheckCircle, AlertCircle, Info, Settings, ArrowRight } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { Upload, FileCode, CheckCircle, AlertCircle, Info, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useEvaluationWizard } from '@/context/EvaluationWizardContext';
+import { useEvaluationResult } from '@/context/EvaluationResultContext';
+import { WeightsByDiagramType } from '@/components/WeightsByDiagramType';
+import {
+  defaultWeightsForKind,
+  weightsValidForKind,
+  SEQUENCE_FIXED_WEIGHTS,
+} from '@/lib/weights-diagram';
 import type { Weights } from '@/types/comparison';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-interface UploadPageProps {
-  onResult: (data: any) => void;
-  onNavigate: (page: string) => void;
-}
 
 function FileUploadZone({
   label,
@@ -102,99 +107,33 @@ function FileUploadZone({
   );
 }
 
-function WeightsPanel({
-  weights,
-  onChange,
-}: {
-  weights: Weights;
-  onChange: (weights: Weights) => void;
-}) {
-  const total = weights.classes + weights.attributes + weights.methods + weights.relationships;
-  const isValid = Math.abs(total - 100) < 0.01;
+export default function UploadPage() {
+  const { diagramKind } = useEvaluationWizard();
+  const { setResult } = useEvaluationResult();
+  const navigate = useNavigate();
 
-  const fields: { key: keyof Weights; label: string; color: string }[] = [
-    { key: 'classes', label: 'Clases', color: 'text-blue-600' },
-    { key: 'attributes', label: 'Atributos', color: 'text-purple-600' },
-    { key: 'methods', label: 'Métodos', color: 'text-teal-600' },
-    { key: 'relationships', label: 'Relaciones', color: 'text-orange-600' },
-  ];
-
-  const handleChange = (key: keyof Weights, value: string) => {
-    const num = Math.max(0, Math.min(100, Number(value) || 0));
-    onChange({ ...weights, [key]: num });
-  };
-
-  return (
-    <Card className="border-dashed">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Settings className="w-4 h-4" />
-          Ponderación de criterios
-        </CardTitle>
-        <CardDescription className="text-xs">
-          Define cuánto vale cada criterio en la nota final. Los valores deben sumar 100%.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {fields.map(({ key, label, color }) => (
-            <div key={key} className="flex flex-col gap-1">
-              <label className={'text-xs font-semibold ' + color}>{label}</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={weights[key]}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-3 flex items-center gap-2">
-          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
-            {fields.map(({ key, color }) => (
-              <div
-                key={key}
-                className={'h-full transition-all ' + color.replace('text-', 'bg-')}
-                style={{ width: total > 0 ? (weights[key] / total) * 100 + '%' : '25%' }}
-              />
-            ))}
-          </div>
-          <span className={'text-xs font-medium ' + (isValid ? 'text-green-600' : 'text-red-500')}>
-            Total: {Math.round(total)}%
-          </span>
-        </div>
-
-        {!isValid && (
-          <p className="text-xs text-red-500 mt-2">
-            La suma debe ser exactamente 100%. Actualmente es {Math.round(total)}%.
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function UploadPage({ onResult, onNavigate }: UploadPageProps) {
   const [expectedFile, setExpectedFile] = useState<File | null>(null);
   const [studentFile, setStudentFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [weights, setWeights] = useState<Weights>({
-    classes: 35,
-    attributes: 25,
-    methods: 25,
-    relationships: 15,
-  });
+  const [weights, setWeights] = useState<Weights>(() =>
+    diagramKind ? defaultWeightsForKind(diagramKind) : defaultWeightsForKind('class'),
+  );
 
-  const weightsTotal = weights.classes + weights.attributes + weights.methods + weights.relationships;
-  const weightsValid = Math.abs(weightsTotal - 100) < 0.01;
+  useEffect(() => {
+    if (diagramKind) {
+      setWeights(defaultWeightsForKind(diagramKind));
+    }
+  }, [diagramKind]);
+
+  if (!diagramKind) {
+    return <Navigate to="/evaluar/tipo" replace />;
+  }
+
+  const weightsForSubmit: Weights =
+    diagramKind === 'sequence' ? SEQUENCE_FIXED_WEIGHTS : weights;
+
+  const weightsValid = weightsValidForKind(diagramKind, weights);
 
   const handleCompare = async () => {
     if (!expectedFile || !studentFile) {
@@ -202,7 +141,7 @@ export default function UploadPage({ onResult, onNavigate }: UploadPageProps) {
       return;
     }
     if (!weightsValid) {
-      setError('La suma de las ponderaciones debe ser exactamente 100%');
+      setError('La suma de las ponderaciones debe ser exactamente 100% (según el tipo de diagrama).');
       return;
     }
 
@@ -215,10 +154,11 @@ export default function UploadPage({ onResult, onNavigate }: UploadPageProps) {
       formData.append('student_file', studentFile);
       formData.append('case_sensitive', 'false');
       formData.append('strict_types', 'true');
-      formData.append('weight_classes', String(weights.classes));
-      formData.append('weight_attributes', String(weights.attributes));
-      formData.append('weight_methods', String(weights.methods));
-      formData.append('weight_relationships', String(weights.relationships));
+      formData.append('weight_classes', String(weightsForSubmit.classes));
+      formData.append('weight_attributes', String(weightsForSubmit.attributes));
+      formData.append('weight_methods', String(weightsForSubmit.methods));
+      formData.append('weight_relationships', String(weightsForSubmit.relationships));
+      formData.append('expected_diagram_type', diagramKind);
 
       const response = await fetch(API_URL + '/api/compare', {
         method: 'POST',
@@ -231,8 +171,8 @@ export default function UploadPage({ onResult, onNavigate }: UploadPageProps) {
       }
 
       const data = await response.json();
-      onResult(data);
-      onNavigate('results');
+      setResult(data, { studentFileName: studentFile.name });
+      navigate('/evaluar/resultados');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -240,13 +180,29 @@ export default function UploadPage({ onResult, onNavigate }: UploadPageProps) {
     }
   };
 
+  const kindLabel =
+    diagramKind === 'class'
+      ? 'diagrama de clases'
+      : diagramKind === 'usecase'
+        ? 'casos de uso'
+        : 'diagrama de secuencia';
+
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold">Compara Diagramas UML</h2>
+        <div className="flex w-full items-center">
+          <div className="flex flex-1 justify-start">
+            <Button variant="ghost" onClick={() => navigate('/evaluar/tipo')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver
+            </Button>
+          </div>
+          <h2 className="shrink-0 text-3xl font-bold">Compara Diagramas UML</h2>
+          <div className="flex-1" aria-hidden="true" />
+        </div>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          Sube el archivo de la solución correcta y el archivo del estudiante para evaluar automáticamente la
-          similitud entre ambos diagramas UML.
+          Tipo seleccionado: <strong className="text-foreground">{kindLabel}</strong>. Sube la solución y el
+          archivo del estudiante (XMI/XML). Opcionalmente podrás usar ZIP en una versión futura.
         </p>
       </div>
 
@@ -267,7 +223,7 @@ export default function UploadPage({ onResult, onNavigate }: UploadPageProps) {
         />
       </div>
 
-      <WeightsPanel weights={weights} onChange={setWeights} />
+      <WeightsByDiagramType diagramKind={diagramKind} weights={weights} onChange={setWeights} />
 
       {error && (
         <Alert variant="destructive">
@@ -307,6 +263,14 @@ export default function UploadPage({ onResult, onNavigate }: UploadPageProps) {
                 Archivos XMI, XML y UML generados por StarUML, Enterprise Architect, Visual Paradigm, Astah,
                 Eclipse Papyrus y otras herramientas de modelado UML.
               </p>
+              {diagramKind !== 'class' && (
+                <p className="mt-2 text-xs">
+                  Ponderación mostrada:{' '}
+                  {diagramKind === 'usecase'
+                    ? `${Math.round(weights.classes)}% actores, ${Math.round(weights.attributes)}% casos de uso, ${Math.round(weights.relationships)}% relaciones (total ${Math.round(weights.classes + weights.attributes + weights.relationships)}%).`
+                    : '40% líneas de vida / 60% mensajes (fijos en el servidor por ahora).'}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>

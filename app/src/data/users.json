@@ -1,0 +1,14 @@
+[
+  {
+    "email": "docente@demo.edu",
+    "password": "demo123",
+    "name": "Docente Demo"
+  },
+
+  {
+    "email": "gm23025@ues.edu.sv",
+    "password": "gissi1010",
+    "name": "Gissi Girón"
+  }
+
+]
