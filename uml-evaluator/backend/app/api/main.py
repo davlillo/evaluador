@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from app.parsers.xmi_parser import parse_xmi_file, parse_xmi_string
 from app.comparator.uml_comparator import compare_uml_diagrams
+from app.users_file import USERS_JSON_PATH, append_user_if_new, find_user_by_credentials
 
 
 # Configuración de CORS
@@ -37,6 +38,7 @@ async def lifespan(app: FastAPI):
     """Gestión del ciclo de vida de la aplicación."""
     # Startup
     print("Iniciando UML Evaluator API...")
+    print(f"Archivo de usuarios (auth): {USERS_JSON_PATH}")
     yield
     # Shutdown
     print("Cerrando UML Evaluator API...")
@@ -76,6 +78,22 @@ class HealthResponse(BaseModel):
     version: str
 
 
+class AuthLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class AuthRegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+
+
+class AuthUserResponse(BaseModel):
+    email: str
+    name: str
+
+
 @app.get("/", response_model=HealthResponse)
 async def root():
     """Endpoint raíz con información del sistema."""
@@ -92,6 +110,41 @@ async def health_check():
         status="healthy",
         version="1.0.0"
     )
+
+
+@app.post("/api/auth/login", response_model=AuthUserResponse)
+async def auth_login(body: AuthLoginRequest):
+    """Valida credenciales contra usuarios en app/src/data/users.json (o USERS_JSON_PATH)."""
+    found = find_user_by_credentials(body.email, body.password)
+    if not found:
+        raise HTTPException(
+            status_code=401,
+            detail="Correo o contraseña incorrectos.",
+        )
+    return AuthUserResponse(email=found["email"], name=found["name"])
+
+
+@app.post("/api/auth/register", response_model=AuthUserResponse, status_code=201)
+async def auth_register(body: AuthRegisterRequest):
+    """Registra un usuario y lo persiste en el archivo JSON de usuarios."""
+    trimmed_email = body.email.strip()
+    trimmed_name = body.name.strip()
+    if not trimmed_email or not trimmed_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Completá correo y nombre.",
+        )
+    record = {
+        "email": trimmed_email,
+        "password": body.password,
+        "name": trimmed_name,
+    }
+    if not append_user_if_new(record):
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe una cuenta con ese correo.",
+        )
+    return AuthUserResponse(email=trimmed_email, name=trimmed_name)
 
 
 @app.post("/api/compare")

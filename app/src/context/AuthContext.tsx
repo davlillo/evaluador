@@ -7,31 +7,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import usersDb from '@/data/users.json';
-import {
-  appendRegisteredUser,
-  loadRegisteredUsers,
-  type StoredUserRecord,
-} from '@/lib/registered-users-storage';
+import { getAuthApiBaseUrl, parseApiErrorMessage } from '@/lib/auth-api';
 
 export interface AuthUser {
   email: string;
   name: string;
 }
 
-interface UserRecord {
-  email: string;
-  password: string;
-  name: string;
-}
-
 const SESSION_KEY = 'uml-evaluator-session';
-
-function getUsers(): UserRecord[] {
-  const fromFile = usersDb as UserRecord[];
-  const registered = loadRegisteredUsers();
-  return [...fromFile, ...registered];
-}
 
 function persistSession(user: AuthUser | null) {
   if (user) {
@@ -64,35 +47,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => readSession());
 
   const login = useCallback(async (email: string, password: string) => {
-    const normalized = email.trim().toLowerCase();
-    const found = getUsers().find(
-      (u) => u.email.toLowerCase() === normalized && u.password === password,
-    );
-    if (!found) {
-      throw new Error('Correo o contraseña incorrectos.');
+    const base = getAuthApiBaseUrl();
+    let res: Response;
+    try {
+      res = await fetch(`${base}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch {
+      throw new Error(
+        'No se pudo conectar con el servidor. Comprobá que el backend esté en marcha (puerto 8000 por defecto).',
+      );
     }
-    const next: AuthUser = { email: found.email, name: found.name };
+    if (!res.ok) {
+      throw new Error(await parseApiErrorMessage(res));
+    }
+    const next = (await res.json()) as AuthUser;
     setUser(next);
     persistSession(next);
   }, []);
 
   const register = useCallback(async (email: string, password: string, name: string) => {
-    const trimmedEmail = email.trim();
-    const trimmedName = name.trim();
-    if (!trimmedEmail || !trimmedName) {
-      throw new Error('Completá correo y nombre.');
+    const base = getAuthApiBaseUrl();
+    let res: Response;
+    try {
+      res = await fetch(`${base}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+    } catch {
+      throw new Error(
+        'No se pudo conectar con el servidor. Comprobá que el backend esté en marcha para guardar el usuario en users.json.',
+      );
     }
-    const normalized = trimmedEmail.toLowerCase();
-    const exists = getUsers().some((u) => u.email.toLowerCase() === normalized);
-    if (exists) {
-      throw new Error('Ya existe una cuenta con ese correo.');
+    if (!res.ok) {
+      throw new Error(await parseApiErrorMessage(res));
     }
-    const record: StoredUserRecord = {
-      email: trimmedEmail,
-      password,
-      name: trimmedName,
-    };
-    appendRegisteredUser(record);
   }, []);
 
   const logout = useCallback(() => {
