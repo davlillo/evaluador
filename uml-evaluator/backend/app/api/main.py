@@ -36,10 +36,10 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def lifespan(app: FastAPI):
     """Gestión del ciclo de vida de la aplicación."""
     # Startup
-    print("🚀 Iniciando UML Evaluator API...")
+    print("Iniciando UML Evaluator API...")
     yield
     # Shutdown
-    print("🛑 Cerrando UML Evaluator API...")
+    print("Cerrando UML Evaluator API...")
     # Limpiar archivos temporales
     shutil.rmtree(UPLOAD_DIR, ignore_errors=True)
 
@@ -104,6 +104,10 @@ async def compare_files(
     weight_attributes: float = Form(25, description="Peso para atributos (0-100)"),
     weight_methods: float = Form(25, description="Peso para métodos (0-100)"),
     weight_relationships: float = Form(15, description="Peso para relaciones (0-100)"),
+    expected_diagram_type: Optional[str] = Form(
+        None,
+        description="Opcional: class, usecase o sequence. Si se envía, debe coincidir con ambos XMI.",
+    ),
 ):
     """
     Compara dos archivos XMI/XML de diagramas UML.
@@ -157,6 +161,31 @@ async def compare_files(
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al parsear archivo del estudiante: {str(e)}")
 
+        if expected_diagram_type and str(expected_diagram_type).strip():
+            want = str(expected_diagram_type).strip().lower()
+            allowed = {'class', 'usecase', 'sequence'}
+            if want not in allowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail="expected_diagram_type debe ser class, usecase o sequence.",
+                )
+            if expected_diagram.diagram_type != want:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"La solución parseada es de tipo '{expected_diagram.diagram_type}', "
+                        f"pero indicaste '{want}'."
+                    ),
+                )
+            if student_diagram.diagram_type != want:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"El diagrama del estudiante es de tipo '{student_diagram.diagram_type}', "
+                        f"pero indicaste '{want}'."
+                    ),
+                )
+
         # Normalizar pesos
         raw_weights = {
             'classes': max(0.0, weight_classes),
@@ -179,6 +208,8 @@ async def compare_files(
         response['weights_used'] = {k: round(v * 100, 1) for k, v in normalized_weights.items()}
         response['expected_diagram'] = expected_diagram.to_dict()
         response['student_diagram'] = student_diagram.to_dict()
+        # Ayuda a comprobar que el servidor usa la lógica F1 y parser actualizado
+        response['evaluator_version'] = '2-f1'
 
         return response
 

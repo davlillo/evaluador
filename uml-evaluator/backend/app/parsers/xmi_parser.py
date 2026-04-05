@@ -491,6 +491,39 @@ class XMIParser:
                     excluded_ids.add(elem_id)
                     self.element_id_map[elem_id] = UMLClass(name=name)
 
+        # Segunda pasada: muchas herramientas exportan actor y CU como uml:Class.
+        # Si el nombre empieza con verbo de caso de uso → CU; si no → actor (p. ej. «Consultor»).
+        for elem in root.iter():
+            elem_type = elem.get(f'{self.ns_xmi}type', '') or elem.get('type', '')
+            tag_local = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
+            elem_id = elem.get(f'{self.ns_xmi}id') or elem.get('id')
+            name = elem.get('name', '').strip()
+            if not name or name.lower() in PRIMITIVE_TYPES:
+                continue
+            is_class_elem = (
+                tag_local in ['Class', 'Interface']
+                or 'Class' in elem_type
+                or 'Interface' in elem_type
+            )
+            if not is_class_elem:
+                continue
+            if name in actor_names or name in usecase_names:
+                continue
+            name_lower = name.lower()
+            first_word = name_lower.split()[0] if name_lower.split() else name_lower
+            if first_word in UC_VERBS:
+                use_cases.append(UMLUseCase(name=name))
+                usecase_names.add(name)
+                if elem_id:
+                    excluded_ids.add(elem_id)
+                    self.element_id_map[elem_id] = UMLClass(name=name)
+            else:
+                actors.append(UMLActor(name=name))
+                actor_names.add(name)
+                if elem_id:
+                    excluded_ids.add(elem_id)
+                    self.element_id_map[elem_id] = UMLClass(name=name)
+
         return actors, use_cases, excluded_ids
 
     # ------------------------------------------------------------------
@@ -628,8 +661,8 @@ class XMIParser:
                     id_to_name, valid_names,
                 )
 
-            # Include (casos de uso)
-            elif tag_local == 'include' or elem_type == 'uml:Include':
+            # Include (casos de uso) — varias variantes de namespace/tipo
+            elif (tag_local or '').lower() == 'include' or 'Include' in (elem_type or ''):
                 including_id = elem.get('includingCase', '')
                 if not including_id:
                     parent = parent_map.get(elem)
@@ -643,7 +676,7 @@ class XMIParser:
                 )
 
             # Extend (casos de uso)
-            elif tag_local == 'extend' or elem_type == 'uml:Extend':
+            elif (tag_local or '').lower() == 'extend' or 'Extend' in (elem_type or ''):
                 extended_id = elem.get('extendedCase', '')
                 extension_id = elem.get('extension', '')
                 if not extension_id:
