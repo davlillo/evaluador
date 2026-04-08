@@ -2,9 +2,10 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { ClassResultsView } from '@/components/results/ClassResultsView';
 import { UseCaseResultsView } from '@/components/results/UseCaseResultsView';
+import { SequenceResultsView } from '@/components/results/SequenceResultsView';
 import { OtherDiagramResultsStub } from '@/components/results/OtherDiagramResultsStub';
-import type { Breakdown, ComparisonResult, UseCaseBreakdown } from '@/types/comparison';
-import { isUseCaseBreakdown } from '@/types/comparison';
+import type { Breakdown, ComparisonResult, SequenceBreakdown, UseCaseBreakdown } from '@/types/comparison';
+import { isSequenceBreakdown, isUseCaseBreakdown } from '@/types/comparison';
 
 export default function ResultsPage() {
   const { result, clearResult } = useEvaluationResult();
@@ -32,6 +33,20 @@ export default function ResultsPage() {
     return (
       <UseCaseResultsView
         result={useCaseResult}
+        onBack={handleBack}
+        onViewReport={handleViewReport}
+      />
+    );
+  }
+
+  if (result.diagram_type === 'sequence' && isSequenceBreakdown(result.breakdown)) {
+    const sequenceResult: Omit<ComparisonResult, 'breakdown'> & { breakdown: SequenceBreakdown } = {
+      ...result,
+      breakdown: result.breakdown,
+    };
+    return (
+      <SequenceResultsView
+        result={sequenceResult}
         onBack={handleBack}
         onViewReport={handleViewReport}
       />

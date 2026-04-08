@@ -7,14 +7,16 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { EvaluationMode } from '@/types/evaluation-session';
+import type { EvaluationMode, XmiSource } from '@/types/evaluation-session';
 import type { DiagramKind } from '@/types/diagram';
 
 interface EvaluationWizardValue {
   mode: EvaluationMode;
   diagramKind: DiagramKind | null;
+  xmiSource: XmiSource | null;
   setMode: (m: EvaluationMode) => void;
   setDiagramKind: (k: DiagramKind | null) => void;
+  setXmiSource: (s: XmiSource | null) => void;
   resetWizard: () => void;
 }
 
@@ -23,6 +25,7 @@ const EvaluationWizardContext = createContext<EvaluationWizardValue | null>(null
 export function EvaluationWizardProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<EvaluationMode>('single');
   const [diagramKind, setDiagramKindState] = useState<DiagramKind | null>(null);
+  const [xmiSource, setXmiSourceState] = useState<XmiSource | null>(null);
 
   const setMode = useCallback((m: EvaluationMode) => {
     setModeState(m);
@@ -32,20 +35,27 @@ export function EvaluationWizardProvider({ children }: { children: ReactNode }) 
     setDiagramKindState(k);
   }, []);
 
+  const setXmiSource = useCallback((s: XmiSource | null) => {
+    setXmiSourceState(s);
+  }, []);
+
   const resetWizard = useCallback(() => {
     setModeState('single');
     setDiagramKindState(null);
+    setXmiSourceState(null);
   }, []);
 
   const value = useMemo(
     () => ({
       mode,
       diagramKind,
+      xmiSource,
       setMode,
       setDiagramKind,
+      setXmiSource,
       resetWizard,
     }),
-    [mode, diagramKind, setMode, setDiagramKind, resetWizard],
+    [mode, diagramKind, xmiSource, setMode, setDiagramKind, setXmiSource, resetWizard],
   );
 
   return (

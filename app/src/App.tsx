@@ -10,6 +10,7 @@ import RegisterPage from '@/pages/RegisterPage';
 import EvaluationModePage from '@/pages/EvaluationModePage';
 import DiagramTypePage from '@/pages/DiagramTypePage';
 import GlobalEvaluationPlaceholderPage from '@/pages/GlobalEvaluationPlaceholderPage';
+import GlobalStudentBreakdownPage from '@/pages/GlobalStudentBreakdownPage';
 import UploadPage from '@/pages/UploadPage';
 import ResultsPage from '@/pages/ResultsPage';
 import ReportPage from '@/pages/ReportPage';
@@ -113,6 +114,7 @@ export default function App() {
           <Route path="/evaluar/resultados" element={<ResultsPage />} />
           <Route path="/evaluar/reporte" element={<ReportPage />} />
           <Route path="/evaluar/global" element={<GlobalEvaluationPlaceholderPage />} />
+          <Route path="/evaluar/global/desglose" element={<GlobalStudentBreakdownPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

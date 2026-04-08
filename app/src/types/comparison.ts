@@ -78,10 +78,23 @@ export interface UseCaseBreakdown {
   relationships: UseCaseSliceBreakdown;
 }
 
+export interface SequenceBreakdown {
+  lifelines: UseCaseSliceBreakdown;
+  messages: UseCaseSliceBreakdown & {
+    order_score: number;
+  };
+}
+
 export function isUseCaseBreakdown(
-  b: Breakdown | UseCaseBreakdown,
+  b: Breakdown | UseCaseBreakdown | SequenceBreakdown,
 ): b is UseCaseBreakdown {
   return 'actors' in b && 'use_cases' in b;
+}
+
+export function isSequenceBreakdown(
+  b: Breakdown | UseCaseBreakdown | SequenceBreakdown,
+): b is SequenceBreakdown {
+  return 'lifelines' in b && 'messages' in b;
 }
 
 export interface ComparisonDetail {
@@ -145,6 +158,19 @@ export interface DiagramUseCaseItem {
   name: string;
 }
 
+export interface DiagramLifeline {
+  name: string;
+  represents: string;
+}
+
+export interface DiagramMessage {
+  name: string;
+  source_lifeline: string;
+  target_lifeline: string;
+  message_sort: string;
+  sequence_order: number;
+}
+
 export interface DiagramInfo {
   name: string;
   diagram_type: string;
@@ -154,13 +180,16 @@ export interface DiagramInfo {
   /** Presente en diagramas de tipo usecase cuando el parser los incluye. */
   actors?: DiagramActor[];
   use_cases?: DiagramUseCaseItem[];
+  /** Presente en diagramas de tipo sequence cuando el parser los incluye. */
+  lifelines?: DiagramLifeline[];
+  messages?: DiagramMessage[];
 }
 
 export interface ComparisonResult {
   overall_similarity: number;
   /** Tipo detectado en el diagrama esperado: class | usecase | sequence */
   diagram_type?: string;
-  breakdown: Breakdown | UseCaseBreakdown;
+  breakdown: Breakdown | UseCaseBreakdown | SequenceBreakdown;
   class_details: ClassResult[];
   details: ComparisonDetail[];
   weights_used?: WeightsUsed;

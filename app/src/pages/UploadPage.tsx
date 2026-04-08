@@ -4,9 +4,8 @@
   useEffect,
 } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Upload, FileCode, CheckCircle, AlertCircle, Info, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Upload, FileCode, CheckCircle, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useEvaluationWizard } from '@/context/EvaluationWizardContext';
@@ -108,7 +107,7 @@ function FileUploadZone({
 }
 
 export default function UploadPage() {
-  const { diagramKind } = useEvaluationWizard();
+  const { diagramKind, xmiSource } = useEvaluationWizard();
   const { setResult } = useEvaluationResult();
   const navigate = useNavigate();
 
@@ -126,7 +125,7 @@ export default function UploadPage() {
     }
   }, [diagramKind]);
 
-  if (!diagramKind) {
+  if (!diagramKind || !xmiSource) {
     return <Navigate to="/evaluar/tipo" replace />;
   }
 
@@ -159,6 +158,7 @@ export default function UploadPage() {
       formData.append('weight_methods', String(weightsForSubmit.methods));
       formData.append('weight_relationships', String(weightsForSubmit.relationships));
       formData.append('expected_diagram_type', diagramKind);
+      formData.append('xmi_source', xmiSource);
 
       const response = await fetch(API_URL + '/api/compare', {
         method: 'POST',
@@ -186,6 +186,7 @@ export default function UploadPage() {
       : diagramKind === 'usecase'
         ? 'casos de uso'
         : 'diagrama de secuencia';
+  const sourceLabel = xmiSource === 'visual_paradigm' ? 'Visual Paradigm' : 'Astah';
 
   return (
     <div className="space-y-6">
@@ -203,6 +204,9 @@ export default function UploadPage() {
         <p className="text-muted-foreground max-w-xl mx-auto">
           Tipo seleccionado: <strong className="text-foreground">{kindLabel}</strong>. Sube la solución y el
           archivo del estudiante (XMI/XML). Opcionalmente podrás usar ZIP en una versión futura.
+        </p>
+        <p className="text-muted-foreground max-w-xl mx-auto text-sm">
+          Formato XMI seleccionado: <strong className="text-foreground">{sourceLabel}</strong>.
         </p>
       </div>
 
@@ -253,28 +257,6 @@ export default function UploadPage() {
         </Button>
       </div>
 
-      <Card className="bg-muted/50 border-dashed">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Formatos soportados</p>
-              <p>
-                Archivos XMI, XML y UML generados por StarUML, Enterprise Architect, Visual Paradigm, Astah,
-                Eclipse Papyrus y otras herramientas de modelado UML.
-              </p>
-              {diagramKind !== 'class' && (
-                <p className="mt-2 text-xs">
-                  Ponderación mostrada:{' '}
-                  {diagramKind === 'usecase'
-                    ? `${Math.round(weights.classes)}% actores, ${Math.round(weights.attributes)}% casos de uso, ${Math.round(weights.relationships)}% relaciones (total ${Math.round(weights.classes + weights.attributes + weights.relationships)}%).`
-                    : '40% líneas de vida / 60% mensajes (fijos en el servidor por ahora).'}
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -50,7 +50,7 @@ class XMIParser:
         'ea': 'http://www.sparxsystems.com.au/schemas/ea',
     }
 
-    def __init__(self):
+    def __init__(self, xmi_source: str = 'astah'):
         # xmi:id → UMLClass  (clases del dominio + primitivos para resolución)
         self.element_id_map: Dict[str, Any] = {}
         # xmi:id → ET.Element  (todos los elementos con ID)
@@ -58,6 +58,7 @@ class XMIParser:
         # xmi:id de ownedAttribute → nombre de la clase dueña
         self.property_owner_map: Dict[str, str] = {}
         self.ns_xmi = '{http://www.omg.org/spec/XMI/20131001}'
+        self.xmi_source = xmi_source
 
     # ------------------------------------------------------------------
     # Entrada pública
@@ -534,10 +535,12 @@ class XMIParser:
         """Extrae líneas de vida y mensajes de un diagrama de secuencia."""
         lifelines: List[UMLLifeline] = []
         messages: List[UMLMessage] = []
+        found_lifeline_ids: set = set()
 
         for elem in root.iter():
             elem_type = elem.get(f'{self.ns_xmi}type', '') or elem.get('type', '')
             tag_local = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
+            tag_local = tag_local.split(':')[-1]
 
             if 'Interaction' not in elem_type and tag_local != 'Interaction':
                 continue
@@ -547,6 +550,7 @@ class XMIParser:
 
             for child in elem:
                 child_tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                child_tag = child_tag.split(':')[-1]
                 if child_tag == 'lifeline':
                     ll_name = child.get('name', '').strip()
                     ll_id = child.get(f'{self.ns_xmi}id') or child.get('id', '')
@@ -558,6 +562,7 @@ class XMIParser:
 
             for order, child in enumerate(elem):
                 child_tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                child_tag = child_tag.split(':')[-1]
                 if child_tag == 'message':
                     msg_name = child.get('name', '').strip()
                     send_event_id = child.get('sendEvent', '')
@@ -578,6 +583,99 @@ class XMIParser:
                         message_sort=msg_sort,
                         sequence_order=order,
                     ))
+
+        # Fallback para XMI 1.x de Visual Paradigm:
+        # lifelines como UML:ClassifierRole y mensajes como UML:Message
+        if self.xmi_source == 'visual_paradigm' and not lifelines and not messages:
+            activation_to_lifeline: Dict[str, str] = {}
+
+            for elem in root.iter():
+                tag_local = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
+                tag_local = tag_local.split(':')[-1]
+                if tag_local != 'ClassifierRole':
+                    continue
+
+                ll_name = elem.get('name', '').strip()
+                ll_id = elem.get(f'{self.ns_xmi}id') or elem.get('xmi.id') or elem.get('id', '')
+                if ll_name:
+                    lifelines.append(UMLLifeline(name=ll_name, represents=''))
+                    if ll_id:
+                        found_lifeline_ids.add(ll_id)
+
+                # Activaciones anidadas en extensiones de VP: vpumlModel id="..."
+                for nested in elem.iter():
+                    nested_tag = nested.tag.split('}')[-1] if '}' in nested.tag else nested.tag
+                    nested_tag = nested_tag.split(':')[-1]
+                    if nested_tag != 'vpumlModel':
+                        continue
+                    if nested.get('modelType') != 'Activation':
+                        continue
+                    activation_id = nested.get('id', '').strip()
+                    if activation_id and ll_name:
+                        activation_to_lifeline[activation_id] = ll_name
+
+            order_counter = 0
+            for elem in root.iter():
+                tag_local = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
+                tag_local = tag_local.split(':')[-1]
+                if tag_local != 'Message':
+                    continue
+
+                msg_name = elem.get('name', '').strip()
+                sender_id = elem.get('sender', '')
+                receiver_id = elem.get('receiver', '')
+
+                source_ll = sender_id
+                target_ll = receiver_id
+                if sender_id in found_lifeline_ids:
+                    source_ll = next((l.name for l in lifelines if l.name and sender_id == (self.all_elements_by_id.get(sender_id, {}).get(f'{self.ns_xmi}id') if isinstance(self.all_elements_by_id.get(sender_id), dict) else sender_id)), source_ll)
+                if receiver_id in found_lifeline_ids:
+                    target_ll = next((l.name for l in lifelines if l.name and receiver_id == (self.all_elements_by_id.get(receiver_id, {}).get(f'{self.ns_xmi}id') if isinstance(self.all_elements_by_id.get(receiver_id), dict) else receiver_id)), target_ll)
+
+                # Resolver IDs a nombre de lifeline de manera directa
+                if sender_id and sender_id in found_lifeline_ids:
+                    sender_elem = self.all_elements_by_id.get(sender_id)
+                    if sender_elem is not None:
+                        source_ll = sender_elem.get('name', source_ll)
+                if receiver_id and receiver_id in found_lifeline_ids:
+                    receiver_elem = self.all_elements_by_id.get(receiver_id)
+                    if receiver_elem is not None:
+                        target_ll = receiver_elem.get('name', target_ll)
+
+                # Resolver por activación usando extensión VP (from/to)
+                msg_sort = 'synchCall'
+                number_value = ''
+                for nested in elem.iter():
+                    nested_tag = nested.tag.split('}')[-1] if '}' in nested.tag else nested.tag
+                    nested_tag = nested_tag.split(':')[-1]
+                    if nested_tag == 'asynchronous':
+                        if nested.get(f'{self.ns_xmi}value', '') == 'true' or nested.get('xmi.value', '') == 'true':
+                            msg_sort = 'asynchCall'
+                    elif nested_tag == 'number':
+                        number_value = nested.get(f'{self.ns_xmi}value', '') or nested.get('xmi.value', '')
+                    elif nested_tag == 'from':
+                        from_id = nested.get(f'{self.ns_xmi}value', '') or nested.get('xmi.value', '')
+                        if from_id in activation_to_lifeline:
+                            source_ll = activation_to_lifeline[from_id]
+                    elif nested_tag == 'to':
+                        to_id = nested.get(f'{self.ns_xmi}value', '') or nested.get('xmi.value', '')
+                        if to_id in activation_to_lifeline:
+                            target_ll = activation_to_lifeline[to_id]
+
+                sequence_order = order_counter
+                order_counter += 1
+                if number_value:
+                    seq_digits = re.sub(r'[^0-9.]', '', number_value)
+                    if seq_digits:
+                        sequence_order = len(messages)
+
+                messages.append(UMLMessage(
+                    name=msg_name,
+                    source_lifeline=source_ll,
+                    target_lifeline=target_ll,
+                    message_sort=msg_sort,
+                    sequence_order=sequence_order,
+                ))
 
         return lifelines, messages
 
@@ -806,31 +904,35 @@ class XMIParser:
                     source_mult = owned_ends[0]['multiplicity']
                     target_mult = owned_ends[1]['multiplicity']
 
-        # Estrategia 2: memberEnd + property_owner_map (Astah/StarUML)
+        # Estrategia 2: memberEnd + resolución de extremos por owner/type (Astah/StarUML/VP)
         if not source_name or not target_name:
             member_end = elem.get('memberEnd', '')
             if member_end:
                 ends = member_end.split()
                 if len(ends) >= 2:
-                    # En StarUML, la cardinalidad en un ownedAttribute representa
-                    # la multiplicidad del extremo OPUESTO (el type), no del owner.
-                    # end[0] owned by A, type=B, card=X → mult at B end = X
-                    # end[1] owned by B, type=A, card=Y → mult at A end = Y
+                    # En XMI de asociaciones, la multiplicidad guardada en un end
+                    # suele describir el extremo opuesto. Soporta:
+                    # - ownedAttribute dueño de clase (owner conocido)
+                    # - ownedEnd dentro de la asociación (owner no mapeado)
                     end_data = []
                     for end_id in ends[:2]:
-                        owner = self.property_owner_map.get(end_id) or id_to_name.get(end_id, '')
                         end_elem = self.all_elements_by_id.get(end_id)
+                        owner = self.property_owner_map.get(end_id, '')
+                        type_ref = ''
                         lower = None
                         upper = None
                         if end_elem:
+                            type_ref = end_elem.get('type', '')
                             for gc in end_elem:
                                 gc_tag = gc.tag.split('}')[-1] if '}' in gc.tag else gc.tag
                                 if gc_tag == 'lowerValue':
                                     lower = gc.get('value')
                                 elif gc_tag == 'upperValue':
                                     upper = gc.get('value')
+                        if not owner and type_ref:
+                            owner = id_to_name.get(type_ref, type_ref)
                         mult = self._format_multiplicity(lower, upper)
-                        end_data.append({'owner': owner, 'mult': mult})
+                        end_data.append({'owner': owner, 'mult': mult, 'type_ref': type_ref})
 
                     if len(end_data) >= 2:
                         # La cardinalidad en end[i] es la mult del OTRO extremo
@@ -869,6 +971,35 @@ class XMIParser:
                             target_name = end_data[1]['owner']
                             source_mult = mult_at_0
                             target_mult = mult_at_1
+
+        # Estrategia 2b (Visual Paradigm): fallback explícito cuando owner quedó vacío.
+        if (not source_name or not target_name) and self.xmi_source == 'visual_paradigm':
+            member_end = elem.get('memberEnd', '')
+            if member_end:
+                ends = member_end.split()
+                end_data = []
+                for end_id in ends[:2]:
+                    end_elem = self.all_elements_by_id.get(end_id)
+                    if end_elem is None:
+                        continue
+                    type_ref = end_elem.get('type', '')
+                    end_name = id_to_name.get(type_ref, type_ref)
+                    lower = None
+                    upper = None
+                    for gc in end_elem:
+                        gc_tag = gc.tag.split('}')[-1] if '}' in gc.tag else gc.tag
+                        if gc_tag == 'lowerValue':
+                            lower = gc.get('value')
+                        elif gc_tag == 'upperValue':
+                            upper = gc.get('value')
+                    end_data.append({'name': end_name, 'mult': self._format_multiplicity(lower, upper)})
+
+                if len(end_data) >= 2:
+                    # Igual que en Astah: la multiplicidad de un end aplica al extremo opuesto.
+                    source_name = end_data[0]['name']
+                    target_name = end_data[1]['name']
+                    source_mult = end_data[1]['mult']
+                    target_mult = end_data[0]['mult']
 
         # Estrategia 3: atributos source/target directos
         if not source_name or not target_name:
@@ -975,13 +1106,13 @@ class XMIParser:
         return visibility_map.get(visibility_str.lower(), Visibility.PRIVATE)
 
 
-def parse_xmi_file(file_path: str) -> UMLDiagram:
+def parse_xmi_file(file_path: str, xmi_source: str = 'astah') -> UMLDiagram:
     """Función de conveniencia para parsear un archivo XMI."""
-    parser = XMIParser()
+    parser = XMIParser(xmi_source=xmi_source)
     return parser.parse_file(file_path)
 
 
-def parse_xmi_string(xml_content: str) -> UMLDiagram:
+def parse_xmi_string(xml_content: str, xmi_source: str = 'astah') -> UMLDiagram:
     """Función de conveniencia para parsear un string XMI."""
-    parser = XMIParser()
+    parser = XMIParser(xmi_source=xmi_source)
     return parser.parse_string(xml_content)

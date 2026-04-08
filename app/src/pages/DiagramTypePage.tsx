@@ -3,8 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Box, CircleDot, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useEvaluationWizard } from '@/context/EvaluationWizardContext';
 import type { DiagramKind } from '@/types/diagram';
+import type { XmiSource } from '@/types/evaluation-session';
+import { useState } from 'react';
 
 const OPTIONS: {
   kind: DiagramKind;
@@ -34,10 +44,20 @@ const OPTIONS: {
 
 export default function DiagramTypePage() {
   const navigate = useNavigate();
-  const { setDiagramKind } = useEvaluationWizard();
+  const { setDiagramKind, setXmiSource } = useEvaluationWizard();
+  const [pendingKind, setPendingKind] = useState<DiagramKind | null>(null);
 
   const select = (kind: DiagramKind) => {
-    setDiagramKind(kind);
+    setPendingKind(kind);
+  };
+
+  const chooseSource = (source: XmiSource) => {
+    if (!pendingKind) {
+      return;
+    }
+    setDiagramKind(pendingKind);
+    setXmiSource(source);
+    setPendingKind(null);
     navigate('/evaluar/subir');
   };
 
@@ -75,6 +95,30 @@ export default function DiagramTypePage() {
           Volver
         </Button>
       </div>
+      <Dialog open={pendingKind !== null} onOpenChange={(open) => !open && setPendingKind(null)}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Selecciona el origen del XMI</DialogTitle>
+            <DialogDescription>
+              Para este tipo de diagrama, elige si vas a subir archivos exportados desde Astah o Visual
+              Paradigm.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Button type="button" onClick={() => chooseSource('astah')}>
+              Astah
+            </Button>
+            <Button type="button" variant="outline" onClick={() => chooseSource('visual_paradigm')}>
+              Visual Paradigm
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setPendingKind(null)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
