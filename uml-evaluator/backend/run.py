@@ -13,12 +13,11 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 if __name__ == "__main__":
-    from app.api.main import app
-
     port = int(os.environ.get("PORT", 8000))
     host = os.environ.get("HOST", "0.0.0.0")
     
     print(f"Iniciando UML Evaluator API en http://{host}:{port}")
     print(f"Documentación: http://{host}:{port}/docs")
     
-    uvicorn.run(app, host=host, port=port, reload=True, log_level="info")
+    # ¡Aquí está el cambio! Pasamos la ruta como texto: "app.api.main:app"
+    uvicorn.run("app.api.main:app", host=host, port=port, reload=True, log_level="info")
