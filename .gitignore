@@ -58,6 +58,9 @@ test_files/*
 !test_files/solucion_correcta.xmi
 !test_files/estudiante_incompleto.xmi
 
+# Credenciales locales (registro vía API; no subir a Git)
+app/src/data/users.json
+
 # OS
 .DS_Store
 Thumbs.db

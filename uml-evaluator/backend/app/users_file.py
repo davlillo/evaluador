@@ -26,6 +26,11 @@ def _resolve_users_path() -> Path:
         return Path(env).expanduser().resolve()
 
     here = Path(__file__).resolve()
+    # Monorepo: mismo archivo que el frontend; se crea en el primer registro (save_users hace mkdir).
+    for parent in here.parents:
+        if (parent / "app" / "package.json").is_file():
+            return (parent / "app" / "src" / "data" / "users.json").resolve()
+
     for parent in here.parents:
         candidate = parent / "app" / "src" / "data" / "users.json"
         if candidate.is_file():
