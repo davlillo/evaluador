@@ -1,9 +1,8 @@
-import { ArrowLeft, FileText, ListOrdered, MessageSquareText, Scale, Workflow } from 'lucide-react';
+import { ArrowLeft, FileText, ListOrdered, Scale, Workflow } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { ComparisonResult, SequenceBreakdown } from '@/types/comparison';
 
 interface SequenceResultsViewProps {
@@ -130,33 +129,6 @@ export function SequenceResultsView({ result, onBack, onViewReport }: SequenceRe
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {result.details.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <MessageSquareText className="w-4 h-4" />
-            Detalle de comparación
-          </h3>
-          <ScrollArea className="h-[300px]">
-            <div className="space-y-2 pr-2">
-              {result.details.map((detail, index) => (
-                <div
-                  key={index}
-                  className="p-3 rounded-lg border text-sm bg-background flex items-start justify-between gap-2"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium break-words">{detail.name}</p>
-                    <p className="text-xs text-muted-foreground">{detail.message}</p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">
-                    {detail.element_type}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
       )}
 
       <div className="flex justify-center gap-4">

@@ -9,12 +9,31 @@ import {
 } from 'react';
 import type { ComparisonResult } from '@/types/comparison';
 
+interface AutoDetectedResult {
+  diagram_type: string;
+  similarity: number;
+  comparison: ComparisonResult;
+}
+
+interface MultiDiagramResult {
+  detected_diagrams: string[];
+  results: AutoDetectedResult[];
+  overall_similarity: number;
+  expected_diagrams: Record<string, unknown>;
+  student_diagrams: Record<string, unknown>;
+  xmi_source_used: string;
+  evaluator_version: string;
+}
+
+type ResultType = ComparisonResult | MultiDiagramResult;
+
 interface EvaluationResultContextValue {
-  result: ComparisonResult | null;
+  result: ResultType | null;
   /** Nombre del archivo XMI/XML subido como entrega del estudiante (se usa como carné en el PDF). */
   studentFileName: string | null;
+  isMultiDiagram: boolean;
   setResult: (
-    r: ComparisonResult | null,
+    r: ResultType | null,
     meta?: { studentFileName?: string | null },
   ) => void;
   clearResult: () => void;
@@ -23,11 +42,16 @@ interface EvaluationResultContextValue {
 const EvaluationResultContext = createContext<EvaluationResultContextValue | null>(null);
 
 export function EvaluationResultProvider({ children }: { children: ReactNode }) {
-  const [result, setResultState] = useState<ComparisonResult | null>(null);
+  const [result, setResultState] = useState<ResultType | null>(null);
   const [studentFileName, setStudentFileName] = useState<string | null>(null);
 
+  const isMultiDiagram = useCallback((r: ResultType | null): boolean => {
+    if (!r) return false;
+    return 'detected_diagrams' in r && 'results' in r;
+  }, []);
+
   const setResult = useCallback(
-    (r: ComparisonResult | null, meta?: { studentFileName?: string | null }) => {
+    (r: ResultType | null, meta?: { studentFileName?: string | null }) => {
       setResultState(r);
       if (r === null) {
         setStudentFileName(null);
@@ -44,8 +68,14 @@ export function EvaluationResultProvider({ children }: { children: ReactNode }) 
   }, []);
 
   const value = useMemo(
-    () => ({ result, studentFileName, setResult, clearResult }),
-    [result, studentFileName, setResult, clearResult],
+    () => ({
+      result,
+      studentFileName,
+      isMultiDiagram: isMultiDiagram(result),
+      setResult,
+      clearResult,
+    }),
+    [result, studentFileName, setResult, clearResult, isMultiDiagram],
   );
 
   return (

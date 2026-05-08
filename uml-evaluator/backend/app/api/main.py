@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.parsers.xmi_parser import parse_xmi_file, parse_xmi_string
+from app.parsers.xmi_parser import parse_xmi_file, parse_xmi_string, parse_xmi_file_multi
 from app.comparator.uml_comparator import compare_uml_diagrams
 from app.users_file import USERS_JSON_PATH, append_user_if_new, find_user_by_credentials
 
@@ -385,6 +385,184 @@ async def compare_files(
         response['evaluator_version'] = '2-f1'
 
         return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+    finally:
+        if expected_path and os.path.exists(expected_path):
+            os.remove(expected_path)
+        if student_path and os.path.exists(student_path):
+            os.remove(student_path)
+
+
+@app.post("/api/compare-auto")
+async def compare_files_auto(
+    expected_file: UploadFile = File(..., description="Archivo XMI/XML con la solución correcta (puede contener múltiples diagramas)"),
+    student_file: UploadFile = File(..., description="Archivo XMI/XML del estudiante (puede contener múltiples diagramas)"),
+    case_sensitive: bool = Form(False),
+    strict_types: bool = Form(True),
+    xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
+    selected_types: Optional[str] = Form(None, description="Tipos a evaluar: 'class,usecase,sequence'"),
+    # Pesos por tipo de diagrama
+    class_weight_classes: Optional[float] = Form(None),
+    class_weight_attributes: Optional[float] = Form(None),
+    class_weight_methods: Optional[float] = Form(None),
+    class_weight_relationships: Optional[float] = Form(None),
+    usecase_weight_classes: Optional[float] = Form(None),
+    usecase_weight_attributes: Optional[float] = Form(None),
+    usecase_weight_relationships: Optional[float] = Form(None),
+    sequence_weight_classes: Optional[float] = Form(None),
+    sequence_weight_relationships: Optional[float] = Form(None),
+    global_weight_class: Optional[float] = Form(None),
+    global_weight_usecase: Optional[float] = Form(None),
+    global_weight_sequence: Optional[float] = Form(None),
+):
+    """
+    Compara dos archivos XMI detectando automáticamente los tipos de diagramas contenidos.
+    Soporta XMI 1.1 de Astah/JUDE con múltiples diagramas en un solo archivo.
+    """
+    valid_extensions = VALID_UML_EXTENSIONS
+    expected_ext = os.path.splitext(expected_file.filename.lower())[1]
+    student_ext = os.path.splitext(student_file.filename.lower())[1]
+
+    if expected_ext not in valid_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Archivo de solución: extensión '{expected_ext}' no válida. Use: {valid_extensions}",
+        )
+
+    if student_ext not in valid_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Archivo del estudiante: extensión '{student_ext}' no válida. Use: {valid_extensions}",
+        )
+
+    expected_path = None
+    student_path = None
+
+    try:
+        expected_path = os.path.join(UPLOAD_DIR, f"expected_auto_{expected_file.filename}")
+        student_path = os.path.join(UPLOAD_DIR, f"student_auto_{student_file.filename}")
+
+        with open(expected_path, "wb") as f:
+            f.write(await expected_file.read())
+
+        with open(student_path, "wb") as f:
+            f.write(await student_file.read())
+
+        source = str(xmi_source).strip().lower() or 'astah'
+
+        try:
+            expected_diagrams = parse_xmi_file_multi(expected_path)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error al parsear archivo de solución: {str(e)}")
+
+        try:
+            student_diagrams = parse_xmi_file_multi(student_path)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error al parsear archivo del estudiante: {str(e)}")
+
+        all_detected = sorted(set(expected_diagrams.keys()) & set(student_diagrams.keys()))
+
+        if not all_detected:
+            raise HTTPException(
+                status_code=400,
+                detail="No se encontraron diagramas compatibles en ambos archivos.",
+            )
+
+        if selected_types and selected_types.strip():
+            requested = [t.strip().lower() for t in selected_types.split(',') if t.strip().lower() in ('class', 'usecase', 'sequence')]
+            detected_types = [t for t in requested if t in all_detected]
+        else:
+            detected_types = all_detected
+
+        if not detected_types:
+            raise HTTPException(
+                status_code=400,
+                detail="Ninguno de los tipos seleccionados está presente en ambos archivos.",
+            )
+
+        weights_by_kind_defaults = {
+            'class': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.25, 'relationships': 0.15},
+            'usecase': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.0, 'relationships': 0.40},
+            'sequence': {'classes': 0.40, 'attributes': 0.0, 'methods': 0.0, 'relationships': 0.60},
+        }
+
+        weights_by_kind = {}
+        for kind in detected_types:
+            default = dict(weights_by_kind_defaults.get(kind, weights_by_kind_defaults['class']))
+            if kind == 'class':
+                default['classes'] = (class_weight_classes or 35) / 100.0
+                default['attributes'] = (class_weight_attributes or 25) / 100.0
+                default['methods'] = (class_weight_methods or 25) / 100.0
+                default['relationships'] = (class_weight_relationships or 15) / 100.0
+            elif kind == 'usecase':
+                default['classes'] = (usecase_weight_classes or 35) / 100.0
+                default['attributes'] = (usecase_weight_attributes or 25) / 100.0
+                default['methods'] = 0.0
+                default['relationships'] = (usecase_weight_relationships or 40) / 100.0
+            elif kind == 'sequence':
+                default['classes'] = (sequence_weight_classes or 40) / 100.0
+                default['attributes'] = 0.0
+                default['methods'] = 0.0
+                default['relationships'] = (sequence_weight_relationships or 60) / 100.0
+            total = sum(default.values())
+            if total > 0:
+                default = {k: v / total for k, v in default.items()}
+            weights_by_kind[kind] = default
+
+        global_weights = {
+            'class': (global_weight_class or 40) / 100.0,
+            'usecase': (global_weight_usecase or 35) / 100.0,
+            'sequence': (global_weight_sequence or 25) / 100.0,
+        }
+        gw_total = sum(global_weights.values())
+        if gw_total > 0:
+            global_weights = {k: v / gw_total for k, v in global_weights.items()}
+
+        results = []
+        weighted_sum = 0.0
+
+        for diagram_type in detected_types:
+            expected_diag = expected_diagrams[diagram_type]
+            student_diag = student_diagrams[diagram_type]
+
+            comparison = compare_uml_diagrams(
+                expected_diag,
+                student_diag,
+                case_sensitive=case_sensitive,
+                strict_types=strict_types,
+                weights=weights_by_kind.get(diagram_type, weights_by_kind['class']),
+            )
+
+            sim = round(float(comparison.overall_similarity), 2)
+            weighted_sum += sim * global_weights.get(diagram_type, 0.33)
+
+            results.append({
+                'diagram_type': diagram_type,
+                'similarity': sim,
+                'comparison': comparison.to_dict(),
+            })
+
+        overall_similarity = round(weighted_sum, 2)
+
+        return {
+            'detected_diagrams': detected_types,
+            'results': results,
+            'overall_similarity': overall_similarity,
+            'expected_diagrams': {k: v.to_dict() for k, v in expected_diagrams.items()},
+            'student_diagrams': {k: v.to_dict() for k, v in student_diagrams.items()},
+            'xmi_source_used': source,
+            'evaluator_version': '3-auto',
+            'weights_used': {
+                kind: {k: round(v * 100, 1) for k, v in w.items()}
+                for kind, w in weights_by_kind.items()
+            },
+            'global_weights_used': {k: round(v * 100, 1) for k, v in global_weights.items()},
+        }
 
     except HTTPException:
         raise
