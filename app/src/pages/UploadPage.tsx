@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, FileCode, CheckCircle, AlertCircle, ArrowRight, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
@@ -190,6 +191,62 @@ function WeightsPanel({
   );
 }
 
+function GlobalWeightsPanel({
+  weights,
+  onChange,
+  selectedTypes,
+}: {
+  weights: Record<string, number>;
+  onChange: (key: string, v: number) => void;
+  selectedTypes: Set<string>;
+}) {
+  const total = DIAGRAM_TYPES
+    .filter(({ key }) => selectedTypes.has(key))
+    .reduce((s, { key }) => s + (weights[key] || 0), 0);
+  const isValid = Math.abs(total - 100) < 0.01;
+  const fields = [
+    { key: 'class', label: 'Clases', color: 'text-blue-600' },
+    { key: 'usecase', label: 'Casos de Uso', color: 'text-purple-600' },
+    { key: 'sequence', label: 'Secuencia', color: 'text-teal-600' },
+  ];
+  return (
+    <div className="mt-4 p-3 border rounded-lg bg-muted/10">
+      <h4 className="text-sm font-semibold mb-3">Peso global por tipo de diagrama</h4>
+      <div className="grid grid-cols-3 gap-3">
+        {fields.map(({ key, label, color }) => (
+          <WeightSlider
+            key={key}
+            label={label}
+            color={color}
+            value={selectedTypes.has(key) ? weights[key] : 0}
+            disabled={!selectedTypes.has(key)}
+            onChange={(v) => onChange(key, v)}
+          />
+        ))}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
+          {fields.map(({ key, color }) => {
+            if (!selectedTypes.has(key)) return null;
+            const pct = total > 0 ? (weights[key] / total) * 100 + '%' : '0%';
+            return (
+              <div
+                key={key}
+                className={'h-full transition-all ' + color.replace('text-', 'bg-')}
+                style={{ width: pct }}
+              />
+            );
+          })}
+        </div>
+        <span className={'text-xs font-medium ' + (isValid ? 'text-green-600' : 'text-red-500')}>
+          Total: {Math.round(total)}%
+        </span>
+      </div>
+      {!isValid && <p className="text-xs text-red-500 mt-1">Debe sumar 100%.</p>}
+    </div>
+  );
+}
+
 function FileUploadZone({
   label,
   description,
@@ -287,6 +344,15 @@ export default function UploadPage() {
   const [showConfig, setShowConfig] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(['class', 'usecase', 'sequence']));
   const [weightsByType, setWeightsByType] = useState<Record<string, TypeWeights>>({ ...DEFAULT_WEIGHTS });
+  const [useSemanticMatching, setUseSemanticMatching] = useState(true);
+  const [semanticThreshold, setSemanticThreshold] = useState(0.55);
+  const [globalWeights, setGlobalWeights] = useState<Record<string, number>>({
+    class: 40, usecase: 35, sequence: 25,
+  });
+
+  const updateGlobalWeight = (key: string, value: number) => {
+    setGlobalWeights((prev) => ({ ...prev, [key]: value }));
+  };
 
   const toggleType = (key: string) => {
     const next = new Set(selectedTypes);
@@ -323,6 +389,11 @@ export default function UploadPage() {
       formData.append('strict_types', 'true');
       formData.append('xmi_source', 'astah');
       formData.append('selected_types', Array.from(selectedTypes).join(','));
+      formData.append('use_semantic_matching', String(useSemanticMatching));
+      formData.append('semantic_threshold', String(semanticThreshold));
+      if (selectedTypes.has('class')) formData.append('global_weight_class', String(globalWeights.class));
+      if (selectedTypes.has('usecase')) formData.append('global_weight_usecase', String(globalWeights.usecase));
+      if (selectedTypes.has('sequence')) formData.append('global_weight_sequence', String(globalWeights.sequence));
 
       for (const [typeKey, w] of Object.entries(weightsByType)) {
         if (!selectedTypes.has(typeKey)) continue;
@@ -426,6 +497,40 @@ export default function UploadPage() {
                 </div>
               ))}
             </div>
+
+            <div className="mt-4 p-3 border rounded-lg bg-muted/10">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h4 className="text-sm font-semibold">Corrección semántica</h4>
+                  <p className="text-xs text-muted-foreground">FastText para detectar sinónimos y variantes</p>
+                </div>
+                <Switch
+                  checked={useSemanticMatching}
+                  onCheckedChange={setUseSemanticMatching}
+                />
+              </div>
+              {useSemanticMatching && (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium">Umbral:</span>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={1.0}
+                    step={0.05}
+                    value={semanticThreshold}
+                    onChange={(e) => setSemanticThreshold(Number(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-xs font-mono w-10 text-right">{semanticThreshold.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+
+            <GlobalWeightsPanel
+              weights={globalWeights}
+              onChange={updateGlobalWeight}
+              selectedTypes={selectedTypes}
+            />
           </CardContent>
         )}
       </Card>

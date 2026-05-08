@@ -71,6 +71,8 @@ class ComparisonRequest(BaseModel):
     student_xml: str
     case_sensitive: bool = False
     strict_types: bool = True
+    use_semantic_matching: bool = True
+    semantic_threshold: float = 0.55
 
 
 class HealthResponse(BaseModel):
@@ -268,6 +270,8 @@ async def compare_files(
         None,
         description="Opcional: class, usecase o sequence. Si se envía, debe coincidir con ambos XMI.",
     ),
+    use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
+    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
     xmi_source: str = Form(
         'astah',
         description="Origen del XMI: astah o visual_paradigm.",
@@ -405,6 +409,8 @@ async def compare_files_auto(
     case_sensitive: bool = Form(False),
     strict_types: bool = Form(True),
     xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
+    use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
+    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
     selected_types: Optional[str] = Form(None, description="Tipos a evaluar: 'class,usecase,sequence'"),
     # Pesos por tipo de diagrama
     class_weight_classes: Optional[float] = Form(None),
@@ -519,9 +525,13 @@ async def compare_files_auto(
             'usecase': (global_weight_usecase or 35) / 100.0,
             'sequence': (global_weight_sequence or 25) / 100.0,
         }
-        gw_total = sum(global_weights.values())
-        if gw_total > 0:
-            global_weights = {k: v / gw_total for k, v in global_weights.items()}
+
+        # Renormalizar pesos solo sobre los tipos realmente detectados
+        detected_global_sum = sum(global_weights.get(t, 0) for t in detected_types)
+        if detected_global_sum > 0:
+            detected_global_weights = {t: global_weights[t] / detected_global_sum for t in detected_types}
+        else:
+            detected_global_weights = {t: 1.0 / len(detected_types) for t in detected_types}
 
         results = []
         weighted_sum = 0.0
@@ -536,10 +546,12 @@ async def compare_files_auto(
                 case_sensitive=case_sensitive,
                 strict_types=strict_types,
                 weights=weights_by_kind.get(diagram_type, weights_by_kind['class']),
+                use_semantic_matching=use_semantic_matching,
+                semantic_threshold=semantic_threshold,
             )
 
             sim = round(float(comparison.overall_similarity), 2)
-            weighted_sum += sim * global_weights.get(diagram_type, 0.33)
+            weighted_sum += sim * detected_global_weights.get(diagram_type, 1.0 / len(detected_types))
 
             results.append({
                 'diagram_type': diagram_type,
@@ -561,7 +573,7 @@ async def compare_files_auto(
                 kind: {k: round(v * 100, 1) for k, v in w.items()}
                 for kind, w in weights_by_kind.items()
             },
-            'global_weights_used': {k: round(v * 100, 1) for k, v in global_weights.items()},
+            'global_weights_used': {k: round(v * 100, 1) for k, v in detected_global_weights.items()},
         }
 
     except HTTPException:
@@ -587,6 +599,8 @@ async def compare_global_files(
     global_weight_class: float = Form(40, description="Peso global de clases (0-100)"),
     global_weight_usecase: float = Form(35, description="Peso global de casos de uso (0-100)"),
     global_weight_sequence: float = Form(25, description="Peso global de secuencia (0-100)"),
+    use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
+    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
     xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
 ):
     source = str(xmi_source).strip().lower() or 'astah'
@@ -728,6 +742,8 @@ async def compare_global_files(
                         case_sensitive=False,
                         strict_types=True,
                         weights=weights_by_kind[kind],
+                        use_semantic_matching=use_semantic_matching,
+                        semantic_threshold=semantic_threshold,
                     )
                     sim = round(float(comparison.overall_similarity), 2)
                     weighted_sum += sim * normalized_global[kind]
@@ -818,7 +834,9 @@ async def compare_xml_content(request: ComparisonRequest):
             expected_diagram, 
             student_diagram,
             case_sensitive=request.case_sensitive,
-            strict_types=request.strict_types
+            strict_types=request.strict_types,
+            use_semantic_matching=request.use_semantic_matching,
+            semantic_threshold=request.semantic_threshold,
         )
         
         # Retornar resultado
