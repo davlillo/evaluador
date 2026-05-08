@@ -178,6 +178,7 @@ function DiagramSection({
             {isUseCase && (
               <UseCaseComparison
                 expected={expInfo}
+                student={stuInfo}
                 actorBreakdown={(comparison.breakdown as UseCaseBreakdown)?.actors}
                 useCaseBreakdown={(comparison.breakdown as UseCaseBreakdown)?.use_cases}
               />
@@ -185,6 +186,7 @@ function DiagramSection({
             {isSequence && (
               <SequenceComparison
                 expected={expInfo}
+                student={stuInfo}
                 lifelineBreakdown={(comparison.breakdown as SequenceBreakdown)?.lifelines}
               />
             )}

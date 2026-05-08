@@ -1471,7 +1471,7 @@ class XMIParserV11:
                         for mult in end_child:
                             if self._local_tag(mult) == 'Multiplicity':
                                 for rng in mult:
-                                    if self._local_tag(rng) == 'range':
+                                    if self._local_tag(rng).endswith('.range') or self._local_tag(rng) == 'range':
                                         for mr in rng:
                                             if self._local_tag(mr) == 'MultiplicityRange':
                                                 lower = mr.get('lower', '')

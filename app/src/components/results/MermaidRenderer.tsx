@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
 mermaid.initialize({
@@ -17,47 +17,69 @@ mermaid.initialize({
 
 export function MermaidRenderer({ chart, id }: { chart: string; id: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const hasRendered = useRef(false);
+  const prevChart = useRef('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!ref.current || hasRendered.current) return;
-    hasRendered.current = true;
+    if (!ref.current || !chart) return;
+    if (prevChart.current === chart) return;
+    prevChart.current = chart;
 
-    mermaid.render(`mermaid-${id}`, chart).then(({ svg }) => {
-      if (ref.current) {
-        ref.current.innerHTML = svg;
-      }
-    });
+    mermaid.render(`mermaid-${id}`, chart)
+      .then(({ svg }) => {
+        if (ref.current) {
+          ref.current.innerHTML = svg;
+        }
+      })
+      .catch((err: Error) => {
+        console.error('Mermaid render error:', err);
+        setError(err.message || 'Error al renderizar el diagrama');
+      });
   }, [chart, id]);
+
+  if (error) {
+    return (
+      <div className="w-full overflow-auto py-2 flex justify-center">
+        <div className="text-red-500 text-sm p-2 rounded border border-red-300 bg-red-50">
+          Error al renderizar: {error}
+        </div>
+      </div>
+    );
+  }
 
   return <div ref={ref} className="w-full overflow-auto py-2 flex justify-center" />;
 }
 
 export function buildClassDiagramMermaid(
   classes: Array<{ name: string; attributes?: Array<{ name: string; type?: string; visibility?: string }>; methods?: Array<{ name: string; return_type?: string; visibility?: string }>; is_abstract?: boolean; is_interface?: boolean }>,
-  relationships: Array<{ source: string; target: string; relationship_type: string; name?: string | null }>,
+  relationships: Array<{ source: string; target: string; relationship_type: string; name?: string | null; source_multiplicity?: string | null; target_multiplicity?: string | null }>,
 ): string {
   const lines: string[] = ['classDiagram'];
 
   for (const cls of classes) {
     const vis = (v?: string) => (v === 'public' ? '+' : v === 'private' ? '-' : v === 'protected' ? '#' : '+');
     const label = cls.is_interface ? '<<interface>>' : cls.is_abstract ? '<<abstract>>' : '';
+    let hasBlock = false;
 
     if (label) {
       lines.push(`  class ${cls.name} {`);
+      hasBlock = true;
       lines.push(`    ${label}`);
+    } else if (cls.attributes && cls.attributes.length > 0) {
+      lines.push(`  class ${cls.name} {`);
+      hasBlock = true;
     } else {
       lines.push(`  class ${cls.name}`);
     }
 
     if (cls.attributes && cls.attributes.length > 0) {
-      if (!label) lines.push(`  class ${cls.name} {`);
       for (const attr of cls.attributes) {
         const typeStr = attr.type ? `: ${attr.type}` : '';
         lines.push(`    ${vis(attr.visibility)}${attr.name}${typeStr}`);
       }
-      if (!label) lines.push(`  }`);
-    } else if (label) {
+    }
+
+    if (hasBlock) {
       lines.push(`  }`);
     }
   }
@@ -74,11 +96,17 @@ export function buildClassDiagramMermaid(
       extend: '..|>',
     };
     const arrow = typeMap[rel.relationship_type] || '-->';
+    const srcMult = rel.source_multiplicity ? ` "${rel.source_multiplicity}"` : '';
+    const tgtMult = rel.target_multiplicity ? ` "${rel.target_multiplicity}"` : '';
     const relName = rel.name ? ` : ${rel.name}` : '';
-    lines.push(`  ${rel.source} ${arrow} ${rel.target}${relName}`);
+    lines.push(`  ${rel.source}${srcMult} ${arrow}${tgtMult} ${rel.target}${relName}`);
   }
 
   return lines.join('\n');
+}
+
+function sanitizeId(name: string): string {
+  return name.replace(/[\s+%\/@#$&]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
 }
 
 export function buildUseCaseDiagramMermaid(
@@ -89,17 +117,26 @@ export function buildUseCaseDiagramMermaid(
   const lines: string[] = ['graph TD'];
 
   for (const actor of actors) {
-    lines.push(`  ${actor.name.replace(/\s+/g, '_')}["${actor.name}"]`);
+    const id = sanitizeId(actor.name);
+    lines.push(`  ${id}["${actor.name}"]`);
   }
 
   for (const uc of useCases) {
-    lines.push(`  ${uc.name.replace(/\s+/g, '_')}(["${uc.name}"])`);
+    const id = sanitizeId(uc.name);
+    lines.push(`  ${id}(["${uc.name}"])`);
   }
 
+  const typeMap: Record<string, string> = {
+    association: '-->',
+    include: '-.->',
+    extend: '-->',
+  };
+
   for (const rel of relationships) {
-    const src = rel.source.replace(/\s+/g, '_');
-    const tgt = rel.target.replace(/\s+/g, '_');
-    lines.push(`  ${src} --> ${tgt}`);
+    const src = sanitizeId(rel.source);
+    const tgt = sanitizeId(rel.target);
+    const arrow = typeMap[rel.relationship_type] || '-->';
+    lines.push(`  ${src} ${arrow} ${tgt}`);
   }
 
   return lines.join('\n');
@@ -112,12 +149,12 @@ export function buildSequenceDiagramMermaid(
   const lines: string[] = ['sequenceDiagram'];
 
   for (const ll of lifelines) {
-    lines.push(`  participant ${ll.name.replace(/\s+/g, '_')} as ${ll.name}`);
+    lines.push(`  participant ${sanitizeId(ll.name)} as "${ll.name}"`);
   }
 
   for (const msg of messages) {
-    const src = msg.source_lifeline.replace(/\s+/g, '_');
-    const tgt = msg.target_lifeline.replace(/\s+/g, '_');
+    const src = sanitizeId(msg.source_lifeline);
+    const tgt = sanitizeId(msg.target_lifeline);
     const arrow = '->>';
     lines.push(`  ${src}${arrow}${tgt}: ${msg.name}`);
   }
