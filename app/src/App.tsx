@@ -10,6 +10,7 @@ import RegisterPage from '@/pages/RegisterPage';
 import UploadPage from '@/pages/UploadPage';
 import ResultsPage from '@/pages/ResultsPage';
 import ReportPage from '@/pages/ReportPage';
+import GlobalStudentBreakdownPage from '@/pages/GlobalStudentBreakdownPage';
 import './App.css';
 
 function ProtectedLayout() {
@@ -107,6 +108,7 @@ export default function App() {
           <Route path="/evaluar/subir" element={<UploadPage />} />
           <Route path="/evaluar/resultados" element={<ResultsPage />} />
           <Route path="/evaluar/reporte" element={<ReportPage />} />
+          <Route path="/evaluar/global/desglose" element={<GlobalStudentBreakdownPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

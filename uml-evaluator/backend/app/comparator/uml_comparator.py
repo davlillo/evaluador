@@ -11,6 +11,7 @@ from app.models.uml_elements import (
     UMLRelationship, Visibility, RelationshipType,
     UMLActor, UMLUseCase, UMLLifeline, UMLMessage,
 )
+from app.comparator.semantic_matcher import SemanticMatcher
 
 
 @dataclass
@@ -22,6 +23,7 @@ class ComparisonDetail:
     expected: Any = None
     found: Any = None
     similarity_score: float = 0.0
+    semantic_match_of: Optional[str] = None
     message: str = ""
 
 
@@ -87,6 +89,7 @@ class ComparisonResult:
                     "name": d.name,
                     "status": d.status,
                     "similarity_score": round(d.similarity_score, 2),
+                    "semantic_match_of": d.semantic_match_of,
                     "message": d.message,
                 }
                 for d in self.details
@@ -211,6 +214,8 @@ class UMLComparator:
         case_sensitive: bool = False,
         strict_types: bool = True,
         weights: Optional[Dict[str, float]] = None,
+        use_semantic_matching: bool = False,
+        semantic_threshold: float = 0.55,
     ):
         """
         Inicializa el comparador.
@@ -221,9 +226,14 @@ class UMLComparator:
             weights: Diccionario con pesos para cada categoría
                      (classes, attributes, methods, relationships).
                      Los valores se normalizan automáticamente.
+            use_semantic_matching: Si se usa FastText para matching semántico
+            semantic_threshold: Umbral de similitud semántica (0.0 a 1.0)
         """
         self.case_sensitive = case_sensitive
         self.strict_types = strict_types
+        self._use_semantic_matching = use_semantic_matching
+        self._semantic_threshold = semantic_threshold
+        self._semantic_matcher = SemanticMatcher() if use_semantic_matching else None
 
         if weights:
             total = sum(weights.values())
@@ -398,18 +408,19 @@ class UMLComparator:
         exp_map = {self._normalize_name(e.name): e for e in expected_items}
         stu_map = {self._normalize_name(e.name): e for e in student_items}
 
-        correct = set(exp_map.keys()) & set(stu_map.keys())
-        missing = [exp_map[n].name for n in (set(exp_map.keys()) - set(stu_map.keys()))]
-        extra = [stu_map[n].name for n in (set(stu_map.keys()) - set(exp_map.keys()))]
+        exact_correct, semantic_map, missing_norm, extra_norm = self._semantic_match_dicts(exp_map, stu_map)
+        correct_names = exact_correct | set(semantic_map.keys())
+        missing = [exp_map[n].name for n in missing_norm]
+        extra = [stu_map[n].name for n in extra_norm]
 
-        setattr(result, result_correct_attr, len(correct))
+        setattr(result, result_correct_attr, len(correct_names))
         if result_missing_attr:
             setattr(result, result_missing_attr, missing)
         if result_extra_attr:
             setattr(result, result_extra_attr, extra)
         n_exp = len(exp_map)
         n_stu = len(stu_map)
-        sim = self._f1_similarity_counts(len(correct), n_exp, n_stu)
+        sim = self._f1_similarity_counts(len(correct_names), n_exp, n_stu)
         setattr(result, result_similarity_attr, sim)
 
         for name in missing:
@@ -426,13 +437,24 @@ class UMLComparator:
                 status="extra",
                 message=f"'{name}' extra en el diagrama del estudiante",
             ))
-        for name in [exp_map[n].name for n in correct]:
+        for name in [exp_map[n].name for n in exact_correct]:
             result.details.append(ComparisonDetail(
                 element_type=element_type,
                 name=name,
                 status="correct",
                 similarity_score=100.0,
                 message=f"'{name}' correcto",
+            ))
+        for exp_norm, stu_norm in semantic_map.items():
+            exp_name = exp_map[exp_norm].name
+            stu_name = stu_map[stu_norm].name
+            result.details.append(ComparisonDetail(
+                element_type=element_type,
+                name=exp_name,
+                status="correct",
+                similarity_score=self._semantic_threshold * 100,
+                semantic_match_of=stu_name,
+                message=f"'{exp_name}' coincide semánticamente con '{stu_name}'",
             ))
 
     # ------------------------------------------------------------------
@@ -571,7 +593,82 @@ class UMLComparator:
         if not self.case_sensitive:
             return name.lower().strip()
         return name.strip()
+
+    def _names_match(self, a: str, b: str) -> bool:
+        """Compara dos nombres: exacto o semántico."""
+        if self._normalize_name(a) == self._normalize_name(b):
+            return True
+        if self._use_semantic_matching and self._semantic_matcher is not None:
+            return self._semantic_matcher.similarity(a, b) >= self._semantic_threshold
+        return False
+
+    def _semantic_match_dicts(
+        self,
+        expected_map: Dict[str, Any],
+        student_map: Dict[str, Any],
+    ) -> Tuple[Set[str], Dict[str, str], Set[str], Set[str]]:
+        """
+        Dados dos dicts keyed por nombre normalizado, devuelve:
+        - exact_correct: nombres con match exacto
+        - semantic_map: expected_norm -> student_norm para matches semánticos
+        - missing: expected sin match
+        - extra: student sin match
+        """
+        expected_names = set(expected_map.keys())
+        student_names = set(student_map.keys())
+
+        exact_correct = expected_names & student_names
+        remaining_exp = expected_names - exact_correct
+        remaining_stu = student_names - exact_correct
+
+        semantic_map: Dict[str, str] = {}
+        used_stu: Set[str] = set()
+
+        if self._use_semantic_matching and self._semantic_matcher is not None:
+            for exp_name in remaining_exp:
+                candidates = [s for s in remaining_stu if s not in used_stu]
+                if not candidates:
+                    break
+                best, score = self._semantic_matcher.find_best_match(
+                    exp_name, candidates, self._semantic_threshold
+                )
+                if best is not None:
+                    norm_best = best.lower().strip() if not self.case_sensitive else best.strip()
+                    semantic_map[exp_name] = norm_best
+                    used_stu.add(norm_best)
+
+        matched_semantic = set(semantic_map.keys())
+        missing = remaining_exp - matched_semantic
+        extra = remaining_stu - set(semantic_map.values())
+
+        return exact_correct, semantic_map, missing, extra
     
+    def _attribute_set_similarity(self, class_a: UMLClass, class_b: UMLClass) -> float:
+        """F1 score (0-100) de similitud entre atributos de dos clases."""
+        a_attrs = {self._normalize_name(a.name): a for a in class_a.attributes}
+        b_attrs = {self._normalize_name(a.name): a for a in class_b.attributes}
+        if not a_attrs and not b_attrs:
+            return 100.0
+        a_names = set(a_attrs.keys())
+        b_names = set(b_attrs.keys())
+        exact = a_names & b_names
+        remaining_a = a_names - exact
+        remaining_b = b_names - exact
+        sem_correct = 0
+        used: Set[str] = set()
+        if self._use_semantic_matching and self._semantic_matcher is not None:
+            for name_a in remaining_a:
+                candidates = [n for n in remaining_b if n not in used]
+                if not candidates:
+                    break
+                best, score = self._semantic_matcher.find_best_match(name_a, candidates, 0.50)
+                if best is not None:
+                    sem_correct += 1
+                    nbest = best.lower().strip() if not self.case_sensitive else best.strip()
+                    used.add(nbest)
+        correct = len(exact) + sem_correct
+        return self._f1_similarity_counts(correct, len(a_attrs), len(b_attrs))
+
     def _compare_classes(self, expected_classes: List[UMLClass], 
                         student_classes: List[UMLClass],
                         result: ComparisonResult) -> None:
@@ -581,24 +678,44 @@ class UMLComparator:
         expected_map = {self._normalize_name(c.name): c for c in expected_classes}
         student_map = {self._normalize_name(c.name): c for c in student_classes}
         
-        expected_names = set(expected_map.keys())
-        student_names = set(student_map.keys())
-        
-        # Clases correctas (intersección)
-        correct_names = expected_names & student_names
+        exact_correct, semantic_map, missing_norm, extra_norm = self._semantic_match_dicts(
+            expected_map, student_map
+        )
+
+        # Fase 3: matching por contenido (atributos)
+        CONTENT_MATCH_THRESHOLD = 60.0
+        content_matched: Set[str] = set()
+        if missing_norm and extra_norm and self._use_semantic_matching:
+            for exp_norm in list(missing_norm):
+                exp_class = expected_map[exp_norm]
+                best_stu = None
+                best_score = 0.0
+                for stu_norm in list(extra_norm):
+                    stu_class = student_map[stu_norm]
+                    score = self._attribute_set_similarity(exp_class, stu_class)
+                    if score > best_score:
+                        best_score = score
+                        best_stu = stu_norm
+                if best_stu is not None and best_score >= CONTENT_MATCH_THRESHOLD:
+                    semantic_map[exp_norm] = best_stu
+                    content_matched.add(exp_norm)
+                    missing_norm.discard(exp_norm)
+                    extra_norm.discard(best_stu)
+
+        correct_names = exact_correct | set(semantic_map.keys())
         result.correct_classes = len(correct_names)
         
         # Clases faltantes
-        result.missing_classes = [expected_map[name].name for name in (expected_names - student_names)]
+        result.missing_classes = [expected_map[n].name for n in missing_norm]
         
         # Clases extra
-        result.extra_classes = [student_map[name].name for name in (student_names - expected_names)]
+        result.extra_classes = [student_map[n].name for n in extra_norm]
         
         # Similitud F1 entre clases (penaliza clases extra o faltantes)
         result.class_similarity = self._f1_similarity_counts(
             result.correct_classes,
-            len(expected_names),
-            len(student_names),
+            len(expected_map),
+            len(student_map),
         )
         
         # Comparar atributos y métodos de cada clase correcta
@@ -609,9 +726,14 @@ class UMLComparator:
         total_method_found = 0
         total_method_correct = 0
         
+        # Construir lookup de student class por nombre semántico
+        stu_lookup = dict(student_map)
+        for exp_norm, stu_norm in semantic_map.items():
+            stu_lookup[exp_norm] = student_map[stu_norm]
+        
         for class_name in correct_names:
             expected_class = expected_map[class_name]
-            student_class = student_map[class_name]
+            student_class = stu_lookup[class_name]
             
             class_result = self._compare_class_details(expected_class, student_class)
             result.class_results.append(class_result)
@@ -641,6 +763,23 @@ class UMLComparator:
                 name=extra_name,
                 status="extra",
                 message=f"Clase extra '{extra_name}' encontrada en el diagrama del estudiante"
+            ))
+        
+        # Agregar clases con match semántico o por contenido como detalles
+        for exp_norm, stu_norm in semantic_map.items():
+            exp_name = expected_map[exp_norm].name
+            stu_name = student_map[stu_norm].name
+            if exp_norm in content_matched:
+                msg = f"Clase '{exp_name}' coincide por atributos con '{stu_name}'"
+            else:
+                msg = f"Clase '{exp_name}' coincide semánticamente con '{stu_name}'"
+            result.details.append(ComparisonDetail(
+                element_type="class",
+                name=exp_name,
+                status="correct",
+                similarity_score=self._semantic_threshold * 100,
+                semantic_match_of=stu_name,
+                message=msg,
             ))
         
         # Actualizar contadores globales
@@ -692,27 +831,32 @@ class UMLComparator:
         expected_attrs = {self._normalize_name(a.name): a for a in expected_class.attributes}
         student_attrs = {self._normalize_name(a.name): a for a in student_class.attributes}
         
-        expected_names = set(expected_attrs.keys())
-        student_names = set(student_attrs.keys())
-        
-        # Atributos correctos
-        correct_names = expected_names & student_names
+        exact_correct, semantic_map, missing_norm, extra_norm = self._semantic_match_dicts(
+            expected_attrs, student_attrs
+        )
+        correct_names = exact_correct | set(semantic_map.keys())
         result.attributes_correct = len(correct_names)
         
         # Atributos faltantes
-        result.missing_attributes = [expected_attrs[name].name for name in (expected_names - student_names)]
+        result.missing_attributes = [expected_attrs[n].name for n in missing_norm]
         
         # Atributos extra
-        result.extra_attributes = [student_attrs[name].name for name in (student_names - expected_names)]
+        result.extra_attributes = [student_attrs[n].name for n in extra_norm]
+        
+        # Construir lookup semántico
+        attr_lookup = dict(student_attrs)
+        for exp_norm, stu_norm in semantic_map.items():
+            attr_lookup[exp_norm] = student_attrs[stu_norm]
         
         # Detalles de atributos correctos
         for attr_name in correct_names:
             expected_attr = expected_attrs[attr_name]
-            student_attr = student_attrs[attr_name]
+            student_attr = attr_lookup[attr_name]
             
             similarity = self._calculate_attribute_similarity(expected_attr, student_attr)
             status = "correct" if similarity == 1.0 else "partial"
             
+            matched_with = student_attr.name if attr_name in semantic_map else None
             result.details.append(ComparisonDetail(
                 element_type="attribute",
                 name=expected_attr.name,
@@ -720,6 +864,7 @@ class UMLComparator:
                 expected=expected_attr.to_dict(),
                 found=student_attr.to_dict(),
                 similarity_score=similarity * 100,
+                semantic_match_of=matched_with,
                 message=f"Atributo '{expected_attr.name}' - Similitud: {similarity * 100:.0f}%"
             ))
         
@@ -740,27 +885,32 @@ class UMLComparator:
         expected_methods = {self._normalize_name(m.name): m for m in expected_class.methods}
         student_methods = {self._normalize_name(m.name): m for m in student_class.methods}
         
-        expected_names = set(expected_methods.keys())
-        student_names = set(student_methods.keys())
-        
-        # Métodos correctos
-        correct_names = expected_names & student_names
+        exact_correct, semantic_map, missing_norm, extra_norm = self._semantic_match_dicts(
+            expected_methods, student_methods
+        )
+        correct_names = exact_correct | set(semantic_map.keys())
         result.methods_correct = len(correct_names)
         
         # Métodos faltantes
-        result.missing_methods = [expected_methods[name].name for name in (expected_names - student_names)]
+        result.missing_methods = [expected_methods[n].name for n in missing_norm]
         
         # Métodos extra
-        result.extra_methods = [student_methods[name].name for name in (student_names - expected_names)]
+        result.extra_methods = [student_methods[n].name for n in extra_norm]
+        
+        # Construir lookup semántico
+        method_lookup = dict(student_methods)
+        for exp_norm, stu_norm in semantic_map.items():
+            method_lookup[exp_norm] = student_methods[stu_norm]
         
         # Detalles de métodos correctos
         for method_name in correct_names:
             expected_method = expected_methods[method_name]
-            student_method = student_methods[method_name]
+            student_method = method_lookup[method_name]
             
             similarity = self._calculate_method_similarity(expected_method, student_method)
             status = "correct" if similarity == 1.0 else "partial"
             
+            matched_with = student_method.name if method_name in semantic_map else None
             result.details.append(ComparisonDetail(
                 element_type="method",
                 name=expected_method.name,
@@ -768,6 +918,7 @@ class UMLComparator:
                 expected=expected_method.to_dict(),
                 found=student_method.to_dict(),
                 similarity_score=similarity * 100,
+                semantic_match_of=matched_with,
                 message=f"Método '{expected_method.name}' - Similitud: {similarity * 100:.0f}%"
             ))
         
@@ -785,9 +936,9 @@ class UMLComparator:
         score = 0.0
         total = 0
         
-        # Nombre (siempre debe coincidir)
+        # Nombre (exacto o semántico)
         total += 1
-        if self._normalize_name(expected.name) == self._normalize_name(student.name):
+        if self._names_match(expected.name, student.name):
             score += 1
         
         # Tipo
@@ -808,9 +959,9 @@ class UMLComparator:
         score = 0.0
         total = 0
         
-        # Nombre
+        # Nombre (exacto o semántico)
         total += 1
-        if self._normalize_name(expected.name) == self._normalize_name(student.name):
+        if self._names_match(expected.name, student.name):
             score += 1
         
         # Tipo de retorno
@@ -946,6 +1097,8 @@ def compare_uml_diagrams(
     case_sensitive: bool = False,
     strict_types: bool = True,
     weights: Optional[Dict[str, float]] = None,
+    use_semantic_matching: bool = False,
+    semantic_threshold: float = 0.50,
 ) -> ComparisonResult:
     """
     Función de conveniencia para comparar dos diagramas UML.
@@ -957,6 +1110,8 @@ def compare_uml_diagrams(
         strict_types: Si se requiere coincidencia exacta de tipos
         weights: Pesos personalizados por categoría
                  (classes, attributes, methods, relationships)
+        use_semantic_matching: Si se usa FastText para matching semántico
+        semantic_threshold: Umbral de similitud semántica (0.0 a 1.0)
 
     Returns:
         ComparisonResult con el resultado de la comparación
@@ -965,5 +1120,7 @@ def compare_uml_diagrams(
         case_sensitive=case_sensitive,
         strict_types=strict_types,
         weights=weights,
+        use_semantic_matching=use_semantic_matching,
+        semantic_threshold=semantic_threshold,
     )
     return comparator.compare(expected, student)

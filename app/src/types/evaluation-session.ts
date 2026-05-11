@@ -56,3 +56,27 @@ export interface GlobalComparisonResponse {
   students_incomplete: number;
   results: GlobalStudentResult[];
 }
+
+export interface BatchRunSummary {
+  status: 'ok' | 'missing' | 'error';
+  similarity: number | null;
+  error?: string;
+  comparison?: ComparisonResult;
+}
+
+export interface BatchStudentResult {
+  student_id: string;
+  status: 'ok' | 'error';
+  complete: boolean;
+  final_score: number;
+  runs: Record<string, BatchRunSummary>;
+}
+
+export interface BatchCompareResponse {
+  results: BatchStudentResult[];
+  students_total: number;
+  students_complete: number;
+  students_incomplete: number;
+  global_weights_used: GlobalDiagramWeights;
+  detected_diagrams: string[];
+}

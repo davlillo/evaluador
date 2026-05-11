@@ -1,12 +1,18 @@
 import { useCallback, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle, FileCode, FolderArchive } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle, ChevronRight, FileCode, FolderArchive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
 import { useEvaluationWizard } from '@/context/EvaluationWizardContext';
 import type { GlobalComparisonResponse, GlobalDiagramWeights } from '@/types/evaluation-session';
 
@@ -372,48 +378,52 @@ export default function GlobalEvaluationPlaceholderPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Estudiante</th>
-                      <th className="text-right p-2">Clases</th>
-                      <th className="text-right p-2">Casos</th>
-                      <th className="text-right p-2">Secuencia</th>
-                      <th className="text-right p-2">Nota final</th>
-                      <th className="text-center p-2">Estado</th>
-                      <th className="text-center p-2">Desglose</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.results.map((row) => (
-                      <tr key={row.student_id} className="border-b hover:bg-muted/40">
-                          <td className="p-2 font-medium">{row.student_id}</td>
-                          <td className="p-2 text-right">{formatScore(row.runs.class.similarity)}</td>
-                          <td className="p-2 text-right">{formatScore(row.runs.usecase.similarity)}</td>
-                          <td className="p-2 text-right">{formatScore(row.runs.sequence.similarity)}</td>
-                          <td className="p-2 text-right font-semibold">{formatScore(row.final_score)}</td>
-                          <td className="p-2 text-center">
-                            {row.complete ? (
-                              <Badge>Completo</Badge>
-                            ) : (
-                              <Badge variant="secondary">Incompleto</Badge>
-                            )}
-                          </td>
-                          <td className="p-2 text-center">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => navigate('/evaluar/global/desglose', { state: { student: row } })}
-                            >
-                              Ver desglose
-                            </Button>
-                          </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Accordion type="single" collapsible className="w-full">
+                {result.results.map((row) => (
+                  <AccordionItem key={row.student_id} value={row.student_id}>
+                    <AccordionTrigger className="hover:bg-muted/40 px-3 rounded-lg">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <span className="font-medium truncate">{row.student_id}</span>
+                        <span className="text-sm font-semibold ml-auto">
+                          {formatScore(row.final_score)}%
+                        </span>
+                        {row.complete ? (
+                          <Badge className="shrink-0">Completo</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="shrink-0">Incompleto</Badge>
+                        )}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-3 px-3 pb-3">
+                        <div className="grid grid-cols-3 gap-3 text-sm">
+                          <div className="p-3 border rounded-lg bg-muted/10">
+                            <p className="text-xs text-muted-foreground">Clases</p>
+                            <p className="text-lg font-semibold">{formatScore(row.runs.class.similarity)}%</p>
+                          </div>
+                          <div className="p-3 border rounded-lg bg-muted/10">
+                            <p className="text-xs text-muted-foreground">Casos de uso</p>
+                            <p className="text-lg font-semibold">{formatScore(row.runs.usecase.similarity)}%</p>
+                          </div>
+                          <div className="p-3 border rounded-lg bg-muted/10">
+                            <p className="text-xs text-muted-foreground">Secuencia</p>
+                            <p className="text-lg font-semibold">{formatScore(row.runs.sequence.similarity)}%</p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => navigate('/evaluar/global/desglose', { state: { student: row } })}
+                        >
+                          <ChevronRight className="w-4 h-4 mr-2" />
+                          Ver desglose detallado
+                        </Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </CardContent>
           </Card>
         </div>

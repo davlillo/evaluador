@@ -1,0 +1,2 @@
+/uml-evaluator/backend/models/cc.es.300.kv.vectors.npy filter=lfs diff=lfs merge=lfs -text
+/uml-evaluator/backend/models/cc.es.300.vec filter=lfs diff=lfs merge=lfs -text

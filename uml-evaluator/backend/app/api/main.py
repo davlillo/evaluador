@@ -71,6 +71,8 @@ class ComparisonRequest(BaseModel):
     student_xml: str
     case_sensitive: bool = False
     strict_types: bool = True
+    use_semantic_matching: bool = True
+    semantic_threshold: float = 0.55
 
 
 class HealthResponse(BaseModel):
@@ -268,6 +270,8 @@ async def compare_files(
         None,
         description="Opcional: class, usecase o sequence. Si se envía, debe coincidir con ambos XMI.",
     ),
+    use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
+    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
     xmi_source: str = Form(
         'astah',
         description="Origen del XMI: astah o visual_paradigm.",
@@ -405,6 +409,8 @@ async def compare_files_auto(
     case_sensitive: bool = Form(False),
     strict_types: bool = Form(True),
     xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
+    use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
+    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
     selected_types: Optional[str] = Form(None, description="Tipos a evaluar: 'class,usecase,sequence'"),
     # Pesos por tipo de diagrama
     class_weight_classes: Optional[float] = Form(None),
@@ -519,9 +525,13 @@ async def compare_files_auto(
             'usecase': (global_weight_usecase or 35) / 100.0,
             'sequence': (global_weight_sequence or 25) / 100.0,
         }
-        gw_total = sum(global_weights.values())
-        if gw_total > 0:
-            global_weights = {k: v / gw_total for k, v in global_weights.items()}
+
+        # Renormalizar pesos solo sobre los tipos realmente detectados
+        detected_global_sum = sum(global_weights.get(t, 0) for t in detected_types)
+        if detected_global_sum > 0:
+            detected_global_weights = {t: global_weights[t] / detected_global_sum for t in detected_types}
+        else:
+            detected_global_weights = {t: 1.0 / len(detected_types) for t in detected_types}
 
         results = []
         weighted_sum = 0.0
@@ -536,10 +546,12 @@ async def compare_files_auto(
                 case_sensitive=case_sensitive,
                 strict_types=strict_types,
                 weights=weights_by_kind.get(diagram_type, weights_by_kind['class']),
+                use_semantic_matching=use_semantic_matching,
+                semantic_threshold=semantic_threshold,
             )
 
             sim = round(float(comparison.overall_similarity), 2)
-            weighted_sum += sim * global_weights.get(diagram_type, 0.33)
+            weighted_sum += sim * detected_global_weights.get(diagram_type, 1.0 / len(detected_types))
 
             results.append({
                 'diagram_type': diagram_type,
@@ -561,7 +573,7 @@ async def compare_files_auto(
                 kind: {k: round(v * 100, 1) for k, v in w.items()}
                 for kind, w in weights_by_kind.items()
             },
-            'global_weights_used': {k: round(v * 100, 1) for k, v in global_weights.items()},
+            'global_weights_used': {k: round(v * 100, 1) for k, v in detected_global_weights.items()},
         }
 
     except HTTPException:
@@ -587,6 +599,8 @@ async def compare_global_files(
     global_weight_class: float = Form(40, description="Peso global de clases (0-100)"),
     global_weight_usecase: float = Form(35, description="Peso global de casos de uso (0-100)"),
     global_weight_sequence: float = Form(25, description="Peso global de secuencia (0-100)"),
+    use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
+    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
     xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
 ):
     source = str(xmi_source).strip().lower() or 'astah'
@@ -728,6 +742,8 @@ async def compare_global_files(
                         case_sensitive=False,
                         strict_types=True,
                         weights=weights_by_kind[kind],
+                        use_semantic_matching=use_semantic_matching,
+                        semantic_threshold=semantic_threshold,
                     )
                     sim = round(float(comparison.overall_similarity), 2)
                     weighted_sum += sim * normalized_global[kind]
@@ -818,7 +834,9 @@ async def compare_xml_content(request: ComparisonRequest):
             expected_diagram, 
             student_diagram,
             case_sensitive=request.case_sensitive,
-            strict_types=request.strict_types
+            strict_types=request.strict_types,
+            use_semantic_matching=request.use_semantic_matching,
+            semantic_threshold=request.semantic_threshold,
         )
         
         # Retornar resultado
@@ -901,6 +919,157 @@ async def supported_formats():
             "Composiciones", "Dependencias", "Realizaciones"
         ]
     }
+
+
+@app.post("/api/compare-batch")
+async def compare_batch(
+    expected_file: UploadFile = File(..., description="Archivo XMI con la solución (puede contener múltiples diagramas)"),
+    students_zip: UploadFile = File(..., description="ZIP con los archivos XMI de cada estudiante"),
+    use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico"),
+    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica"),
+    global_weight_class: float = Form(40, description="Peso global de clases (0-100)"),
+    global_weight_usecase: float = Form(35, description="Peso global de casos de uso (0-100)"),
+    global_weight_sequence: float = Form(25, description="Peso global de secuencia (0-100)"),
+):
+    ext = os.path.splitext(expected_file.filename.lower())[1]
+    if ext not in VALID_UML_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Extensión '{ext}' no válida. Use: {VALID_UML_EXTENSIONS}")
+    if os.path.splitext(students_zip.filename.lower())[1] != '.zip':
+        raise HTTPException(status_code=400, detail="El archivo de estudiantes debe ser .zip.")
+
+    expected_path = None
+    zip_path = None
+    temp_root = None
+
+    try:
+        expected_path = os.path.join(UPLOAD_DIR, f"batch_expected_{expected_file.filename}")
+        zip_path = os.path.join(UPLOAD_DIR, f"batch_students_{students_zip.filename}")
+
+        with open(expected_path, "wb") as f:
+            f.write(await expected_file.read())
+        with open(zip_path, "wb") as f:
+            f.write(await students_zip.read())
+
+        # Parsear solución (multi-diagrama)
+        try:
+            expected_diagrams = parse_xmi_file_multi(expected_path)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error al parsear solución: {str(e)}")
+
+        if not expected_diagrams:
+            raise HTTPException(status_code=400, detail="No se detectaron diagramas en la solución.")
+
+        detected_types = sorted(expected_diagrams.keys())
+
+        # Extraer ZIP
+        temp_root = tempfile.mkdtemp(prefix='batch_', dir=UPLOAD_DIR)
+        try:
+            _safe_extract_zip(zip_path, temp_root)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"No se pudo leer el ZIP: {str(e)}")
+
+        student_files = _index_students_from_dir(temp_root)
+        if not student_files:
+            raise HTTPException(status_code=400, detail="No se encontraron archivos XMI en el ZIP.")
+
+        # Pesos globales renormalizados sobre tipos detectados
+        raw_global = {
+            'class': max(0.0, global_weight_class),
+            'usecase': max(0.0, global_weight_usecase),
+            'sequence': max(0.0, global_weight_sequence),
+        }
+        detected_sum = sum(raw_global.get(t, 0) for t in detected_types)
+        if detected_sum > 0:
+            detected_weights = {t: raw_global[t] / detected_sum for t in detected_types}
+        else:
+            detected_weights = {t: 1.0 / len(detected_types) for t in detected_types}
+
+        # Pesos internos por tipo
+        weights_by_kind = {
+            'class': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.25, 'relationships': 0.15},
+            'usecase': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.0, 'relationships': 0.40},
+            'sequence': {'classes': 0.40, 'attributes': 0.0, 'methods': 0.0, 'relationships': 0.60},
+        }
+
+        results = []
+        complete_count = 0
+
+        for student_id, student_path in sorted(student_files.items()):
+            try:
+                student_diagrams = parse_xmi_file_multi(student_path)
+            except Exception:
+                results.append({
+                    'student_id': student_id,
+                    'status': 'error',
+                    'error': 'No se pudo parsear el archivo XMI.',
+                    'runs': {},
+                })
+                continue
+
+            runs = {}
+            weighted_sum = 0.0
+            all_ok = True
+
+            for kind in detected_types:
+                exp_diag = expected_diagrams.get(kind)
+                stu_diag = student_diagrams.get(kind)
+                if exp_diag is None or stu_diag is None:
+                    all_ok = False
+                    runs[kind] = {'status': 'missing', 'similarity': None}
+                    continue
+
+                try:
+                    comparison = compare_uml_diagrams(
+                        exp_diag, stu_diag,
+                        weights=weights_by_kind.get(kind, weights_by_kind['class']),
+                        use_semantic_matching=use_semantic_matching,
+                        semantic_threshold=semantic_threshold,
+                    )
+                    sim = round(float(comparison.overall_similarity), 2)
+                    weighted_sum += sim * detected_weights.get(kind, 0)
+                    runs[kind] = {
+                        'status': 'ok',
+                        'similarity': sim,
+                        'comparison': comparison.to_dict(),
+                    }
+                except Exception as e:
+                    all_ok = False
+                    runs[kind] = {'status': 'error', 'similarity': None, 'error': str(e)}
+
+            final_score = round(weighted_sum, 2) if all_ok else 0.0
+            if all_ok:
+                complete_count += 1
+
+            results.append({
+                'student_id': student_id,
+                'status': 'ok',
+                'complete': all_ok,
+                'final_score': final_score,
+                'runs': runs,
+            })
+
+        results.sort(key=lambda r: r['final_score'], reverse=True)
+
+        return {
+            'results': results,
+            'students_total': len(results),
+            'students_complete': complete_count,
+            'students_incomplete': len(results) - complete_count,
+            'global_weights_used': {k: round(v * 100, 1) for k, v in detected_weights.items()},
+            'detected_diagrams': detected_types,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+    finally:
+        if expected_path and os.path.exists(expected_path):
+            os.remove(expected_path)
+        if zip_path and os.path.exists(zip_path):
+            os.remove(zip_path)
+        if temp_root:
+            shutil.rmtree(temp_root, ignore_errors=True)
 
 
 if __name__ == "__main__":

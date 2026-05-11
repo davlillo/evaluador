@@ -61,6 +61,12 @@ test_files/*
 # Credenciales locales (registro vía API; no subir a Git)
 app/src/data/users.json
 
+# Modelos preentrenados FastText
+uml-evaluator/backend/models/*.bin
+uml-evaluator/backend/models/*.kv
+uml-evaluator/backend/models/*.kv.vectors.npy
+uml-evaluator/backend/models/*.vec
+
 # OS
 .DS_Store
 Thumbs.db
