@@ -1,10 +1,8 @@
-import { useState } from 'react';
-import { ArrowLeft, Code, Layers, ArrowRight, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Code, Layers, ArrowRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Breakdown, ComparisonResult } from '@/types/comparison';
 
 interface ClassResultsViewProps {
@@ -100,93 +98,6 @@ function ScoreCard({
   );
 }
 
-function ClassDetailCard({ classResult }: { classResult: {
-  class_name: string;
-  similarity: number;
-  attributes: { correct: number; total: number; missing: string[]; extra: string[] };
-  methods: { correct: number; total: number; missing: string[]; extra: string[] };
-} }) {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <Card className="overflow-hidden">
-      <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setExpanded(!expanded)}>
-        <div className="flex items-center gap-3">
-          <Code className="w-5 h-5 text-primary" />
-          <div>
-            <h4 className="font-semibold">{classResult.class_name}</h4>
-            <p className="text-sm text-muted-foreground">
-              Atributos: {classResult.attributes.correct}/{classResult.attributes.total} |
-              Métodos: {classResult.methods.correct}/{classResult.methods.total}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <SimilarityGauge value={classResult.similarity} label="" size="sm" />
-          <span className="text-lg">{expanded ? '↑' : '↓'}</span>
-        </div>
-      </div>
-      {expanded && (
-        <div className="px-4 pb-4 border-t bg-muted/30">
-          <div className="grid md:grid-cols-2 gap-4 pt-4">
-            <div>
-              <h5 className="text-sm font-medium mb-2 flex items-center gap-2"><Layers className="w-4 h-4" /> Atributos</h5>
-              {classResult.attributes.missing.length > 0 && (
-                <div className="mb-2">
-                  <span className="text-xs text-red-500 font-medium">Faltantes:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {classResult.attributes.missing.map((attr: string, i: number) => (
-                      <Badge key={i} variant="destructive" className="text-xs">{attr}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {classResult.attributes.extra.length > 0 && (
-                <div>
-                  <span className="text-xs text-orange-500 font-medium">Extra:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {classResult.attributes.extra.map((attr: string, i: number) => (
-                      <Badge key={i} variant="secondary" className="text-xs bg-orange-100 text-orange-700">{attr}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {classResult.attributes.missing.length === 0 && classResult.attributes.extra.length === 0 && (
-                <p className="text-sm text-green-600 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> Todos los atributos correctos</p>
-              )}
-            </div>
-            <div>
-              <h5 className="text-sm font-medium mb-2 flex items-center gap-2"><Code className="w-4 h-4" /> Métodos</h5>
-              {classResult.methods.missing.length > 0 && (
-                <div className="mb-2">
-                  <span className="text-xs text-red-500 font-medium">Faltantes:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {classResult.methods.missing.map((method: string, i: number) => (
-                      <Badge key={i} variant="destructive" className="text-xs">{method}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {classResult.methods.extra.length > 0 && (
-                <div>
-                  <span className="text-xs text-orange-500 font-medium">Extra:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {classResult.methods.extra.map((method: string, i: number) => (
-                      <Badge key={i} variant="secondary" className="text-xs bg-orange-100 text-orange-700">{method}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {classResult.methods.missing.length === 0 && classResult.methods.extra.length === 0 && (
-                <p className="text-sm text-green-600 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> Todos los métodos correctos</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </Card>
-  );
-}
-
 export function ClassResultsView({ result, onBack, onViewReport }: ClassResultsViewProps) {
   const weights = result.weights_used;
   return (
@@ -217,43 +128,10 @@ export function ClassResultsView({ result, onBack, onViewReport }: ClassResultsV
       </div>
 
       {result.class_details && result.class_details.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Detalle por Clase</h3>
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-3">
-              {result.class_details.map((classResult, index: number) => (
-                <ClassDetailCard key={index} classResult={classResult} />
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-      )}
-
-      {result.details && result.details.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Detalle de Elementos</h3>
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-2">
-              {result.details.map((detail, index: number) => (
-                <div key={index} className={'flex items-center gap-3 p-3 rounded-lg border ' + (detail.status === 'correct' ? 'bg-green-50 border-green-200 ' : '') + (detail.status === 'missing' ? 'bg-red-50 border-red-200 ' : '') + (detail.status === 'extra' ? 'bg-orange-50 border-orange-200 ' : '') + (detail.status === 'partial' ? 'bg-yellow-50 border-yellow-200 ' : '')}>
-                  {detail.status === 'correct' && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />}
-                  {detail.status === 'missing' && <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />}
-                  {detail.status === 'extra' && <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0" />}
-                  {detail.status === 'partial' && <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs capitalize">{detail.element_type}</Badge>
-                      <span className="font-medium truncate">{detail.name}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">{detail.message}</p>
-                  </div>
-                  {detail.similarity_score !== undefined && detail.similarity_score < 100 && (
-                    <span className="text-sm font-medium text-yellow-600">{Math.round(detail.similarity_score)}%</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+        <div className="pt-2 border-t">
+          <p className="text-xs text-muted-foreground">
+            {result.class_details.length} clase(s) analizada(s). Usá "Ver Comparación Detallada" abajo para ver el detalle elemento por elemento.
+          </p>
         </div>
       )}
 

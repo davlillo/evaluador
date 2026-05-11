@@ -7,10 +7,6 @@ import { useEvaluationWizard } from '@/context/EvaluationWizardContext';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
-import EvaluationModePage from '@/pages/EvaluationModePage';
-import DiagramTypePage from '@/pages/DiagramTypePage';
-import GlobalEvaluationPlaceholderPage from '@/pages/GlobalEvaluationPlaceholderPage';
-import GlobalStudentBreakdownPage from '@/pages/GlobalStudentBreakdownPage';
 import UploadPage from '@/pages/UploadPage';
 import ResultsPage from '@/pages/ResultsPage';
 import ReportPage from '@/pages/ReportPage';
@@ -97,7 +93,7 @@ function AppShell() {
 
 function HomeRedirect() {
   const { user } = useAuth();
-  return <Navigate to={user ? '/evaluar/modo' : '/login'} replace />;
+  return <Navigate to={user ? '/evaluar/subir' : '/login'} replace />;
 }
 
 export default function App() {
@@ -108,13 +104,9 @@ export default function App() {
       <Route path="/" element={<HomeRedirect />} />
       <Route element={<ProtectedLayout />}>
         <Route element={<AppShell />}>
-          <Route path="/evaluar/modo" element={<EvaluationModePage />} />
-          <Route path="/evaluar/tipo" element={<DiagramTypePage />} />
           <Route path="/evaluar/subir" element={<UploadPage />} />
           <Route path="/evaluar/resultados" element={<ResultsPage />} />
           <Route path="/evaluar/reporte" element={<ReportPage />} />
-          <Route path="/evaluar/global" element={<GlobalEvaluationPlaceholderPage />} />
-          <Route path="/evaluar/global/desglose" element={<GlobalStudentBreakdownPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

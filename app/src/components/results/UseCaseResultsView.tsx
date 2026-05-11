@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { ComparisonResult, UseCaseBreakdown } from '@/types/comparison';
 
 interface UseCaseResultsViewProps {
@@ -155,37 +154,6 @@ export function UseCaseResultsView({ result, onBack, onViewReport }: UseCaseResu
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {result.details && result.details.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Detalle de elementos</h3>
-          <ScrollArea className="h-[320px]">
-            <div className="space-y-2 pr-2">
-              {result.details.map((detail, index) => (
-                <div
-                  key={index}
-                  className={
-                    'flex items-start gap-3 p-3 rounded-lg border text-sm ' +
-                    (detail.status === 'correct'
-                      ? 'bg-green-50 border-green-200'
-                      : '') +
-                    (detail.status === 'missing' ? 'bg-red-50 border-red-200' : '') +
-                    (detail.status === 'extra' ? 'bg-orange-50 border-orange-200' : '')
-                  }
-                >
-                  <div className="flex-1 min-w-0">
-                    <Badge variant="outline" className="text-[10px] capitalize mb-1">
-                      {detail.element_type}
-                    </Badge>
-                    <p className="font-medium break-words">{detail.name}</p>
-                    <p className="text-muted-foreground text-xs mt-0.5">{detail.message}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
       )}
 
       <div className="flex justify-center gap-4">

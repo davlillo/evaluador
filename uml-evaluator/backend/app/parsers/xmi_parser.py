@@ -1116,3 +1116,480 @@ def parse_xmi_string(xml_content: str, xmi_source: str = 'astah') -> UMLDiagram:
     """Función de conveniencia para parsear un string XMI."""
     parser = XMIParser(xmi_source=xmi_source)
     return parser.parse_string(xml_content)
+
+
+# ------------------------------------------------------------------
+# Parser Multi-Diagrama (XMI 1.1 con múltiples diagramas en un archivo)
+# ------------------------------------------------------------------
+
+class XMIParserV11:
+    """Parser para archivos XMI 1.1 de Astah/JUDE con múltiples diagramas."""
+
+    NAMESPACES = {
+        'jude': 'http://objectclub.esm.co.jp/Jude/namespace/',
+        'uml': 'org.omg.xmi.namespace.UML',
+    }
+
+    def __init__(self):
+        self.all_elements_by_id: Dict[str, ET.Element] = {}
+        self.id_to_name: Dict[str, str] = {}
+
+    def _xmi_attr(self, elem, attr_name, default=''):
+        """Lee un atributo XMI 1.1, probando xmi.{name} y luego {name}."""
+        val = elem.get(f'xmi.{attr_name}')
+        if val is not None:
+            return val
+        return elem.get(attr_name, default)
+
+    def _local_tag(self, elem) -> str:
+        """Extrae el nombre local del tag, quitando namespace {} y prefijos UML:"""
+        tag = elem.tag if hasattr(elem, 'tag') else str(elem)
+        if '}' in tag:
+            tag = tag.split('}')[-1]
+        if ':' in tag:
+            tag = tag.split(':')[-1]
+        return tag
+
+    def parse_file_multi(self, file_path: str) -> Dict[str, UMLDiagram]:
+        tree = ET.parse(file_path)
+        root = tree.getroot()
+        return self._parse_root_multi(root)
+
+    def parse_string_multi(self, xml_content: str) -> Dict[str, UMLDiagram]:
+        root = ET.fromstring(xml_content)
+        return self._parse_root_multi(root)
+
+    def _parse_root_multi(self, root: ET.Element) -> Dict[str, UMLDiagram]:
+        self._build_id_maps(root)
+        detected_types = self._detect_diagram_types(root)
+        diagrams: Dict[str, UMLDiagram] = {}
+
+        for diagram_type in detected_types:
+            if diagram_type == 'class':
+                diagrams['class'] = self._extract_class_diagram(root)
+            elif diagram_type == 'usecase':
+                diagrams['usecase'] = self._extract_usecase_diagram(root)
+            elif diagram_type == 'sequence':
+                diagrams['sequence'] = self._extract_sequence_diagram(root)
+
+        return diagrams
+
+    def _build_id_maps(self, root: ET.Element):
+        for elem in root.iter():
+            elem_id = self._xmi_attr(elem, 'id')
+            if elem_id:
+                self.all_elements_by_id[elem_id] = elem
+                name = elem.get('name', '')
+                if name:
+                    self.id_to_name[elem_id] = name
+
+    def _detect_diagram_types(self, root: ET.Element) -> List[str]:
+        """Detecta qué tipos de diagramas existen en el archivo XMI 1.1."""
+        types = set()
+
+        for elem in root.iter():
+            local = self._local_tag(elem)
+            if local in ('Class', 'Interface'):
+                types.add('class')
+            if local in ('Actor', 'UseCase'):
+                types.add('usecase')
+
+        collaboration_found = False
+        for elem in root.iter():
+            if self._local_tag(elem) == 'Collaboration':
+                collaboration_found = True
+                break
+
+        if collaboration_found:
+            has_messages = False
+            for elem in root.iter():
+                if self._local_tag(elem) == 'Message':
+                    has_messages = True
+                    break
+            if has_messages:
+                types.add('sequence')
+
+        if not types:
+            types.add('class')
+
+        return sorted(list(types))
+
+    def _extract_class_diagram(self, root: ET.Element) -> UMLDiagram:
+        """Extrae el diagrama de clases del XMI 1.1."""
+        diagram = UMLDiagram(name='Class Diagram', diagram_type='class')
+        class_map: Dict[str, UMLClass] = {}
+
+        for elem in root.iter():
+            if self._local_tag(elem) not in ('Class',):
+                continue
+
+            name = elem.get('name', '').strip()
+            if not name or name.lower() in PRIMITIVE_TYPES:
+                continue
+
+            elem_id = self._xmi_attr(elem, 'id')
+            uml_class = UMLClass(name=name, is_abstract=False, is_interface=False)
+
+            for child in elem:
+                child_local = self._local_tag(child)
+                if child_local.endswith('feature') or child_local == 'Feature':
+                    for attr_elem in child:
+                        if self._local_tag(attr_elem) == 'Attribute':
+                            attr_name = attr_elem.get('name', '').strip()
+                            if attr_name:
+                                type_ref = attr_elem.get('type', '')
+                                attr_type = self._resolve_type(type_ref)
+                                uml_class.attributes.append(UMLAttribute(
+                                    name=attr_name,
+                                    type=attr_type,
+                                    visibility=Visibility.PRIVATE
+                                ))
+                        elif self._local_tag(attr_elem) == 'Operation':
+                            op_name = attr_elem.get('name', '').strip()
+                            if op_name:
+                                return_type = 'void'
+                                for param in attr_elem:
+                                    param_local = self._local_tag(param)
+                                    if param_local.endswith('parameter'):
+                                        p_kind = param.get('kind', '')
+                                        if p_kind == 'return':
+                                            for p_type in param:
+                                                pt_local = self._local_tag(p_type)
+                                                if pt_local == 'type':
+                                                    href = p_type.get('href', '')
+                                                    if href:
+                                                        return_type = href.split('#')[-1]
+                                                    else:
+                                                        return_type = p_type.get('name', 'void')
+                                uml_class.methods.append(UMLMethod(
+                                    name=op_name,
+                                    return_type=return_type,
+                                    visibility=Visibility.PUBLIC
+                                ))
+
+            diagram.classes.append(uml_class)
+            if elem_id:
+                class_map[elem_id] = uml_class
+                self.id_to_name[elem_id] = name
+
+        diagram.relationships = self._extract_relationships_v11(root, class_map, [], [])
+        diagram.packages = self._extract_packages_v11(root)
+        return diagram
+
+    def _extract_usecase_diagram(self, root: ET.Element) -> UMLDiagram:
+        """Extrae el diagrama de casos de uso del XMI 1.1."""
+        diagram = UMLDiagram(name='UseCase Diagram', diagram_type='usecase')
+        actors: List[UMLActor] = []
+        use_cases: List[UMLUseCase] = []
+        actor_ids: set = set()
+
+        for elem in root.iter():
+            local = self._local_tag(elem)
+            name = elem.get('name', '').strip()
+            elem_id = self._xmi_attr(elem, 'id')
+
+            if local == 'Actor' and name and elem_id not in actor_ids:
+                actors.append(UMLActor(name=name))
+                actor_ids.add(elem_id)
+                self.id_to_name[elem_id] = name
+
+            if local == 'UseCase' and name:
+                use_cases.append(UMLUseCase(name=name))
+                if elem_id:
+                    self.id_to_name[elem_id] = name
+
+        diagram.actors = actors
+        diagram.use_cases = use_cases
+
+        actor_names = {a.name for a in actors}
+        uc_names = {uc.name for uc in use_cases}
+        valid_names = actor_names | uc_names
+
+        relationships = []
+        for elem in root.iter():
+            local = self._local_tag(elem)
+
+            if local == 'Association':
+                source_name, target_name, _, _, _, _ = self._extract_association_ends_v11(elem)
+                if not source_name or not target_name:
+                    continue
+                if source_name not in valid_names or target_name not in valid_names:
+                    continue
+                relationships.append(UMLRelationship(
+                    source=source_name,
+                    target=target_name,
+                    relationship_type=RelationshipType.ASSOCIATION
+                ))
+
+            elif local == 'Include':
+                base_id = None
+                addition_id = None
+                for child in elem:
+                    cl = self._local_tag(child)
+                    if cl.endswith('base'):
+                        for ref in child:
+                            if self._local_tag(ref) == 'UseCase':
+                                base_id = self._xmi_attr(ref, 'idref')
+                    elif cl.endswith('addition'):
+                        for ref in child:
+                            if self._local_tag(ref) == 'UseCase':
+                                addition_id = self._xmi_attr(ref, 'idref')
+                base_name = self.id_to_name.get(base_id, '')
+                addition_name = self.id_to_name.get(addition_id, '')
+                if base_name in valid_names and addition_name in valid_names:
+                    relationships.append(UMLRelationship(
+                        source=base_name,
+                        target=addition_name,
+                        relationship_type=RelationshipType.INCLUDE
+                    ))
+
+            elif local == 'Extend':
+                base_id = None
+                extension_id = None
+                for child in elem:
+                    cl = self._local_tag(child)
+                    if cl.endswith('base'):
+                        for ref in child:
+                            if self._local_tag(ref) == 'UseCase':
+                                base_id = self._xmi_attr(ref, 'idref')
+                    elif cl.endswith('extension'):
+                        for ref in child:
+                            if self._local_tag(ref) == 'UseCase':
+                                extension_id = self._xmi_attr(ref, 'idref')
+                base_name = self.id_to_name.get(base_id, '')
+                extension_name = self.id_to_name.get(extension_id, '')
+                if base_name in valid_names and extension_name in valid_names:
+                    relationships.append(UMLRelationship(
+                        source=extension_name,
+                        target=base_name,
+                        relationship_type=RelationshipType.EXTEND
+                    ))
+
+        diagram.relationships = relationships
+        return diagram
+
+    def _extract_sequence_diagram(self, root: ET.Element) -> UMLDiagram:
+        """Extrae el diagrama de secuencia del XMI 1.1."""
+        diagram = UMLDiagram(name='Sequence Diagram', diagram_type='sequence')
+        lifelines: List[UMLLifeline] = []
+        messages: List[UMLMessage] = []
+
+        for elem in root.iter():
+            if self._local_tag(elem) != 'Collaboration':
+                continue
+
+            for child in elem:
+                child_local = self._local_tag(child)
+
+                if child_local.endswith('ownedElement'):
+                    for role_elem in child:
+                        if self._local_tag(role_elem) == 'ClassifierRole':
+                            name = role_elem.get('name', '').strip()
+                            if name:
+                                lifelines.append(UMLLifeline(name=name, represents=''))
+
+                if 'interaction' in child_local:
+                    self._extract_messages(child, lifelines, messages)
+
+        diagram.lifelines = lifelines
+        diagram.messages = messages
+        return diagram
+
+    def _extract_messages(self, collaboration_elem: ET.Element, lifelines: List[UMLLifeline], messages: List[UMLMessage]):
+        """Extrae mensajes de un Collaboration."""
+        for nested in collaboration_elem:
+            nested_local = self._local_tag(nested)
+            if nested_local != 'Interaction':
+                continue
+
+            for msg_container in nested:
+                container_local = self._local_tag(msg_container)
+                if not container_local.endswith('message'):
+                    continue
+
+                for msg_elem in msg_container:
+                    if self._local_tag(msg_elem) != 'Message':
+                        continue
+                    msg_name = msg_elem.get('name', '').strip()
+                    msg_name = self._url_decode(msg_name)
+
+                    sender_ref = None
+                    receiver_ref = None
+                    for msg_child in msg_elem:
+                        mc_local = self._local_tag(msg_child)
+                        if mc_local.endswith('sender'):
+                            for role in msg_child:
+                                if self._local_tag(role) == 'ClassifierRole':
+                                    sender_ref = self._xmi_attr(role, 'idref')
+                        elif mc_local.endswith('receiver'):
+                            for role in msg_child:
+                                if self._local_tag(role) == 'ClassifierRole':
+                                    receiver_ref = self._xmi_attr(role, 'idref')
+
+                    source_ll = self._resolve_role_name(sender_ref)
+                    target_ll = self._resolve_role_name(receiver_ref)
+
+                    if source_ll and target_ll:
+                        messages.append(UMLMessage(
+                            name=msg_name,
+                            source_lifeline=source_ll,
+                            target_lifeline=target_ll,
+                            message_sort='synchCall',
+                            sequence_order=len(messages)
+                        ))
+
+    def _extract_association_ends_v11(self, elem: ET.Element) -> tuple:
+        """Extrae los extremos de una asociación en XMI 1.1.
+        Retorna (source_name, target_name, source_mult, target_mult, source_agg, target_agg)."""
+        source_name = None
+        target_name = None
+        source_mult = None
+        target_mult = None
+        source_agg = 'none'
+        target_agg = 'none'
+        end_names = []
+
+        for child in elem:
+            child_local = self._local_tag(child)
+            if not child_local.endswith('connection'):
+                continue
+
+            for end in child:
+                if self._local_tag(end) != 'AssociationEnd':
+                    continue
+                participant_ref = None
+                multiplicity = None
+                aggregation = end.get('aggregation', 'none')
+
+                for end_child in end:
+                    ec_local = self._local_tag(end_child)
+                    if ec_local.endswith('participant'):
+                        for classifier in end_child:
+                            if self._local_tag(classifier) == 'Classifier':
+                                participant_ref = self._xmi_attr(classifier, 'idref')
+                    elif ec_local.endswith('multiplicity'):
+                        for mult in end_child:
+                            if self._local_tag(mult) == 'Multiplicity':
+                                for rng in mult:
+                                    if self._local_tag(rng).endswith('.range') or self._local_tag(rng) == 'range':
+                                        for mr in rng:
+                                            if self._local_tag(mr) == 'MultiplicityRange':
+                                                lower = mr.get('lower', '')
+                                                upper = mr.get('upper', '')
+                                                if upper == '-1':
+                                                    upper = '*'
+                                                if lower and upper:
+                                                    multiplicity = f'{lower}..{upper}'
+                                                elif lower:
+                                                    multiplicity = lower
+
+                name = self.id_to_name.get(participant_ref, '')
+                end_names.append(name)
+                if not source_name:
+                    source_name = name
+                    source_mult = multiplicity
+                    source_agg = aggregation
+                elif not target_name:
+                    target_name = name
+                    target_mult = multiplicity
+                    target_agg = aggregation
+
+        return source_name, target_name, source_mult, target_mult, source_agg, target_agg
+
+    def _extract_relationships_v11(self, root: ET.Element, classes: Dict[str, UMLClass], actors: List[UMLActor], use_cases: List[UMLUseCase]) -> List[UMLRelationship]:
+        """Extrae relaciones entre clases en XMI 1.1 (asociaciones + herencia)."""
+        relationships = []
+        valid_names = {c.name for c in classes.values()}
+
+        for elem in root.iter():
+            local = self._local_tag(elem)
+
+            if local == 'Association':
+                source_name, target_name, src_mult, tgt_mult, src_agg, tgt_agg = self._extract_association_ends_v11(elem)
+                if not source_name or not target_name:
+                    continue
+                if source_name not in valid_names or target_name not in valid_names:
+                    continue
+
+                if src_agg == 'composite' or tgt_agg == 'composite':
+                    rel_type = RelationshipType.COMPOSITION
+                elif src_agg == 'shared' or tgt_agg == 'shared':
+                    rel_type = RelationshipType.AGGREGATION
+                else:
+                    rel_type = RelationshipType.ASSOCIATION
+
+                rel_name = elem.get('name', '')
+                rel = UMLRelationship(
+                    source=source_name,
+                    target=target_name,
+                    relationship_type=rel_type,
+                    name=rel_name if rel_name else None
+                )
+                if src_mult:
+                    rel.source_multiplicity = src_mult
+                if tgt_mult:
+                    rel.target_multiplicity = tgt_mult
+                relationships.append(rel)
+
+            elif local == 'Generalization':
+                child_id = None
+                parent_id = None
+                for gc in elem:
+                    gc_local = self._local_tag(gc)
+                    if gc_local.endswith('child'):
+                        for ch in gc:
+                            if self._local_tag(ch) == 'GeneralizableElement':
+                                child_id = self._xmi_attr(ch, 'idref')
+                    elif gc_local.endswith('parent'):
+                        for p in gc:
+                            if self._local_tag(p) == 'GeneralizableElement':
+                                parent_id = self._xmi_attr(p, 'idref')
+                child_name = self.id_to_name.get(child_id, '')
+                parent_name = self.id_to_name.get(parent_id, '')
+                if child_name in valid_names and parent_name in valid_names:
+                    relationships.append(UMLRelationship(
+                        source=child_name,
+                        target=parent_name,
+                        relationship_type=RelationshipType.INHERITANCE
+                    ))
+
+        return relationships
+
+    def _extract_packages_v11(self, root: ET.Element) -> List[str]:
+        """Extrae paquetes del XMI 1.1."""
+        packages = []
+        for elem in root.iter():
+            if self._local_tag(elem) == 'Package':
+                name = elem.get('name', '')
+                if name:
+                    packages.append(name)
+        return packages
+
+    def _resolve_type(self, type_ref: str) -> str:
+        if not type_ref:
+            return ''
+        return self.id_to_name.get(type_ref, type_ref)
+
+    def _resolve_role_name(self, role_ref: str) -> str:
+        if not role_ref:
+            return ''
+        return self.id_to_name.get(role_ref, role_ref)
+
+    def _url_decode(self, text: str) -> str:
+        import urllib.parse
+        try:
+            return urllib.parse.unquote(text)
+        except Exception:
+            return text
+
+
+def parse_xmi_file_multi(file_path: str) -> Dict[str, UMLDiagram]:
+    """Parsea un archivo XMI y retorna un diccionario con todos los diagramas detectados."""
+    parser = XMIParserV11()
+    return parser.parse_file_multi(file_path)
+
+
+def parse_xmi_string_multi(xml_content: str) -> Dict[str, UMLDiagram]:
+    """Parsea un string XMI y retorna un diccionario con todos los diagramas detectados."""
+    parser = XMIParserV11()
+    return parser.parse_string_multi(xml_content)

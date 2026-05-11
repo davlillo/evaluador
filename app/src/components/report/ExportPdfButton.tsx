@@ -4,19 +4,40 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { downloadDetailedReportPdf } from '@/lib/report-pdf';
+import type { ComparisonResult } from '@/types/comparison';
+
+interface MultiDiagramResult {
+  detected_diagrams: string[];
+  results: Array<{
+    diagram_type: string;
+    similarity: number;
+    comparison: ComparisonResult;
+  }>;
+}
+
+function isMultiDiagram(r: unknown): r is MultiDiagramResult {
+  return r !== null && typeof r === 'object' && 'detected_diagrams' in r;
+}
 
 export function ExportPdfButton() {
   const { result, studentFileName } = useEvaluationResult();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [multiDiagramWarning, setMultiDiagramWarning] = useState(false);
 
   const handleClick = () => {
     if (!result) return;
+
+    if (isMultiDiagram(result)) {
+      setMultiDiagramWarning(true);
+      return;
+    }
+
     setBusy(true);
     setError(null);
     try {
       downloadDetailedReportPdf({
-        result,
+        result: result as ComparisonResult,
         studentFileName,
       });
     } catch (e) {
@@ -41,6 +62,14 @@ export function ExportPdfButton() {
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="w-4 h-4" />
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {multiDiagramWarning && (
+        <Alert className="max-w-md">
+          <AlertCircle className="w-4 h-4" />
+          <AlertDescription>
+            La exportación de PDF para múltiples diagramas aún no está soportada. Podés exportar cada diagrama individualmente desde la página de resultados.
+          </AlertDescription>
         </Alert>
       )}
     </div>
