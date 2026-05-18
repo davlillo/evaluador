@@ -29,6 +29,31 @@ export function ExportPdfButton() {
     if (!result) return;
 
     if (isMultiDiagram(result)) {
+      // Si hay exactamente 1 diagrama, extraerlo y generar PDF normalmente
+      if (result.results.length === 1) {
+        const entry = result.results[0];
+        const singleResult: ComparisonResult = {
+          ...entry.comparison,
+          diagram_type: entry.diagram_type,
+          expected_diagram: (result as unknown as Record<string, unknown>)['expected_diagrams']
+            ? ((result as unknown as Record<string, unknown>)['expected_diagrams'] as Record<string, unknown>)[entry.diagram_type] as ComparisonResult['expected_diagram']
+            : entry.comparison.expected_diagram,
+          student_diagram: (result as unknown as Record<string, unknown>)['student_diagrams']
+            ? ((result as unknown as Record<string, unknown>)['student_diagrams'] as Record<string, unknown>)[entry.diagram_type] as ComparisonResult['student_diagram']
+            : entry.comparison.student_diagram,
+        };
+        setBusy(true);
+        setError(null);
+        try {
+          downloadDetailedReportPdf({ result: singleResult, studentFileName });
+        } catch (e) {
+          setError(e instanceof Error ? e.message : 'No se pudo generar el PDF.');
+        } finally {
+          setBusy(false);
+        }
+        return;
+      }
+      // Múltiples diagramas: no soportado aún
       setMultiDiagramWarning(true);
       return;
     }

@@ -214,6 +214,9 @@ class UMLMessage:
     target_lifeline: str
     message_sort: str = ""
     sequence_order: int = 0
+    # Fragmento combinado al que pertenece el mensaje, ej: "alt", "loop [i < n]"
+    # None si el mensaje no está dentro de ningún fragmento
+    fragment: Optional[str] = None
 
     def __hash__(self):
         return hash((self.name, self.source_lifeline, self.target_lifeline))
@@ -228,13 +231,16 @@ class UMLMessage:
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d: Dict[str, Any] = {
             "name": self.name,
             "source_lifeline": self.source_lifeline,
             "target_lifeline": self.target_lifeline,
             "message_sort": self.message_sort,
             "sequence_order": self.sequence_order,
         }
+        if self.fragment is not None:
+            d["fragment"] = self.fragment
+        return d
 
 
 @dataclass

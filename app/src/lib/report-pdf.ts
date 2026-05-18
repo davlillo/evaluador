@@ -188,6 +188,8 @@ export function downloadDetailedReportPdf(params: {
   const dt = result.diagram_type;
   if (dt === 'usecase') {
     appendUseCaseReport(doc, result, margin, textW, y);
+  } else if (dt === 'sequence') {
+    appendSequenceReport(doc, result, margin, textW, y);
   } else if (!dt || dt === '' || dt === 'class') {
     appendClassReport(doc, result, margin, textW, y);
   } else {
@@ -223,6 +225,152 @@ function appendStubReport(
   doc.setTextColor(28, 42, 74);
   doc.text(`Similitud global: ${result.overall_similarity.toFixed(2)} %`, margin + 3, y + 3.5);
   doc.setTextColor(0, 0, 0);
+}
+
+// ── Diagrama de Secuencia ──────────────────────────────────────────────────
+
+function appendSequenceReport(
+  doc: jsPDF,
+  result: ComparisonResult,
+  margin: number,
+  textW: number,
+  startY: number,
+): void {
+  let y = ensureGap(doc, startY, 36);
+  y = drawSectionTitle(doc, margin, textW, y, 'Estructura detectada por el parser');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  const intro = doc.splitTextToSize(
+    'Comparación lado a lado: líneas de vida y mensajes de la solución del docente y del diagrama del estudiante.',
+    textW,
+  );
+  doc.text(intro, margin, y);
+  y += intro.length * 5 + 6;
+
+  if (result.expected_diagram) {
+    y = writeSequencePanel(doc, result.expected_diagram, 'Solución del docente', margin, textW, y);
+    y += 8;
+  } else {
+    y = ensureGap(doc, y, 12);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Información del diagrama de referencia no disponible.', margin, y);
+    doc.setFont('helvetica', 'normal');
+    y += 8;
+  }
+
+  if (result.student_diagram) {
+    writeSequencePanel(doc, result.student_diagram, 'Diagrama del estudiante', margin, textW, y);
+  } else {
+    y = ensureGap(doc, y, 12);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Información del diagrama del estudiante no disponible.', margin, y);
+  }
+}
+
+function writeSequencePanel(
+  doc: jsPDF,
+  diagram: DiagramInfo,
+  title: string,
+  margin: number,
+  textW: number,
+  startY: number,
+): number {
+  let y = ensureGap(doc, startY, 28);
+
+  // Título del panel
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(28, 42, 74);
+  doc.text(title, margin, y);
+  doc.setTextColor(0, 0, 0);
+  doc.setDrawColor(210, 218, 230);
+  doc.setLineWidth(0.35);
+  doc.line(margin, y + 2, margin + textW, y + 2);
+  y += 8;
+
+  const lifelines = diagram.lifelines ?? [];
+  const messages  = [...(diagram.messages ?? [])].sort((a, b) => a.sequence_order - b.sequence_order);
+
+  // Resumen
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const summary = `${diagram.name || 'Sin nombre'} · ${lifelines.length} líneas de vida · ${messages.length} mensajes`;
+  doc.text(doc.splitTextToSize(summary, textW), margin, y);
+  y += 7;
+
+  // ── Tabla de Líneas de Vida ──
+  y = ensureGap(doc, y, 24);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Líneas de vida', margin, y);
+  y += 4;
+
+  if (lifelines.length === 0) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    doc.text('No se detectaron líneas de vida.', margin, y);
+    y += 7;
+  } else {
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Línea de vida']],
+      body: lifelines.map((ll, i) => [String(i + 1), ll.name]),
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 9, cellPadding: 2, lineColor: [220, 226, 235], lineWidth: 0.1 },
+      headStyles: { fillColor: [28, 42, 74], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 0: { cellWidth: 12 } },
+      alternateRowStyles: { fillColor: [252, 253, 255] },
+      theme: 'grid',
+    });
+    y = lastTableY(doc) + 6;
+  }
+
+  // ── Tabla de Mensajes ──
+  y = ensureGap(doc, y, 28);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Mensajes (en orden de ejecución)', margin, y);
+  y += 4;
+
+  if (messages.length === 0) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    doc.text('No se detectaron mensajes.', margin, y);
+    y += 7;
+  } else {
+    const hasFragments = messages.some((m) => m.fragment);
+    const head = hasFragments
+      ? [['#', 'Fragmento', 'Mensaje', 'Origen', 'Destino', 'Tipo']]
+      : [['#', 'Mensaje', 'Origen', 'Destino', 'Tipo']];
+    const body = messages.map((msg) => {
+      const row = [
+        String((msg.sequence_order ?? 0) + 1),
+        msg.name || '(sin nombre)',
+        msg.source_lifeline || '—',
+        msg.target_lifeline || '—',
+        msg.message_sort || 'synchCall',
+      ];
+      if (hasFragments) row.splice(1, 0, msg.fragment || '—');
+      return row;
+    });
+    const colStyles: Record<number, object> = hasFragments
+      ? { 0: { cellWidth: 9 }, 1: { cellWidth: 20, textColor: [80, 50, 140] }, 5: { textColor: [100, 100, 100], cellWidth: 22 } }
+      : { 0: { cellWidth: 9 }, 4: { textColor: [100, 100, 100], cellWidth: 22 } };
+    autoTable(doc, {
+      startY: y,
+      head,
+      body,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 8, cellPadding: 1.5, lineColor: [220, 226, 235], lineWidth: 0.1 },
+      headStyles: { fillColor: [28, 42, 74], textColor: 255, fontStyle: 'bold' },
+      columnStyles: colStyles,
+      alternateRowStyles: { fillColor: [252, 253, 255] },
+      theme: 'grid',
+    });
+    y = lastTableY(doc) + 6;
+  }
+
+  return y;
 }
 
 function appendUseCaseReport(

@@ -545,7 +545,7 @@ async def compare_files_auto(
                 student_diag,
                 case_sensitive=case_sensitive,
                 strict_types=strict_types,
-                weights=weights_by_kind.get(diagram_type, weights_by_kind['class']),
+                weights=weights_by_kind.get(diagram_type, weights_by_kind_defaults['class']),
                 use_semantic_matching=use_semantic_matching,
                 semantic_threshold=semantic_threshold,
             )
