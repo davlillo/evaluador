@@ -169,6 +169,8 @@ export interface DiagramMessage {
   target_lifeline: string;
   message_sort: string;
   sequence_order: number;
+  /** Fragmento combinado al que pertenece: "alt", "loop [cond]", etc. Undefined si no aplica. */
+  fragment?: string;
 }
 
 export interface DiagramInfo {

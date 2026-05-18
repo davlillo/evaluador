@@ -1175,39 +1175,70 @@ class XMIParserV11:
         return diagrams
 
     def _build_id_maps(self, root: ET.Element):
+        import urllib.parse
         for elem in root.iter():
             elem_id = self._xmi_attr(elem, 'id')
             if elem_id:
                 self.all_elements_by_id[elem_id] = elem
                 name = elem.get('name', '')
                 if name:
+                    # Decodificar URL-form encoding ('+' = espacio, '%XX' = caracter)
+                    try:
+                        name = urllib.parse.unquote_plus(name)
+                    except Exception:
+                        pass
                     self.id_to_name[elem_id] = name
 
     def _detect_diagram_types(self, root: ET.Element) -> List[str]:
         """Detecta qué tipos de diagramas existen en el archivo XMI 1.1."""
         types = set()
+        has_actors = False
+        has_use_cases = False
 
         for elem in root.iter():
             local = self._local_tag(elem)
             if local in ('Class', 'Interface'):
                 types.add('class')
-            if local in ('Actor', 'UseCase'):
-                types.add('usecase')
+            if local == 'Actor':
+                has_actors = True
+            if local == 'UseCase':
+                has_use_cases = True
 
+        # Solo marcar 'usecase' si hay al menos un UseCase real.
+        # Un Actor solo puede ser participante de un diagrama de secuencia
+        # (Astah lo exporta como UML:Actor aunque no haya diagrama de CU).
+        if has_use_cases:
+            types.add('usecase')
+
+        # Detección primaria: tag JUDE:SequenceDiagram en la sección de extension
+        has_jude_sequence = False
+        for elem in root.iter():
+            if self._local_tag(elem) == 'SequenceDiagram':
+                has_jude_sequence = True
+                break
+
+        # Detección secundaria: Collaboration bajo UML:Namespace.collaboration
         collaboration_found = False
         for elem in root.iter():
             if self._local_tag(elem) == 'Collaboration':
                 collaboration_found = True
                 break
 
-        if collaboration_found:
+        if collaboration_found or has_jude_sequence:
             has_messages = False
             for elem in root.iter():
                 if self._local_tag(elem) == 'Message':
                     has_messages = True
                     break
-            if has_messages:
+            if has_messages or has_jude_sequence:
                 types.add('sequence')
+
+        # Si el archivo contiene un JUDE:SequenceDiagram, las clases detectadas
+        # son el boilerplate de Java (java.lang, java.util) que Astah embebe.
+        # El actor/casos de uso detectados pertenecen al propio diagrama de secuencia,
+        # no a diagramas independientes. Se descarta el tipo 'class'.
+        if has_jude_sequence:
+            types.discard('class')
 
         if not types:
             types.add('class')
@@ -1369,27 +1400,190 @@ class XMIParserV11:
         return diagram
 
     def _extract_sequence_diagram(self, root: ET.Element) -> UMLDiagram:
-        """Extrae el diagrama de secuencia del XMI 1.1."""
+        """Extrae el diagrama de secuencia del XMI 1.1 (formato Astah/JUDE).
+
+        En Astah XMI 1.1:
+        - UML:Collaboration está bajo UML:Namespace.collaboration (no ownedElement).
+        - UML:ClassifierRole tiene name="" — el nombre real está en
+          ClassifierRole.base → Classifier xmi.idref → nombre de la clase del dominio.
+        - Los mensajes están en Collaboration.interaction → Interaction → Interaction.message.
+        - Los nombres de mensajes usan URL-form encoding ('+' = espacio).
+        """
         diagram = UMLDiagram(name='Sequence Diagram', diagram_type='sequence')
         lifelines: List[UMLLifeline] = []
         messages: List[UMLMessage] = []
 
+        # Paso 1: Construir mapa role_id → nombre_lifeline resolviendo ClassifierRole.base.
+        # En Astah, ClassifierRole.name siempre está vacío; el nombre viene de
+        # la clase base a la que apunta ClassifierRole.base > Classifier xmi.idref.
+        role_id_to_name: Dict[str, str] = {}
+        seen_lifeline_names: set = set()
+
+        for elem in root.iter():
+            if self._local_tag(elem) != 'ClassifierRole':
+                continue
+
+            role_id = self._xmi_attr(elem, 'id')
+            if not role_id:
+                continue
+
+            # Buscar ClassifierRole.base > Classifier xmi.idref
+            base_class_id = ''
+            for child in elem:
+                if self._local_tag(child).endswith('base'):
+                    for base_ref in child:
+                        idref = self._xmi_attr(base_ref, 'idref')
+                        if idref:
+                            base_class_id = idref
+                            break
+                    break
+
+            # Resolver el ID de la clase base a su nombre
+            ll_name = self.id_to_name.get(base_class_id, '').strip()
+            if not ll_name:
+                # Fallback: usar el nombre directo del ClassifierRole (raro pero posible)
+                ll_name = elem.get('name', '').strip()
+
+            if ll_name:
+                role_id_to_name[role_id] = ll_name
+                if ll_name not in seen_lifeline_names:
+                    # represents = nombre de la clase que esta lifeline instancia
+                    lifelines.append(UMLLifeline(name=ll_name, represents=ll_name))
+                    seen_lifeline_names.add(ll_name)
+
+        # Paso 1.5: Construir mapa operand_id → etiqueta de fragmento combinado.
+        # Astah exporta: CombinedFragment[operator] > CombinedFragment.operand >
+        #   InteractionOperand[xmi.id] > ModelElement.constraint > InteractionConstraint[name=guardia]
+        # Usamos este mapa para asignar UMLMessage.fragment.
+        operand_to_fragment: Dict[str, str] = {}
+
+        for elem in root.iter():
+            if self._local_tag(elem) != 'CombinedFragment':
+                continue
+            operator = elem.get('operator', '')
+            if not operator or not elem.get('xmi.id'):
+                continue
+
+            # Recopilar guardias por operand id
+            for cf_child in elem:
+                if not self._local_tag(cf_child).endswith('operand'):
+                    continue
+                for operand_elem in cf_child:
+                    if self._local_tag(operand_elem) != 'InteractionOperand':
+                        continue
+                    op_id = operand_elem.get('xmi.id', '')
+                    if not op_id:
+                        continue
+
+                    # Buscar guardia: ModelElement.constraint > InteractionConstraint[name]
+                    guard_text = ''
+                    for op_child in operand_elem:
+                        op_child_local = self._local_tag(op_child)
+                        if 'constraint' in op_child_local.lower():
+                            for constraint_elem in op_child:
+                                cname = self._url_decode(
+                                    constraint_elem.get('name', '').strip()
+                                )
+                                if cname and cname.lower() not in ('guard', ''):
+                                    guard_text = cname
+                                    break
+                        if 'guard' in op_child_local.lower() and not guard_text:
+                            for gref in op_child:
+                                gname = self._url_decode(
+                                    gref.get('name', '').strip()
+                                )
+                                if gname and gname.lower() not in ('guard', ''):
+                                    guard_text = gname
+                                    break
+
+                    label = operator
+                    if guard_text:
+                        label = f'{operator} [{guard_text}]'
+                    operand_to_fragment[op_id] = label
+
+        # Paso 2: Extraer mensajes desde Collaboration.interaction > Interaction > Interaction.message.
         for elem in root.iter():
             if self._local_tag(elem) != 'Collaboration':
                 continue
 
-            for child in elem:
-                child_local = self._local_tag(child)
+            for collab_child in elem:
+                collab_child_local = self._local_tag(collab_child)
+                # Astah usa 'Collaboration.interaction' como tag local
+                if 'interaction' not in collab_child_local:
+                    continue
 
-                if child_local.endswith('ownedElement'):
-                    for role_elem in child:
-                        if self._local_tag(role_elem) == 'ClassifierRole':
-                            name = role_elem.get('name', '').strip()
-                            if name:
-                                lifelines.append(UMLLifeline(name=name, represents=''))
+                for interaction_elem in collab_child:
+                    if self._local_tag(interaction_elem) != 'Interaction':
+                        continue
 
-                if 'interaction' in child_local:
-                    self._extract_messages(child, lifelines, messages)
+                    for interaction_child in interaction_elem:
+                        if not self._local_tag(interaction_child).endswith('message'):
+                            continue
+
+                        for msg_elem in interaction_child:
+                            if self._local_tag(msg_elem) != 'Message':
+                                continue
+
+                            msg_name = self._url_decode(msg_elem.get('name', '').strip())
+                            sender_ref = ''
+                            receiver_ref = ''
+                            is_async = False
+                            action_type = '1'  # 1=call, 2=return
+                            operand_ref = ''
+
+                            for msg_child in msg_elem:
+                                mc_local = self._local_tag(msg_child)
+                                if mc_local.endswith('sender'):
+                                    for role_ref in msg_child:
+                                        idref = self._xmi_attr(role_ref, 'idref')
+                                        if idref:
+                                            sender_ref = idref
+                                            break
+                                elif mc_local.endswith('receiver'):
+                                    for role_ref in msg_child:
+                                        idref = self._xmi_attr(role_ref, 'idref')
+                                        if idref:
+                                            receiver_ref = idref
+                                            break
+                                elif mc_local.endswith('action'):
+                                    # Leer UML:Action para obtener tipo de mensaje
+                                    for action_elem in msg_child:
+                                        if self._local_tag(action_elem) == 'Action':
+                                            is_async = action_elem.get('isAsynchronous', 'false').lower() == 'true'
+                                            action_type = action_elem.get('actionType', '1')
+                                            break
+                                elif mc_local.endswith('operand'):
+                                    # Referencia al InteractionOperand (fragmento combinado)
+                                    for op_ref in msg_child:
+                                        idref = self._xmi_attr(op_ref, 'idref')
+                                        if idref:
+                                            operand_ref = idref
+                                            break
+
+                            # Determinar message_sort según atributos de Astah:
+                            # actionType=2 + isAsynchronous=true  → reply (mensaje de retorno)
+                            # actionType=1 + isAsynchronous=true  → asynchCall
+                            # actionType=1 + isAsynchronous=false → synchCall
+                            if action_type == '2' and is_async:
+                                msg_sort = 'reply'
+                            elif is_async:
+                                msg_sort = 'asynchCall'
+                            else:
+                                msg_sort = 'synchCall'
+
+                            source_ll = role_id_to_name.get(sender_ref, sender_ref)
+                            target_ll = role_id_to_name.get(receiver_ref, receiver_ref)
+                            fragment_label = operand_to_fragment.get(operand_ref) if operand_ref else None
+
+                            if source_ll and target_ll:
+                                messages.append(UMLMessage(
+                                    name=msg_name,
+                                    source_lifeline=source_ll,
+                                    target_lifeline=target_ll,
+                                    message_sort=msg_sort,
+                                    sequence_order=len(messages),
+                                    fragment=fragment_label,
+                                ))
 
         diagram.lifelines = lifelines
         diagram.messages = messages
@@ -1578,7 +1772,8 @@ class XMIParserV11:
     def _url_decode(self, text: str) -> str:
         import urllib.parse
         try:
-            return urllib.parse.unquote(text)
+            # unquote_plus convierte '+' en espacio ademas de %XX
+            return urllib.parse.unquote_plus(text)
         except Exception:
             return text
 
