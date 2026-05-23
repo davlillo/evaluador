@@ -1,0 +1,41 @@
+<?xml version = "1.0" encoding = "UTF-8" standalone = "yes"?>
+<XMI xmi.version="1.1" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/" xmlns:UML="org.omg.xmi.namespace.UML">
+  <XMI.content>
+    <UML:Model xmi.id="g7-model" name="no_title" xmlns:UML="org.omg.xmi.namespace.UML">
+      <UML:Namespace.ownedElement>
+        <UML:Actor xmi.id="rn-actor" name="vendedor"/>
+        <UML:UseCase xmi.id="2a6-uc" name="Realizar+venta"/>
+        <UML:Association xmi.id="3bg-assoc">
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="3bi-end">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="2a6-uc"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="3bo-end">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="rn-actor"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+      </UML:Namespace.ownedElement>
+    </UML:Model>
+    <XMI.extension>
+      <JUDE:Diagram xmi.id="pa-diag" name="UseCase Diagram0" typeInfo="UseCase Diagram" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/">
+        <JUDE:Diagram.presentations>
+          <JUDE:ClassifierPresentation xmi.id="rm-pres">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Actor xmi.idref="rn-actor"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:ClassifierPresentation>
+          <JUDE:UseCasePresentation xmi.id="2a5-pres">
+            <JUDE:UPresentation.semanticModel>
+              <UML:UseCase xmi.idref="2a6-uc"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:UseCasePresentation>
+        </JUDE:Diagram.presentations>
+      </JUDE:Diagram>
+    </XMI.extension>
+  </XMI.content>
+</XMI>

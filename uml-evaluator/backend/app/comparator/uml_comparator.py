@@ -335,7 +335,7 @@ class UMLComparator:
             result=result,
         )
 
-        self._compare_relationships(expected.relationships, student.relationships, result)
+        self._compare_usecase_relationships(expected.relationships, student.relationships, result)
 
         # Incluir siempre cada criterio con peso > 0. Si solo miráramos total_*_expected > 0,
         # un docente con «0 actores» en el XMI ignoraría el 0% de similitud por actores extra
@@ -392,6 +392,103 @@ class UMLComparator:
                 s, t = t, s
                 sm, tm = tm, sm
         return (s, t, rt, sm, tm)
+
+    def _relationship_key_with_aliases(
+        self,
+        rel: UMLRelationship,
+        stu_to_exp: Dict[str, str],
+        remap_student_side: bool,
+    ) -> tuple:
+        """Construye clave de relación; opcionalmente alinea nombres del estudiante al vocabulario esperado."""
+        source = rel.source
+        target = rel.target
+        if remap_student_side:
+            source = stu_to_exp.get(self._normalize_name(source), source)
+            target = stu_to_exp.get(self._normalize_name(target), target)
+        return self._relationship_comparison_key(
+            UMLRelationship(
+                source=source,
+                target=target,
+                relationship_type=rel.relationship_type,
+                source_multiplicity=rel.source_multiplicity,
+                target_multiplicity=rel.target_multiplicity,
+            )
+        )
+
+    def _build_student_to_expected_name_map(
+        self,
+        expected_names: set,
+        student_names: set,
+    ) -> Dict[str, str]:
+        """Mapeo nombre normalizado del estudiante → nombre normalizado esperado (exacto + semántico)."""
+        exp_map = {self._normalize_name(n): n for n in expected_names}
+        stu_map = {self._normalize_name(n): n for n in student_names}
+        exact = set(exp_map.keys()) & set(stu_map.keys())
+        _, semantic_exp_to_stu, _, _ = self._semantic_match_dicts(exp_map, stu_map)
+        stu_to_exp: Dict[str, str] = {s: s for s in exact}
+        for exp_norm, stu_norm in semantic_exp_to_stu.items():
+            stu_to_exp[stu_norm] = exp_norm
+        return stu_to_exp
+
+    def _compare_usecase_relationships(
+        self,
+        expected: List[UMLRelationship],
+        student: List[UMLRelationship],
+        result: ComparisonResult,
+    ) -> None:
+        """Compara relaciones de casos de uso (include/extend/asociación) con matching semántico en extremos."""
+        exp_names = {rel.source for rel in expected} | {rel.target for rel in expected}
+        stu_names = {rel.source for rel in student} | {rel.target for rel in student}
+        stu_to_exp = self._build_student_to_expected_name_map(exp_names, stu_names)
+
+        expected_normalized = set()
+        for rel in expected:
+            key = self._relationship_key_with_aliases(rel, stu_to_exp, remap_student_side=False)
+            expected_normalized.add((key, rel))
+
+        student_normalized = set()
+        for rel in student:
+            key = self._relationship_key_with_aliases(rel, stu_to_exp, remap_student_side=True)
+            student_normalized.add((key, rel))
+
+        expected_keys = {k for k, _ in expected_normalized}
+        student_keys = {k for k, _ in student_normalized}
+
+        correct_keys = expected_keys & student_keys
+        result.correct_relationships = len(correct_keys)
+
+        for key in (expected_keys - student_keys):
+            result.missing_relationships.append(f"{key[0]} -> {key[1]} ({key[2]})")
+            result.details.append(ComparisonDetail(
+                element_type="relationship",
+                name=f"{key[0]} -> {key[1]}",
+                status="missing",
+                message=f"Relación faltante: {key[0]} -> {key[1]} ({key[2]})",
+            ))
+
+        for key in (student_keys - expected_keys):
+            result.extra_relationships.append(f"{key[0]} -> {key[1]} ({key[2]})")
+            result.details.append(ComparisonDetail(
+                element_type="relationship",
+                name=f"{key[0]} -> {key[1]}",
+                status="extra",
+                message=f"Relación extra: {key[0]} -> {key[1]} ({key[2]})",
+            ))
+
+        for key in correct_keys:
+            result.details.append(ComparisonDetail(
+                element_type="relationship",
+                name=f"{key[0]} -> {key[1]}",
+                status="correct",
+                similarity_score=100.0,
+                message=f"Relación correcta: {key[0]} -> {key[1]} ({key[2]})",
+            ))
+
+        n_exp = len(expected_keys)
+        n_stu = len(student_keys)
+        result.relationship_similarity = self._f1_similarity_counts(
+            result.correct_relationships, n_exp, n_stu
+        )
 
     def _compare_named_list(
         self,
