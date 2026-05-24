@@ -72,7 +72,7 @@ class ComparisonRequest(BaseModel):
     case_sensitive: bool = False
     strict_types: bool = True
     use_semantic_matching: bool = True
-    semantic_threshold: float = 0.55
+    semantic_threshold: float = 0.65
 
 
 class HealthResponse(BaseModel):
@@ -203,6 +203,41 @@ def _normalize_global_weights(class_w: float, usecase_w: float, sequence_w: floa
     return {k: v / total for k, v in raw.items()}
 
 
+def _build_usecase_weights(
+    classes: Optional[float] = None,
+    attributes: Optional[float] = None,
+    methods: Optional[float] = None,
+    include_relations: Optional[float] = None,
+    extend_relations: Optional[float] = None,
+    relationships: Optional[float] = None,
+) -> dict[str, float]:
+    """Construye pesos normalizados para diagramas de casos de uso (5 criterios)."""
+    w_act = classes if classes is not None else 15.0
+    w_uc = attributes if attributes is not None else 25.0
+
+    if include_relations is None and extend_relations is None and methods is None and relationships is not None:
+        third = relationships / 3.0
+        w_assoc = third
+        w_inc = third
+        w_ext = third
+    else:
+        w_assoc = methods if methods is not None else 25.0
+        w_inc = include_relations if include_relations is not None else 20.0
+        w_ext = extend_relations if extend_relations is not None else 15.0
+
+    raw = {
+        'classes': max(0.0, w_act),
+        'attributes': max(0.0, w_uc),
+        'methods': max(0.0, w_assoc),
+        'include_relations': max(0.0, w_inc),
+        'extend_relations': max(0.0, w_ext),
+    }
+    total = sum(raw.values())
+    if total <= 0:
+        return {'classes': 0.15, 'attributes': 0.25, 'methods': 0.25, 'include_relations': 0.20, 'extend_relations': 0.15}
+    return {k: v / total for k, v in raw.items()}
+
+
 def _enriched_comparison(comparison, expected_diagram, student_diagram) -> dict:
     """Incluye diagramas parseados para comparación visual y exportación PDF."""
     payload = comparison.to_dict()
@@ -279,7 +314,7 @@ async def compare_files(
         description="Opcional: class, usecase o sequence. Si se envía, debe coincidir con ambos XMI.",
     ),
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
-    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
+    semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica (0.55 a 1.00)"),
     xmi_source: str = Form(
         'astah',
         description="Origen del XMI: astah o visual_paradigm.",
@@ -335,41 +370,6 @@ async def compare_files(
                 detail="xmi_source debe ser astah o visual_paradigm.",
             )
 
-        try:
-            expected_diagram = parse_xmi_file(expected_path, xmi_source=source)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error al parsear archivo de solución: {str(e)}")
-
-        try:
-            student_diagram = parse_xmi_file(student_path, xmi_source=source)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error al parsear archivo del estudiante: {str(e)}")
-
-        if expected_diagram_type and str(expected_diagram_type).strip():
-            want = str(expected_diagram_type).strip().lower()
-            allowed = {'class', 'usecase', 'sequence'}
-            if want not in allowed:
-                raise HTTPException(
-                    status_code=400,
-                    detail="expected_diagram_type debe ser class, usecase o sequence.",
-                )
-            if expected_diagram.diagram_type != want:
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        f"La solución parseada es de tipo '{expected_diagram.diagram_type}', "
-                        f"pero indicaste '{want}'."
-                    ),
-                )
-            if student_diagram.diagram_type != want:
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        f"El diagrama del estudiante es de tipo '{student_diagram.diagram_type}', "
-                        f"pero indicaste '{want}'."
-                    ),
-                )
-
         # Normalizar pesos
         raw_weights = {
             'classes': max(0.0, weight_classes),
@@ -380,16 +380,68 @@ async def compare_files(
         total_w = sum(raw_weights.values()) or 100.0
         normalized_weights = {k: v / total_w for k, v in raw_weights.items()}
 
+        try:
+            expected_diagrams = parse_xmi_file_multi(expected_path, xmi_source=source)
+            student_diagrams = parse_xmi_file_multi(student_path, xmi_source=source)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error al parsear archivos: {str(e)}")
+
+        want_type = str(expected_diagram_type).strip().lower() if expected_diagram_type else None
+        if want_type:
+            if want_type not in expected_diagrams:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"La solución no contiene diagrama '{want_type}'.",
+                )
+            if want_type not in student_diagrams:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"El estudiante no contiene diagrama '{want_type}'.",
+                )
+            expected_diagram = expected_diagrams[want_type]
+            student_diagram = student_diagrams[want_type]
+        else:
+            common = sorted(set(expected_diagrams.keys()) & set(student_diagrams.keys()))
+            if not common:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No hay tipos de diagrama compatibles en ambos archivos.",
+                )
+            if len(common) > 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Ambos archivos contienen varios diagramas. "
+                        "Indique expected_diagram_type (class, usecase o sequence)."
+                    ),
+                )
+            expected_diagram = expected_diagrams[common[0]]
+            student_diagram = student_diagrams[common[0]]
+
+        if expected_diagram.diagram_type == 'usecase':
+            comparison_weights = _build_usecase_weights(
+                classes=raw_weights['classes'],
+                attributes=raw_weights['attributes'],
+                methods=raw_weights['methods'],
+                relationships=raw_weights['relationships'],
+            )
+        else:
+            comparison_weights = normalized_weights
+
         result = compare_uml_diagrams(
             expected_diagram,
             student_diagram,
             case_sensitive=case_sensitive,
             strict_types=strict_types,
-            weights=normalized_weights,
+            weights=comparison_weights,
+            use_semantic_matching=use_semantic_matching,
+            semantic_threshold=semantic_threshold,
         )
 
         response = result.to_dict()
-        response['weights_used'] = {k: round(v * 100, 1) for k, v in normalized_weights.items()}
+        response['weights_used'] = {
+            k: round(v * 100, 1) for k, v in comparison_weights.items()
+        }
         response['expected_diagram'] = expected_diagram.to_dict()
         response['student_diagram'] = student_diagram.to_dict()
         response['xmi_source_used'] = source
@@ -418,7 +470,7 @@ async def compare_files_auto(
     strict_types: bool = Form(True),
     xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
-    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
+    semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica (0.55 a 1.00)"),
     selected_types: Optional[str] = Form(None, description="Tipos a evaluar: 'class,usecase,sequence'"),
     # Pesos por tipo de diagrama
     class_weight_classes: Optional[float] = Form(None),
@@ -427,6 +479,9 @@ async def compare_files_auto(
     class_weight_relationships: Optional[float] = Form(None),
     usecase_weight_classes: Optional[float] = Form(None),
     usecase_weight_attributes: Optional[float] = Form(None),
+    usecase_weight_methods: Optional[float] = Form(None),
+    usecase_weight_include: Optional[float] = Form(None),
+    usecase_weight_extend: Optional[float] = Form(None),
     usecase_weight_relationships: Optional[float] = Form(None),
     sequence_weight_classes: Optional[float] = Form(None),
     sequence_weight_relationships: Optional[float] = Form(None),
@@ -470,12 +525,12 @@ async def compare_files_auto(
         source = str(xmi_source).strip().lower() or 'astah'
 
         try:
-            expected_diagrams = parse_xmi_file_multi(expected_path)
+            expected_diagrams = parse_xmi_file_multi(expected_path, xmi_source=source)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al parsear archivo de solución: {str(e)}")
 
         try:
-            student_diagrams = parse_xmi_file_multi(student_path)
+            student_diagrams = parse_xmi_file_multi(student_path, xmi_source=source)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al parsear archivo del estudiante: {str(e)}")
 
@@ -501,31 +556,43 @@ async def compare_files_auto(
 
         weights_by_kind_defaults = {
             'class': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.25, 'relationships': 0.15},
-            'usecase': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.0, 'relationships': 0.40},
+            'usecase': _build_usecase_weights(),
             'sequence': {'classes': 0.40, 'attributes': 0.0, 'methods': 0.0, 'relationships': 0.60},
         }
 
         weights_by_kind = {}
         for kind in detected_types:
-            default = dict(weights_by_kind_defaults.get(kind, weights_by_kind_defaults['class']))
             if kind == 'class':
-                default['classes'] = (class_weight_classes or 35) / 100.0
-                default['attributes'] = (class_weight_attributes or 25) / 100.0
-                default['methods'] = (class_weight_methods or 25) / 100.0
-                default['relationships'] = (class_weight_relationships or 15) / 100.0
+                default = {
+                    'classes': (class_weight_classes or 35) / 100.0,
+                    'attributes': (class_weight_attributes or 25) / 100.0,
+                    'methods': (class_weight_methods or 25) / 100.0,
+                    'relationships': (class_weight_relationships or 15) / 100.0,
+                }
+                total = sum(default.values())
+                if total > 0:
+                    default = {k: v / total for k, v in default.items()}
             elif kind == 'usecase':
-                default['classes'] = (usecase_weight_classes or 35) / 100.0
-                default['attributes'] = (usecase_weight_attributes or 25) / 100.0
-                default['methods'] = 0.0
-                default['relationships'] = (usecase_weight_relationships or 40) / 100.0
+                default = _build_usecase_weights(
+                    classes=usecase_weight_classes,
+                    attributes=usecase_weight_attributes,
+                    methods=usecase_weight_methods,
+                    include_relations=usecase_weight_include,
+                    extend_relations=usecase_weight_extend,
+                    relationships=usecase_weight_relationships,
+                )
             elif kind == 'sequence':
-                default['classes'] = (sequence_weight_classes or 40) / 100.0
-                default['attributes'] = 0.0
-                default['methods'] = 0.0
-                default['relationships'] = (sequence_weight_relationships or 60) / 100.0
-            total = sum(default.values())
-            if total > 0:
-                default = {k: v / total for k, v in default.items()}
+                default = {
+                    'classes': (sequence_weight_classes or 40) / 100.0,
+                    'attributes': 0.0,
+                    'methods': 0.0,
+                    'relationships': (sequence_weight_relationships or 60) / 100.0,
+                }
+                total = sum(default.values())
+                if total > 0:
+                    default = {k: v / total for k, v in default.items()}
+            else:
+                default = dict(weights_by_kind_defaults.get(kind, weights_by_kind_defaults['class']))
             weights_by_kind[kind] = default
 
         global_weights = {
@@ -608,7 +675,7 @@ async def compare_global_files(
     global_weight_usecase: float = Form(35, description="Peso global de casos de uso (0-100)"),
     global_weight_sequence: float = Form(25, description="Peso global de secuencia (0-100)"),
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
-    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica (0.55 a 1.00)"),
+    semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica (0.55 a 1.00)"),
     xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
 ):
     source = str(xmi_source).strip().lower() or 'astah'
@@ -664,21 +731,18 @@ async def compare_global_files(
         # Parsear soluciones del docente
         for kind in ('class', 'usecase', 'sequence'):
             try:
-                parsed = parse_xmi_file(expected_paths[kind], xmi_source=source)
+                parsed_multi = parse_xmi_file_multi(expected_paths[kind], xmi_source=source)
             except Exception as e:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Error al parsear solución {kind}: {str(e)}",
                 )
-            if parsed.diagram_type != kind:
+            if kind not in parsed_multi:
                 raise HTTPException(
                     status_code=400,
-                    detail=(
-                        f"La solución {kind} se detectó como '{parsed.diagram_type}'. "
-                        f"Debe corresponder al tipo '{kind}'."
-                    ),
+                    detail=f"La solución {kind} no contiene un diagrama de tipo '{kind}'.",
                 )
-            expected_diagrams[kind] = parsed
+            expected_diagrams[kind] = parsed_multi[kind]
 
         # Extraer ZIP e indexar entregas por estudiante y tipo
         for kind in ('class', 'usecase', 'sequence'):
@@ -704,7 +768,7 @@ async def compare_global_files(
         # Pesos internos por tipo de diagrama
         weights_by_kind = {
             'class': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.25, 'relationships': 0.15},
-            'usecase': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.0, 'relationships': 0.40},
+            'usecase': _build_usecase_weights(),
             'sequence': {'classes': 0.40, 'attributes': 0.0, 'methods': 0.0, 'relationships': 0.60},
         }
 
@@ -730,19 +794,18 @@ async def compare_global_files(
                     continue
 
                 try:
-                    student_diagram = parse_xmi_file(student_file_path, xmi_source=source)
-                    if student_diagram.diagram_type != kind:
+                    student_multi = parse_xmi_file_multi(student_file_path, xmi_source=source)
+                    if kind not in student_multi:
                         complete = False
                         runs[kind] = {
                             'diagram_type': kind,
                             'status': 'error',
                             'similarity': None,
                             'student_file': os.path.basename(student_file_path),
-                            'error': (
-                                f"Tipo detectado '{student_diagram.diagram_type}', se esperaba '{kind}'."
-                            ),
+                            'error': f"No se detectó diagrama '{kind}' en la entrega.",
                         }
                         continue
+                    student_diagram = student_multi[kind]
 
                     comparison = compare_uml_diagrams(
                         expected_diagrams[kind],
@@ -939,7 +1002,8 @@ async def compare_batch(
     expected_file: UploadFile = File(..., description="Archivo XMI con la solución (puede contener múltiples diagramas)"),
     students_zip: UploadFile = File(..., description="ZIP con los archivos XMI de cada estudiante"),
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico"),
-    semantic_threshold: float = Form(0.55, description="Umbral de similitud semántica"),
+    semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica"),
+    xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
     global_weight_class: float = Form(40, description="Peso global de clases (0-100)"),
     global_weight_usecase: float = Form(35, description="Peso global de casos de uso (0-100)"),
     global_weight_sequence: float = Form(25, description="Peso global de secuencia (0-100)"),
@@ -963,9 +1027,11 @@ async def compare_batch(
         with open(zip_path, "wb") as f:
             f.write(await students_zip.read())
 
+        source = str(xmi_source).strip().lower() or 'astah'
+
         # Parsear solución (multi-diagrama)
         try:
-            expected_diagrams = parse_xmi_file_multi(expected_path)
+            expected_diagrams = parse_xmi_file_multi(expected_path, xmi_source=source)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al parsear solución: {str(e)}")
 
@@ -1000,7 +1066,7 @@ async def compare_batch(
         # Pesos internos por tipo
         weights_by_kind = {
             'class': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.25, 'relationships': 0.15},
-            'usecase': {'classes': 0.35, 'attributes': 0.25, 'methods': 0.0, 'relationships': 0.40},
+            'usecase': _build_usecase_weights(),
             'sequence': {'classes': 0.40, 'attributes': 0.0, 'methods': 0.0, 'relationships': 0.60},
         }
 
@@ -1009,7 +1075,7 @@ async def compare_batch(
 
         for student_id, student_path in sorted(student_files.items()):
             try:
-                student_diagrams = parse_xmi_file_multi(student_path)
+                student_diagrams = parse_xmi_file_multi(student_path, xmi_source=source)
             except Exception:
                 results.append({
                     'student_id': student_id,

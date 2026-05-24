@@ -30,12 +30,26 @@ UC_VERBS = {
     'agregar', 'añadir', 'borrar', 'cancelar', 'procesar', 'generar',
     'enviar', 'recibir', 'autenticar', 'validar', 'iniciar', 'cerrar',
     'obtener', 'mostrar', 'calcular', 'realizar', 'ejecutar', 'confirmar',
-    'verificar', 'manage', 'create', 'search', 'edit', 'delete', 'register',
+    'verificar', 'revisar', 'marcar', 'pasar', 'agendar', 'programar',
+    'reservar', 'solicitar', 'autorizar', 'aprobar', 'pagar', 'cobrar',
+    'facturar', 'emitir', 'imprimir', 'exportar', 'importar', 'subir',
+    'descargar', 'asignar', 'notificar', 'reportar', 'analizar',
+    'manage', 'create', 'search', 'edit', 'delete', 'register',
     'update', 'view', 'list', 'consult', 'add', 'remove', 'cancel',
     'process', 'generate', 'send', 'receive', 'authenticate', 'validate',
     'login', 'logout', 'get', 'show', 'calculate', 'execute', 'confirm',
-    'verify',
+    'verify', 'check', 'review', 'schedule', 'book', 'pay', 'charge',
 }
+
+
+def looks_like_use_case_name(name: str) -> bool:
+    """True si el nombre parece un caso de uso (verbo de acción al inicio)."""
+    if not name:
+        return False
+    words = decode_xmi_name(name).lower().split()
+    if not words:
+        return False
+    return words[0] in UC_VERBS
 
 
 def decode_xmi_name(name: str) -> str:
@@ -523,7 +537,7 @@ class XMIParser:
                 continue
             name_lower = name.lower()
             first_word = name_lower.split()[0] if name_lower.split() else name_lower
-            if first_word in UC_VERBS:
+            if looks_like_use_case_name(name):
                 use_cases.append(UMLUseCase(name=name))
                 usecase_names.add(name)
                 if elem_id:
@@ -751,13 +765,34 @@ class XMIParser:
                     id_to_name, valid_names,
                 )
 
-            # Dependencia
+            # Dependencia entre casos de uso (a veces exportada como include/extend)
             elif tag_local == 'dependency' or elem_type == 'uml:Dependency':
-                rel = self._make_rel(
-                    elem.get('client', ''), elem.get('supplier', ''),
-                    RelationshipType.DEPENDENCY, elem.get('name'),
-                    id_to_name, valid_names,
-                )
+                src_id = elem.get('client', '')
+                tgt_id = elem.get('supplier', '')
+                src_name = id_to_name.get(src_id, '')
+                tgt_name = id_to_name.get(tgt_id, '')
+                uc_names = {uc.name for uc in use_cases} if use_cases else set()
+                actor_names_set = {a.name for a in actors} if actors else set()
+                src_is_uc = src_name in uc_names
+                tgt_is_uc = tgt_name in uc_names
+                if src_is_uc and tgt_is_uc:
+                    rel = self._make_rel(
+                        src_id, tgt_id,
+                        RelationshipType.INCLUDE, elem.get('name'),
+                        id_to_name, valid_names,
+                    )
+                elif src_name in actor_names_set or tgt_name in actor_names_set:
+                    rel = self._make_rel(
+                        src_id, tgt_id,
+                        RelationshipType.ASSOCIATION, elem.get('name'),
+                        id_to_name, valid_names,
+                    )
+                else:
+                    rel = self._make_rel(
+                        src_id, tgt_id,
+                        RelationshipType.DEPENDENCY, elem.get('name'),
+                        id_to_name, valid_names,
+                    )
 
             # Realización / implementación
             elif tag_local in ('realization', 'interfaceRealization') or \
@@ -1117,16 +1152,49 @@ class XMIParser:
         return visibility_map.get(visibility_str.lower(), Visibility.PRIVATE)
 
 
-def parse_xmi_file(file_path: str, xmi_source: str = 'astah') -> UMLDiagram:
-    """Función de conveniencia para parsear un archivo XMI."""
-    parser = XMIParser(xmi_source=xmi_source)
-    return parser.parse_file(file_path)
+def _pick_diagram_from_multi(
+    diagrams: Dict[str, UMLDiagram],
+    diagram_type: Optional[str] = None,
+) -> UMLDiagram:
+    """Elige un diagrama de un mapa multi-diagrama."""
+    if diagram_type:
+        want = diagram_type.strip().lower()
+        if want in diagrams:
+            return diagrams[want]
+        raise ValueError(
+            f"No se encontró diagrama de tipo '{want}'. "
+            f"Tipos detectados: {', '.join(sorted(diagrams.keys())) or 'ninguno'}."
+        )
+    if len(diagrams) == 1:
+        return next(iter(diagrams.values()))
+    for preferred in ('usecase', 'class', 'sequence'):
+        if preferred in diagrams:
+            return diagrams[preferred]
+    return next(iter(diagrams.values()))
 
 
-def parse_xmi_string(xml_content: str, xmi_source: str = 'astah') -> UMLDiagram:
-    """Función de conveniencia para parsear un string XMI."""
-    parser = XMIParser(xmi_source=xmi_source)
-    return parser.parse_string(xml_content)
+def parse_xmi_file(
+    file_path: str,
+    xmi_source: str = 'astah',
+    diagram_type: Optional[str] = None,
+) -> UMLDiagram:
+    """Función de conveniencia para parsear un archivo XMI (XMI 1.1 o 2.x)."""
+    return _pick_diagram_from_multi(
+        parse_xmi_file_multi(file_path, xmi_source=xmi_source),
+        diagram_type=diagram_type,
+    )
+
+
+def parse_xmi_string(
+    xml_content: str,
+    xmi_source: str = 'astah',
+    diagram_type: Optional[str] = None,
+) -> UMLDiagram:
+    """Función de conveniencia para parsear un string XMI (XMI 1.1 o 2.x)."""
+    return _pick_diagram_from_multi(
+        parse_xmi_string_multi(xml_content, xmi_source=xmi_source),
+        diagram_type=diagram_type,
+    )
 
 
 # ------------------------------------------------------------------
@@ -1847,13 +1915,46 @@ class XMIParserV11:
         return decode_xmi_name(name)
 
 
-def parse_xmi_file_multi(file_path: str) -> Dict[str, UMLDiagram]:
+def _xmi_version_from_root(root: ET.Element) -> str:
+    """Lee la versión XMI del elemento raíz (con o sin namespace)."""
+    version = root.get('xmi.version', '')
+    if version:
+        return version.strip()
+    for attr, val in root.attrib.items():
+        local = attr.split('}')[-1] if '}' in attr else attr
+        if local == 'version' and val:
+            return val.strip()
+    return ''
+
+
+def _is_xmi_11_root(root: ET.Element) -> bool:
+    version = _xmi_version_from_root(root)
+    if version.startswith('1.1'):
+        return True
+    sample = ET.tostring(root, encoding='unicode')[:4000]
+    return 'JUDE' in sample or 'jude/' in sample.lower()
+
+
+def parse_xmi_file_multi(
+    file_path: str,
+    xmi_source: str = 'astah',
+) -> Dict[str, UMLDiagram]:
     """Parsea un archivo XMI y retorna un diccionario con todos los diagramas detectados."""
-    parser = XMIParserV11()
-    return parser.parse_file_multi(file_path)
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    if _is_xmi_11_root(root):
+        return XMIParserV11().parse_file_multi(file_path)
+    diagram = XMIParser(xmi_source=xmi_source).parse_file(file_path)
+    return {diagram.diagram_type: diagram}
 
 
-def parse_xmi_string_multi(xml_content: str) -> Dict[str, UMLDiagram]:
+def parse_xmi_string_multi(
+    xml_content: str,
+    xmi_source: str = 'astah',
+) -> Dict[str, UMLDiagram]:
     """Parsea un string XMI y retorna un diccionario con todos los diagramas detectados."""
-    parser = XMIParserV11()
-    return parser.parse_string_multi(xml_content)
+    root = ET.fromstring(xml_content)
+    if _is_xmi_11_root(root):
+        return XMIParserV11().parse_string_multi(xml_content)
+    diagram = XMIParser(xmi_source=xmi_source).parse_string(xml_content)
+    return {diagram.diagram_type: diagram}
