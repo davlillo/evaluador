@@ -75,7 +75,11 @@ export interface UseCaseSliceBreakdown {
 export interface UseCaseBreakdown {
   actors: UseCaseSliceBreakdown;
   use_cases: UseCaseSliceBreakdown;
-  relationships: UseCaseSliceBreakdown;
+  actor_associations: UseCaseSliceBreakdown;
+  include_relations: UseCaseSliceBreakdown;
+  extend_relations: UseCaseSliceBreakdown;
+  /** @deprecated Desglose anterior con todas las relaciones juntas */
+  relationships?: UseCaseSliceBreakdown;
 }
 
 export interface SequenceBreakdown {
@@ -96,7 +100,7 @@ export interface SequenceBreakdown {
 export function isUseCaseBreakdown(
   b: Breakdown | UseCaseBreakdown | SequenceBreakdown,
 ): b is UseCaseBreakdown {
-  return 'actors' in b && 'use_cases' in b;
+  return 'actors' in b && 'use_cases' in b && ('actor_associations' in b || 'relationships' in b);
 }
 
 export function isSequenceBreakdown(
@@ -117,10 +121,20 @@ export interface ComparisonDetail {
   name: string;
   status: 'correct' | 'missing' | 'extra' | 'partial';
   similarity_score?: number;
+  semantic_match_of?: string;
   message: string;
 }
 
 export interface WeightsUsed {
+  classes: number;
+  attributes: number;
+  methods: number;
+  relationships?: number;
+  include_relations?: number;
+  extend_relations?: number;
+}
+
+export interface Weights {
   classes: number;
   attributes: number;
   methods: number;
@@ -131,6 +145,10 @@ export interface WeightsUsed {
   fragment_usage?: number;
   controller_methods?: number;
   service_methods?: number;
+  /** Solo casos de uso: relaciones include entre CU */
+  include_relations?: number;
+  /** Solo casos de uso: relaciones extend entre CU */
+  extend_relations?: number;
 }
 
 export interface DiagramAttribute {
@@ -246,11 +264,4 @@ export interface ParsedDiagram {
       relationship_type: string;
     }[];
   };
-}
-
-export interface Weights {
-  classes: number;
-  attributes: number;
-  methods: number;
-  relationships: number;
 }

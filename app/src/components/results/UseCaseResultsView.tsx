@@ -1,17 +1,50 @@
 import type { ReactNode } from 'react';
-import { ArrowLeft, FileText, User, CircleDot, Link2, Scale } from 'lucide-react';
+import { ArrowLeft, FileText, User, CircleDot, Link2, GitBranch, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import type { ComparisonResult, UseCaseBreakdown } from '@/types/comparison';
+import type { ComparisonResult, UseCaseBreakdown, UseCaseSliceBreakdown } from '@/types/comparison';
 
 interface UseCaseResultsViewProps {
   result: Omit<ComparisonResult, 'breakdown'> & { breakdown: UseCaseBreakdown };
   onBack: () => void;
   onViewReport: () => void;
   showNavActions?: boolean;
+}
+
+function normalizeUseCaseBreakdown(b: UseCaseBreakdown): Required<
+  Pick<
+    UseCaseBreakdown,
+    'actors' | 'use_cases' | 'actor_associations' | 'include_relations' | 'extend_relations'
+  >
+> {
+  if (b.actor_associations) {
+    return {
+      actors: b.actors,
+      use_cases: b.use_cases,
+      actor_associations: b.actor_associations,
+      include_relations: b.include_relations,
+      extend_relations: b.extend_relations,
+    };
+  }
+  const legacy = b.relationships;
+  const empty: UseCaseSliceBreakdown = {
+    similarity: 0,
+    expected: 0,
+    found: 0,
+    correct: 0,
+    missing: [],
+    extra: [],
+  };
+  return {
+    actors: b.actors,
+    use_cases: b.use_cases,
+    actor_associations: legacy ?? empty,
+    include_relations: empty,
+    extend_relations: empty,
+  };
 }
 
 function Gauge({ value, label }: { value: number; label: string }) {
@@ -37,14 +70,7 @@ function SliceCard({
 }: {
   title: string;
   icon: ReactNode;
-  slice: {
-    similarity: number;
-    expected: number;
-    found: number;
-    correct: number;
-    missing?: string[];
-    extra?: string[];
-  };
+  slice: UseCaseSliceBreakdown;
 }) {
   return (
     <Card>
@@ -57,7 +83,8 @@ function SliceCard({
       <CardContent className="space-y-3">
         <Gauge value={slice.similarity} label="Similitud en este criterio" />
         <p className="text-xs text-muted-foreground">
-          Coinciden {slice.correct} de {slice.expected} esperados (encontrados en el estudiante: {slice.found})
+          Coinciden {slice.correct} de {slice.expected} esperados (encontrados en el estudiante:{' '}
+          {slice.found})
         </p>
         {slice.missing && slice.missing.length > 0 && (
           <div>
@@ -88,8 +115,16 @@ function SliceCard({
   );
 }
 
+const USECASE_WEIGHT_LABELS: Record<string, string> = {
+  classes: 'Actores',
+  attributes: 'Casos de uso',
+  methods: 'Relaciones actor–CU',
+  include_relations: 'Relaciones include',
+  extend_relations: 'Relaciones extend',
+};
+
 export function UseCaseResultsView({ result, onBack, onViewReport, showNavActions = true }: UseCaseResultsViewProps) {
-  const b = result.breakdown;
+  const b = normalizeUseCaseBreakdown(result.breakdown);
   const w = result.weights_used;
 
   return (
@@ -104,8 +139,7 @@ export function UseCaseResultsView({ result, onBack, onViewReport, showNavAction
           </div>
           <p className="text-sm text-muted-foreground">Similitud global (ponderada)</p>
           <p className="text-xs text-center text-muted-foreground max-w-lg mt-2">
-            La nota global combina los tres criterios de abajo con la ponderación que configuraste. Un valor menor
-            al 100% suele deberse a casos de uso o relaciones de más o de menos respecto al modelo de referencia.
+            La nota global combina los cinco criterios de abajo con la ponderación que configuraste.
           </p>
         </CardContent>
       </Card>
@@ -114,14 +148,12 @@ export function UseCaseResultsView({ result, onBack, onViewReport, showNavAction
         <Alert>
           <AlertDescription className="text-sm">
             En el archivo de <strong>solución</strong> no se detectó ningún actor, pero en el del estudiante sí
-            hay {b.actors.found}. Eso cuenta como discrepancia en actores y baja la nota. Si el docente sí
-            modeló actores, revisa que el XMI los exporte como tales (o como clases con nombre de rol); el
-            modelo de referencia debe incluir los mismos actores para una comparación justa.
+            hay {b.actors.found}. Eso cuenta como discrepancia en actores y baja la nota.
           </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         <SliceCard title="Actores" icon={<User className="w-4 h-4 text-blue-600" />} slice={b.actors} />
         <SliceCard
           title="Casos de uso"
@@ -129,9 +161,19 @@ export function UseCaseResultsView({ result, onBack, onViewReport, showNavAction
           slice={b.use_cases}
         />
         <SliceCard
-          title="Relaciones"
-          icon={<Link2 className="w-4 h-4 text-orange-600" />}
-          slice={b.relationships}
+          title="Relaciones actor–CU"
+          icon={<Link2 className="w-4 h-4 text-teal-600" />}
+          slice={b.actor_associations}
+        />
+        <SliceCard
+          title="Relaciones include"
+          icon={<GitBranch className="w-4 h-4 text-orange-600" />}
+          slice={b.include_relations}
+        />
+        <SliceCard
+          title="Relaciones extend"
+          icon={<GitBranch className="w-4 h-4 text-amber-600" />}
+          slice={b.extend_relations}
         />
       </div>
 
@@ -148,10 +190,13 @@ export function UseCaseResultsView({ result, onBack, onViewReport, showNavAction
               Estos porcentajes son el peso de cada criterio en la nota global, no la similitud alcanzada.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">Actores: {w.classes}%</Badge>
-              <Badge variant="outline">Casos de uso: {w.attributes}%</Badge>
-              <Badge variant="outline">Métodos: {w.methods}%</Badge>
-              <Badge variant="outline">Relaciones: {w.relationships}%</Badge>
+              {Object.entries(w)
+                .filter(([key, val]) => val > 0 && key in USECASE_WEIGHT_LABELS)
+                .map(([key, val]) => (
+                  <Badge key={key} variant="outline">
+                    {USECASE_WEIGHT_LABELS[key]}: {val}%
+                  </Badge>
+                ))}
             </div>
           </CardContent>
         </Card>

@@ -14,8 +14,10 @@ function labelForWeightKey(key: string, diagramType: string | undefined): string
   if (diagramType === 'usecase') {
     if (key === 'classes') return 'Actores';
     if (key === 'attributes') return 'Casos de uso';
+    if (key === 'methods') return 'Relaciones actor–CU';
+    if (key === 'include_relations') return 'Relaciones include';
+    if (key === 'extend_relations') return 'Relaciones extend';
     if (key === 'relationships') return 'Relaciones';
-    if (key === 'methods') return 'Métodos';
   }
   if (diagramType === 'sequence') {
     if (key === 'classes') return 'Líneas de vida';

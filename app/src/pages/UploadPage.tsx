@@ -47,6 +47,8 @@ interface TypeWeights {
   fragment_usage?: number;
   controller_methods?: number;
   service_methods?: number;
+  include_relations?: number;
+  extend_relations?: number;
 }
 
 const DIAGRAM_TYPES = [
@@ -57,12 +59,21 @@ const DIAGRAM_TYPES = [
 
 const DEFAULT_WEIGHTS: Record<string, TypeWeights> = {
   class: { classes: 35, attributes: 25, methods: 25, relationships: 15 },
-  usecase: { classes: 35, attributes: 25, methods: 0, relationships: 40 },
+  
   sequence: {
     classes: 40, attributes: 0, methods: 0, relationships: 60,
     sync_messages: 35, async_messages: 20, creation_messages: 15,
     fragment_usage: 30, controller_methods: 0, service_methods: 0,
   },
+  usecase: {
+    classes: 15,
+    attributes: 25,
+    methods: 25,
+    include_relations: 20,
+    extend_relations: 15,
+    relationships: 0,
+  },
+  
 };
 
 function WeightSlider({
@@ -149,23 +160,32 @@ function WeightsPanel({
   }
 
   if (typeKey === 'usecase') {
-    const total = weights.classes + weights.attributes + weights.relationships;
+    const includeW = weights.include_relations ?? 20;
+    const extendW = weights.extend_relations ?? 15;
+    const total = weights.classes + weights.attributes + weights.methods + includeW + extendW;
     const isValid = Math.abs(total - 100) < 0.01;
     const fields = [
       { key: 'classes' as const, label: 'Actores', color: 'text-blue-600' },
       { key: 'attributes' as const, label: 'Casos de uso', color: 'text-purple-600' },
-      { key: 'relationships' as const, label: 'Relaciones', color: 'text-orange-600' },
+      { key: 'methods' as const, label: 'Relaciones actor–CU', color: 'text-teal-600' },
+      { key: 'include_relations' as const, label: 'Relaciones include', color: 'text-orange-600' },
+      { key: 'extend_relations' as const, label: 'Relaciones extend', color: 'text-amber-600' },
     ];
+    const valueFor = (key: typeof fields[number]['key']) => {
+      if (key === 'include_relations') return includeW;
+      if (key === 'extend_relations') return extendW;
+      return weights[key];
+    };
     return (
       <div className="mt-3 p-3 border rounded-lg bg-muted/10">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {fields.map(({ key, label, color }) => (
             <WeightSlider
               key={key}
               label={label}
               color={color}
-              value={weights[key]}
-              onChange={(v) => onChange({ ...weights, [key]: v, methods: 0 })}
+              value={valueFor(key)}
+              onChange={(v) => onChange({ ...weights, [key]: v, relationships: 0 })}
             />
           ))}
         </div>
@@ -175,7 +195,7 @@ function WeightsPanel({
               <div
                 key={key}
                 className={'h-full transition-all ' + color.replace('text-', 'bg-')}
-                style={{ width: total > 0 ? (weights[key] / total) * 100 + '%' : '33%' }}
+                style={{ width: total > 0 ? (valueFor(key) / total) * 100 + '%' : '20%' }}
               />
             ))}
           </div>
@@ -426,7 +446,7 @@ export default function UploadPage() {
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(['class', 'usecase', 'sequence']));
   const [weightsByType, setWeightsByType] = useState<Record<string, TypeWeights>>({ ...DEFAULT_WEIGHTS });
   const [useSemanticMatching, setUseSemanticMatching] = useState(true);
-  const [semanticThreshold, setSemanticThreshold] = useState(0.55);
+  const [semanticThreshold, setSemanticThreshold] = useState(0.65);
   const [globalWeights, setGlobalWeights] = useState<Record<string, number>>({
     class: 40, usecase: 35, sequence: 25,
   });
@@ -492,6 +512,11 @@ export default function UploadPage() {
           formData.append('sequence_weight_fragment_usage', String(w.fragment_usage ?? 30));
           formData.append('sequence_weight_controller_methods', String(w.controller_methods ?? 0));
           formData.append('sequence_weight_service_methods', String(w.service_methods ?? 0));
+        if (typeKey === 'usecase') {
+          formData.append(`${typeKey}_weight_include`, String(w.include_relations ?? 20));
+          formData.append(`${typeKey}_weight_extend`, String(w.extend_relations ?? 15));
+        } else {
+          formData.append(`${typeKey}_weight_relationships`, String(w.relationships));
         }
       }
       const response = await fetch(API_URL + '/api/compare-auto', {
