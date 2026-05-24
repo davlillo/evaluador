@@ -430,6 +430,12 @@ async def compare_files_auto(
     usecase_weight_relationships: Optional[float] = Form(None),
     sequence_weight_classes: Optional[float] = Form(None),
     sequence_weight_relationships: Optional[float] = Form(None),
+    sequence_weight_sync_messages: Optional[float] = Form(None),
+    sequence_weight_async_messages: Optional[float] = Form(None),
+    sequence_weight_creation_messages: Optional[float] = Form(None),
+    sequence_weight_fragment_usage: Optional[float] = Form(None),
+    sequence_weight_controller_methods: Optional[float] = Form(None),
+    sequence_weight_service_methods: Optional[float] = Form(None),
     global_weight_class: Optional[float] = Form(None),
     global_weight_usecase: Optional[float] = Form(None),
     global_weight_sequence: Optional[float] = Form(None),
@@ -519,10 +525,27 @@ async def compare_files_auto(
                 default['methods'] = 0.0
                 default['relationships'] = (usecase_weight_relationships or 40) / 100.0
             elif kind == 'sequence':
-                default['classes'] = (sequence_weight_classes or 40) / 100.0
-                default['attributes'] = 0.0
-                default['methods'] = 0.0
-                default['relationships'] = (sequence_weight_relationships or 60) / 100.0
+                sync_w = sequence_weight_sync_messages
+                async_w = sequence_weight_async_messages
+                creation_w = sequence_weight_creation_messages
+                fragment_w = sequence_weight_fragment_usage
+                controller_w = sequence_weight_controller_methods
+                service_w = sequence_weight_service_methods
+
+                if any(v is not None for v in (sync_w, async_w, creation_w, fragment_w, controller_w, service_w)):
+                    default = {
+                        'sync_messages': max(0.0, float(sync_w or 35)) / 100.0,
+                        'async_messages': max(0.0, float(async_w or 20)) / 100.0,
+                        'creation_messages': max(0.0, float(creation_w or 15)) / 100.0,
+                        'fragment_usage': max(0.0, float(fragment_w or 30)) / 100.0,
+                        'controller_methods': max(0.0, float(controller_w or 0)) / 100.0,
+                        'service_methods': max(0.0, float(service_w or 0)) / 100.0,
+                    }
+                else:
+                    default['classes'] = max(0.0, float(sequence_weight_classes or 40)) / 100.0
+                    default['attributes'] = 0.0
+                    default['methods'] = 0.0
+                    default['relationships'] = max(0.0, float(sequence_weight_relationships or 60)) / 100.0
             total = sum(default.values())
             if total > 0:
                 default = {k: v / total for k, v in default.items()}

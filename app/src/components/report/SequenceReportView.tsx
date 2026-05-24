@@ -4,13 +4,10 @@ import { ExportPdfButton } from '@/components/report/ExportPdfButton';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { DiagramInfo } from '@/types/comparison';
+import type { ComparisonResult, DiagramInfo, SequenceBreakdown } from '@/types/comparison';
 
 interface SequenceReportViewProps {
-  result: {
-    expected_diagram?: DiagramInfo;
-    student_diagram?: DiagramInfo;
-  };
+  result: Pick<ComparisonResult, 'expected_diagram' | 'student_diagram' | 'breakdown'>;
   onBack: () => void;
 }
 
@@ -96,6 +93,8 @@ function DiagramPanel({ diagram, title }: { diagram: DiagramInfo; title: string 
 }
 
 export function SequenceReportView({ result, onBack }: SequenceReportViewProps) {
+  const b = result.breakdown as SequenceBreakdown | undefined;
+  const hasV2 = !!b?.sync_messages || !!b?.async_messages || !!b?.creation_messages || !!b?.fragment_usage;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -114,6 +113,34 @@ export function SequenceReportView({ result, onBack }: SequenceReportViewProps) 
           orden de ejecución.
         </AlertDescription>
       </Alert>
+
+      {hasV2 && (
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-3">Desglose de evaluación por criterios</h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            {b?.sync_messages && (
+              <Badge variant="outline" className="justify-center py-2">
+                Síncronos: {b.sync_messages.similarity.toFixed(1)}%
+              </Badge>
+            )}
+            {b?.async_messages && (
+              <Badge variant="outline" className="justify-center py-2">
+                Asíncronos: {b.async_messages.similarity.toFixed(1)}%
+              </Badge>
+            )}
+            {b?.creation_messages && (
+              <Badge variant="outline" className="justify-center py-2">
+                Creación: {b.creation_messages.similarity.toFixed(1)}%
+              </Badge>
+            )}
+            {b?.fragment_usage && (
+              <Badge variant="outline" className="justify-center py-2">
+                Fragmentos: {b.fragment_usage.similarity.toFixed(1)}%
+              </Badge>
+            )}
+          </div>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6">
         {result.expected_diagram ? (

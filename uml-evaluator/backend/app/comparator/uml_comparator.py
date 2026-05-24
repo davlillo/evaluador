@@ -77,6 +77,8 @@ class ComparisonResult:
     details: List[ComparisonDetail] = field(default_factory=list)
     # Orden de mensajes (secuencia): porcentaje de mensajes en posición correcta
     message_order_score: float = 0.0
+    # Criterios de secuencia (v2)
+    sequence_criteria: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convierte el resultado a diccionario con estructura adaptada al tipo de diagrama."""
@@ -125,25 +127,46 @@ class ComparisonResult:
             }
 
         elif self.diagram_type == "sequence":
-            base["breakdown"] = {
-                "lifelines": {
-                    "similarity": round(self.class_similarity, 2),
-                    "expected": self.total_classes_expected,
-                    "found": self.total_classes_found,
-                    "correct": self.correct_classes,
-                    "missing": self.missing_classes,
-                    "extra": self.extra_classes,
-                },
-                "messages": {
-                    "similarity": round(self.relationship_similarity, 2),
+            if self.sequence_criteria:
+                base["breakdown"] = {
+                    "sync_messages": self.sequence_criteria.get("sync_messages", {}),
+                    "async_messages": self.sequence_criteria.get("async_messages", {}),
+                    "creation_messages": self.sequence_criteria.get("creation_messages", {}),
+                    "fragment_usage": self.sequence_criteria.get("fragment_usage", {}),
+                    "controller_methods": self.sequence_criteria.get("controller_methods", {}),
+                    "service_methods": self.sequence_criteria.get("service_methods", {}),
                     "order_score": round(self.message_order_score, 2),
-                    "expected": self.total_relationships_expected,
-                    "found": self.total_relationships_found,
-                    "correct": self.correct_relationships,
-                    "missing": self.missing_relationships,
-                    "extra": self.extra_relationships,
-                },
-            }
+                    # Se mantiene para vistas comparativas existentes.
+                    "lifelines": {
+                        "similarity": round(self.class_similarity, 2),
+                        "expected": self.total_classes_expected,
+                        "found": self.total_classes_found,
+                        "correct": self.correct_classes,
+                        "missing": self.missing_classes,
+                        "extra": self.extra_classes,
+                    },
+                }
+            else:
+                # Estructura legacy para retrocompatibilidad.
+                base["breakdown"] = {
+                    "lifelines": {
+                        "similarity": round(self.class_similarity, 2),
+                        "expected": self.total_classes_expected,
+                        "found": self.total_classes_found,
+                        "correct": self.correct_classes,
+                        "missing": self.missing_classes,
+                        "extra": self.extra_classes,
+                    },
+                    "messages": {
+                        "similarity": round(self.relationship_similarity, 2),
+                        "order_score": round(self.message_order_score, 2),
+                        "expected": self.total_relationships_expected,
+                        "found": self.total_relationships_found,
+                        "correct": self.correct_relationships,
+                        "missing": self.missing_relationships,
+                        "extra": self.extra_relationships,
+                    },
+                }
 
         else:
             base["breakdown"] = {
@@ -597,15 +620,60 @@ class UMLComparator:
         # Comparar mensajes (existencia + orden)
         self._compare_messages(expected.messages, student.messages, result)
 
+        # Desglose por criterios de secuencia (v2).
+        sync_expected = [m for m in expected.messages if self._is_sync_message(m)]
+        sync_student = [m for m in student.messages if self._is_sync_message(m)]
+        async_expected = [m for m in expected.messages if self._is_async_message(m)]
+        async_student = [m for m in student.messages if self._is_async_message(m)]
+        creation_expected = [m for m in expected.messages if self._is_creation_message(m)]
+        creation_student = [m for m in student.messages if self._is_creation_message(m)]
+
+        sync_breakdown = self._compare_message_subset(
+            sync_expected, sync_student, "sync_message", result
+        )
+        async_breakdown = self._compare_message_subset(
+            async_expected, async_student, "async_message", result
+        )
+        creation_breakdown = self._compare_message_subset(
+            creation_expected, creation_student, "creation_message", result
+        )
+        fragment_breakdown = self._compare_fragment_usage(expected.messages, student.messages, result)
+        controller_breakdown = self._future_sequence_slice("controller_methods")
+        service_breakdown = self._future_sequence_slice("service_methods")
+
+        result.sequence_criteria = {
+            "sync_messages": sync_breakdown,
+            "async_messages": async_breakdown,
+            "creation_messages": creation_breakdown,
+            "fragment_usage": fragment_breakdown,
+            "controller_methods": controller_breakdown,
+            "service_methods": service_breakdown,
+        }
+
         scores, weights = [], []
-        w_ll = self.weights.get('classes', 0.40)
-        if w_ll > 0:
-            scores.append(result.class_similarity)
-            weights.append(w_ll)
-        w_msg = self.weights.get('relationships', 0.60)
-        if w_msg > 0:
-            scores.append(result.relationship_similarity)
-            weights.append(w_msg)
+        sequence_weight_map = {
+            "sync_messages": self.weights.get("sync_messages", 0.0),
+            "async_messages": self.weights.get("async_messages", 0.0),
+            "creation_messages": self.weights.get("creation_messages", 0.0),
+            "fragment_usage": self.weights.get("fragment_usage", 0.0),
+            "controller_methods": self.weights.get("controller_methods", 0.0),
+            "service_methods": self.weights.get("service_methods", 0.0),
+        }
+
+        # Compatibilidad con esquema antiguo (classes/relationships) cuando no vengan pesos v2.
+        if sum(sequence_weight_map.values()) <= 0:
+            sequence_weight_map["sync_messages"] = self.weights.get("relationships", 0.60) * 0.45
+            sequence_weight_map["async_messages"] = self.weights.get("relationships", 0.60) * 0.25
+            sequence_weight_map["creation_messages"] = self.weights.get("relationships", 0.60) * 0.15
+            sequence_weight_map["fragment_usage"] = self.weights.get("relationships", 0.60) * 0.15
+            sequence_weight_map["controller_methods"] = 0.0
+            sequence_weight_map["service_methods"] = 0.0
+
+        for key, breakdown in result.sequence_criteria.items():
+            w = sequence_weight_map.get(key, 0.0)
+            if w > 0:
+                scores.append(float(breakdown.get("similarity", 0.0)))
+                weights.append(w)
 
         if scores:
             total_w = sum(weights)
@@ -615,6 +683,139 @@ class UMLComparator:
                 )
 
         return result
+
+    def _normalize_message_sort(self, sort: str) -> str:
+        return self._normalize_name(sort or "")
+
+    def _is_sync_message(self, msg: UMLMessage) -> bool:
+        kind = self._normalize_message_sort(msg.message_sort)
+        return kind in {"synchcall", "synccall", "call", "sync"}
+
+    def _is_async_message(self, msg: UMLMessage) -> bool:
+        kind = self._normalize_message_sort(msg.message_sort)
+        return kind in {"asynchcall", "asynccall", "async", "asynchronous"}
+
+    def _is_creation_message(self, msg: UMLMessage) -> bool:
+        kind = self._normalize_message_sort(msg.message_sort)
+        name = self._normalize_name(msg.name)
+        return kind in {"createmessage", "create", "creation"} or name.startswith("create")
+
+    def _message_key(self, m: UMLMessage) -> Tuple[str, str, str]:
+        return (
+            self._normalize_name(m.name),
+            self._normalize_name(m.source_lifeline),
+            self._normalize_name(m.target_lifeline),
+        )
+
+    def _compare_message_subset(
+        self,
+        expected: List[UMLMessage],
+        student: List[UMLMessage],
+        element_type: str,
+        result: ComparisonResult,
+    ) -> Dict[str, Any]:
+        exp_set = {self._message_key(m) for m in expected}
+        stu_set = {self._message_key(m) for m in student}
+        correct = exp_set & stu_set
+
+        similarity = self._f1_similarity_counts(len(correct), len(exp_set), len(stu_set))
+        missing = [f"{k[0]} ({k[1]}→{k[2]})" for k in sorted(exp_set - stu_set)]
+        extra = [f"{k[0]} ({k[1]}→{k[2]})" for k in sorted(stu_set - exp_set)]
+
+        for key in (exp_set - stu_set):
+            result.details.append(ComparisonDetail(
+                element_type=element_type,
+                name=key[0],
+                status="missing",
+                message=f"{element_type} faltante: {key[0]} ({key[1]}→{key[2]})",
+            ))
+        for key in (stu_set - exp_set):
+            result.details.append(ComparisonDetail(
+                element_type=element_type,
+                name=key[0],
+                status="extra",
+                message=f"{element_type} extra: {key[0]} ({key[1]}→{key[2]})",
+            ))
+
+        return {
+            "similarity": round(similarity, 2),
+            "expected": len(exp_set),
+            "found": len(stu_set),
+            "correct": len(correct),
+            "missing": missing,
+            "extra": extra,
+        }
+
+    def _fragment_operator(self, fragment: Optional[str]) -> str:
+        if not fragment:
+            return ""
+        raw = self._normalize_name(fragment)
+        if "[" in raw:
+            raw = raw.split("[", 1)[0].strip()
+        return raw
+
+    def _compare_fragment_usage(
+        self, expected_msgs: List[UMLMessage], student_msgs: List[UMLMessage], result: ComparisonResult
+    ) -> Dict[str, Any]:
+        target_ops = {"loop", "alt", "opt"}
+
+        def fragment_key(m: UMLMessage) -> Optional[Tuple[str, str, str, str]]:
+            op = self._fragment_operator(m.fragment)
+            if not op or op not in target_ops:
+                return None
+            return (
+                self._normalize_name(m.name),
+                self._normalize_name(m.source_lifeline),
+                self._normalize_name(m.target_lifeline),
+                self._normalize_name(m.fragment or op),
+            )
+
+        exp_set = {k for m in expected_msgs if (k := fragment_key(m)) is not None}
+        stu_set = {k for m in student_msgs if (k := fragment_key(m)) is not None}
+        correct = exp_set & stu_set
+        similarity = self._f1_similarity_counts(len(correct), len(exp_set), len(stu_set))
+
+        missing = [f"{k[0]} ({k[1]}→{k[2]}) [{k[3]}]" for k in sorted(exp_set - stu_set)]
+        extra = [f"{k[0]} ({k[1]}→{k[2]}) [{k[3]}]" for k in sorted(stu_set - exp_set)]
+
+        for key in (exp_set - stu_set):
+            result.details.append(ComparisonDetail(
+                element_type="fragment_usage",
+                name=key[0],
+                status="missing",
+                message=f"Uso de fragmento faltante: {key[0]} ({key[1]}→{key[2]}) [{key[3]}]",
+            ))
+        for key in (stu_set - exp_set):
+            result.details.append(ComparisonDetail(
+                element_type="fragment_usage",
+                name=key[0],
+                status="extra",
+                message=f"Uso de fragmento extra: {key[0]} ({key[1]}→{key[2]}) [{key[3]}]",
+            ))
+
+        return {
+            "similarity": round(similarity, 2),
+            "expected": len(exp_set),
+            "found": len(stu_set),
+            "correct": len(correct),
+            "missing": missing,
+            "extra": extra,
+        }
+
+    def _future_sequence_slice(self, key: str) -> Dict[str, Any]:
+        return {
+            "similarity": 0.0,
+            "expected": 0,
+            "found": 0,
+            "correct": 0,
+            "missing": [],
+            "extra": [],
+            "future": True,
+            "note": (
+                "Criterio reservado para implementación futura: "
+                + ("métodos de capa controladora." if key == "controller_methods" else "métodos de capa servicios.")
+            ),
+        }
 
     def _compare_messages(
         self,

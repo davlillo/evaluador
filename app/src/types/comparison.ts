@@ -79,8 +79,16 @@ export interface UseCaseBreakdown {
 }
 
 export interface SequenceBreakdown {
-  lifelines: UseCaseSliceBreakdown;
-  messages: UseCaseSliceBreakdown & {
+  sync_messages?: UseCaseSliceBreakdown;
+  async_messages?: UseCaseSliceBreakdown;
+  creation_messages?: UseCaseSliceBreakdown;
+  fragment_usage?: UseCaseSliceBreakdown;
+  controller_methods?: UseCaseSliceBreakdown & { future?: boolean; note?: string };
+  service_methods?: UseCaseSliceBreakdown & { future?: boolean; note?: string };
+  order_score?: number;
+  // Legacy fields (compatibilidad)
+  lifelines?: UseCaseSliceBreakdown;
+  messages?: UseCaseSliceBreakdown & {
     order_score: number;
   };
 }
@@ -94,7 +102,14 @@ export function isUseCaseBreakdown(
 export function isSequenceBreakdown(
   b: Breakdown | UseCaseBreakdown | SequenceBreakdown,
 ): b is SequenceBreakdown {
-  return 'lifelines' in b && 'messages' in b;
+  return (
+    'lifelines' in b ||
+    'messages' in b ||
+    'sync_messages' in b ||
+    'async_messages' in b ||
+    'creation_messages' in b ||
+    'fragment_usage' in b
+  );
 }
 
 export interface ComparisonDetail {
@@ -110,6 +125,12 @@ export interface WeightsUsed {
   attributes: number;
   methods: number;
   relationships: number;
+  sync_messages?: number;
+  async_messages?: number;
+  creation_messages?: number;
+  fragment_usage?: number;
+  controller_methods?: number;
+  service_methods?: number;
 }
 
 export interface DiagramAttribute {
