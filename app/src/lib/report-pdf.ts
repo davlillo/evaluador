@@ -97,24 +97,36 @@ function ensureGap(doc: jsPDF, y: number, minNext: number): number {
   return y;
 }
 
-export function downloadDetailedReportPdf(params: {
+/** Nombre de PDF dentro de la carpeta del alumno en el ZIP por lote. */
+export function buildBatchDiagramPdfFilename(diagramType: string): string {
+  const names: Record<string, string> = {
+    class: 'diagrama-clases.pdf',
+    usecase: 'diagrama-casos-uso.pdf',
+    sequence: 'diagrama-secuencia.pdf',
+  };
+  return names[diagramType] ?? `diagrama-${sanitizeBasename(diagramType)}.pdf`;
+}
+
+export function sanitizeZipFolderName(studentId: string): string {
+  return sanitizeBasename(studentId) || 'estudiante';
+}
+
+export function buildDetailedReportPdfDocument(params: {
   result: ComparisonResult;
   studentFileName: string | null;
-}): void {
+}): jsPDF {
   const { result, studentFileName } = params;
   const diagramLabel = resolveDiagramTypeLabel(result.diagram_type);
   const carnet = extractCarnetFromStudentFile(studentFileName);
   const archivoEntrega =
     studentFileName?.trim() || result.student_diagram?.name || 'No disponible';
   const pct = result.overall_similarity;
-  const filename = buildPdfFilename(studentFileName);
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 14;
   const textW = pageW - margin * 2;
 
-  // Franja superior (cabecera)
   const headerH = 26;
   doc.setFillColor(28, 42, 74);
   doc.rect(0, 0, pageW, headerH, 'F');
@@ -129,7 +141,6 @@ export function downloadDetailedReportPdf(params: {
   let y = headerH + 10;
   doc.setTextColor(0, 0, 0);
 
-  // Tarjeta de metadatos
   const metaTop = y - 4;
   const simLabel = 'Porcentaje de similitud (comparación)';
   const simLine = `${pct.toFixed(2)} %`;
@@ -141,7 +152,6 @@ export function downloadDetailedReportPdf(params: {
     `Archivo entregado: ${archivoEntrega}`,
     `${simLabel}: ${simLine}`,
   ];
-  // Altura: margen superior + título de bloque + líneas de datos + margen inferior
   let metaH = 6 + 7 + 2;
   for (const line of metaLines) {
     const wrapped = doc.splitTextToSize(line, textW - 8);
@@ -196,7 +206,23 @@ export function downloadDetailedReportPdf(params: {
     appendStubReport(doc, result, diagramLabel, margin, y);
   }
 
-  doc.save(filename);
+  return doc;
+}
+
+export function generateDetailedReportPdfArrayBuffer(params: {
+  result: ComparisonResult;
+  studentFileName: string | null;
+}): ArrayBuffer {
+  const doc = buildDetailedReportPdfDocument(params);
+  return doc.output('arraybuffer') as ArrayBuffer;
+}
+
+export function downloadDetailedReportPdf(params: {
+  result: ComparisonResult;
+  studentFileName: string | null;
+}): void {
+  const filename = buildPdfFilename(params.studentFileName);
+  buildDetailedReportPdfDocument(params).save(filename);
 }
 
 function appendStubReport(

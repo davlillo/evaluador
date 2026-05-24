@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
+import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
 import { ClassReportView } from '@/components/report/ClassReportView';
 import { UseCaseReportView } from '@/components/report/UseCaseReportView';
 import { SequenceReportView } from '@/components/report/SequenceReportView';
@@ -29,7 +30,17 @@ function isMultiDiagram(r: unknown): r is MultiDiagramResult {
 
 export default function ReportPage() {
   const { result } = useEvaluationResult();
+  const { reportReturn, setReportReturn } = useGlobalEvaluation();
   const navigate = useNavigate();
+
+  const goBack = () => {
+    if (reportReturn) {
+      navigate(reportReturn.path, { state: { studentId: reportReturn.studentId } });
+      setReportReturn(null);
+      return;
+    }
+    navigate('/evaluar/resultados');
+  };
 
   if (!result) {
     return <Navigate to="/evaluar/subir" replace />;
@@ -38,10 +49,7 @@ export default function ReportPage() {
   // ── Resultado multi-diagrama (viene de /api/compare-auto) ──
   if (isMultiDiagram(result)) {
     const multiResult = result as MultiDiagramResult;
-    const goBack = () => navigate('/evaluar/resultados');
 
-    // Si solo hay 1 tipo detectado, tratarlo como resultado individual
-    // para reutilizar las vistas que ya tienen soporte de PDF
     if (multiResult.results.length === 1) {
       const entry = multiResult.results[0];
       // Inyectar expected_diagram y student_diagram desde el top-level del response
@@ -106,7 +114,6 @@ export default function ReportPage() {
 
   // ── Resultado simple (viene de /api/compare manual) ──
   const singleResult = result as ComparisonResult;
-  const goBack = () => navigate('/evaluar/resultados');
 
   if (!singleResult.diagram_type || singleResult.diagram_type === 'class') {
     return <ClassReportView result={singleResult} onBack={goBack} />;

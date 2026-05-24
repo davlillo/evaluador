@@ -4,7 +4,56 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { downloadDetailedReportPdf } from '@/lib/report-pdf';
+import { getDiagramLabel } from '@/components/results/StudentDiagramSection';
 import type { ComparisonResult } from '@/types/comparison';
+
+interface ExportDiagramPdfButtonProps {
+  comparison: ComparisonResult;
+  studentFileName: string | null;
+  label?: string;
+  size?: 'default' | 'sm';
+  variant?: 'default' | 'secondary' | 'outline';
+}
+
+export function ExportDiagramPdfButton({
+  comparison,
+  studentFileName,
+  label,
+  size = 'default',
+  variant = 'secondary',
+}: ExportDiagramPdfButtonProps) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleClick = () => {
+    setBusy(true);
+    setError(null);
+    try {
+      downloadDetailedReportPdf({ result: comparison, studentFileName });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo generar el PDF.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const defaultLabel = `PDF — ${getDiagramLabel(comparison.diagram_type || 'class')}`;
+
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <Button type="button" variant={variant} size={size} disabled={busy} onClick={handleClick}>
+        <FileDown className="w-4 h-4 mr-2" />
+        {busy ? 'Generando…' : (label ?? defaultLabel)}
+      </Button>
+      {error && (
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="w-4 h-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
 
 interface MultiDiagramResult {
   detected_diagrams: string[];
@@ -29,7 +78,6 @@ export function ExportPdfButton() {
     if (!result) return;
 
     if (isMultiDiagram(result)) {
-      // Si hay exactamente 1 diagrama, extraerlo y generar PDF normalmente
       if (result.results.length === 1) {
         const entry = result.results[0];
         const singleResult: ComparisonResult = {
@@ -53,7 +101,6 @@ export function ExportPdfButton() {
         }
         return;
       }
-      // Múltiples diagramas: no soportado aún
       setMultiDiagramWarning(true);
       return;
     }

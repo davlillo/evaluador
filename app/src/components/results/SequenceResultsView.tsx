@@ -9,6 +9,7 @@ interface SequenceResultsViewProps {
   result: Omit<ComparisonResult, 'breakdown'> & { breakdown: SequenceBreakdown };
   onBack: () => void;
   onViewReport: () => void;
+  showNavActions?: boolean;
 }
 
 function percentColor(v: number): string {
@@ -69,7 +70,7 @@ function Slice({
   );
 }
 
-export function SequenceResultsView({ result, onBack, onViewReport }: SequenceResultsViewProps) {
+export function SequenceResultsView({ result, onBack, onViewReport, showNavActions = true }: SequenceResultsViewProps) {
   const b = result.breakdown;
   const w = result.weights_used;
 
@@ -132,9 +133,11 @@ export function SequenceResultsView({ result, onBack, onViewReport }: SequenceRe
       )}
 
       <div className="flex justify-center gap-4">
-        <Button onClick={onBack} variant="outline">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Nueva comparación
-        </Button>
+        {showNavActions && (
+          <Button onClick={onBack} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Nueva comparación
+          </Button>
+        )}
         <Button onClick={onViewReport}>
           <FileText className="w-4 h-4 mr-2" /> Ver reporte detallado
         </Button>
