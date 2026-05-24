@@ -65,7 +65,7 @@ function ClassWeightsPanel({
               <div
                 key={key}
                 className={'h-full transition-all ' + color.replace('text-', 'bg-')}
-                style={{ width: total > 0 ? (weights[key] / total) * 100 + '%' : '25%' }}
+                style={{ width: total > 0 ? ((weights[key] ?? 0) / total) * 100 + '%' : '25%' }}
               />
             ))}
           </div>
@@ -83,7 +83,7 @@ function ClassWeightsPanel({
   );
 }
 
-/** Actores → classes, casos de uso → attributes, relaciones → relationships; methods = 0. */
+/** Actores → classes; casos de uso → attributes; actor-CU → methods; include/extend → campos propios. */
 function UseCaseWeightsPanel({
   weights,
   onChange,
@@ -91,16 +91,36 @@ function UseCaseWeightsPanel({
   weights: Weights;
   onChange: (w: Weights) => void;
 }) {
-  const total = weights.classes + weights.attributes + weights.relationships;
+  const includeW = weights.include_relations ?? 20;
+  const extendW = weights.extend_relations ?? 15;
+  const total = weights.classes + weights.attributes + weights.methods + includeW + extendW;
   const isValid = Math.abs(total - 100) < 0.01;
-  const fields: { key: 'classes' | 'attributes' | 'relationships'; label: string; color: string }[] = [
+  const fields: {
+    key: 'classes' | 'attributes' | 'methods' | 'include_relations' | 'extend_relations';
+    label: string;
+    color: string;
+  }[] = [
     { key: 'classes', label: 'Actores', color: 'text-blue-600' },
     { key: 'attributes', label: 'Casos de uso', color: 'text-purple-600' },
-    { key: 'relationships', label: 'Relaciones', color: 'text-orange-600' },
+    { key: 'methods', label: 'Relaciones actor–CU', color: 'text-teal-600' },
+    { key: 'include_relations', label: 'Relaciones include', color: 'text-orange-600' },
+    { key: 'extend_relations', label: 'Relaciones extend', color: 'text-amber-600' },
   ];
-  const handleChange = (key: 'classes' | 'attributes' | 'relationships', value: string) => {
+  const handleChange = (
+    key: 'classes' | 'attributes' | 'methods' | 'include_relations' | 'extend_relations',
+    value: string,
+  ) => {
     const num = Math.max(0, Math.min(100, Number(value) || 0));
-    onChange({ ...weights, [key]: num, methods: 0 });
+    if (key === 'include_relations' || key === 'extend_relations') {
+      onChange({ ...weights, [key]: num, relationships: 0 });
+      return;
+    }
+    onChange({ ...weights, [key]: num, relationships: 0 });
+  };
+  const valueFor = (key: typeof fields[number]['key']) => {
+    if (key === 'include_relations') return includeW;
+    if (key === 'extend_relations') return extendW;
+    return weights[key];
   };
   return (
     <Card className="border-dashed">
@@ -110,12 +130,11 @@ function UseCaseWeightsPanel({
           Ponderación (casos de uso)
         </CardTitle>
         <CardDescription className="text-xs">
-          Actores, casos de uso y relaciones deben sumar 100%. Se envían al API con el mismo esquema que el
-          backend (métodos en 0%).
+          Los cinco criterios deben sumar 100%: actores, casos de uso, asociaciones actor–CU, include y extend.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {fields.map(({ key, label, color }) => (
             <div key={key} className="flex flex-col gap-1">
               <label className={'text-xs font-semibold ' + color}>{label}</label>
@@ -125,7 +144,7 @@ function UseCaseWeightsPanel({
                   min={0}
                   max={100}
                   step={1}
-                  value={weights[key]}
+                  value={valueFor(key)}
                   onChange={(e) => handleChange(key, e.target.value)}
                   className="w-full border rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background"
                 />
@@ -134,14 +153,13 @@ function UseCaseWeightsPanel({
             </div>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-2">Métodos: 0% (no aplica en casos de uso).</p>
         <div className="mt-3 flex items-center gap-2">
           <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
             {fields.map(({ key, color }) => (
               <div
                 key={key}
                 className={'h-full transition-all ' + color.replace('text-', 'bg-')}
-                style={{ width: total > 0 ? (weights[key] / total) * 100 + '%' : '33%' }}
+                style={{ width: total > 0 ? (valueFor(key) / total) * 100 + '%' : '20%' }}
               />
             ))}
           </div>
