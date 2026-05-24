@@ -6,6 +6,7 @@ interface MessageInfo {
   name: string;
   source_lifeline: string;
   target_lifeline: string;
+  message_sort?: string;
   fragment?: string;
 }
 
@@ -183,6 +184,11 @@ export function SequenceComparison({
                     </span>
                     <span className={`font-medium ${isInStudent ? '' : 'text-red-600'}`}>
                       {msg.name || <span className="italic text-muted-foreground">(sin nombre)</span>}
+                      {msg.message_sort && (
+                        <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1 uppercase">
+                          {msg.message_sort}
+                        </Badge>
+                      )}
                       {!isInStudent && (
                         <Badge variant="destructive" className="ml-2 text-[10px] py-0 px-1">
                           falta
@@ -235,6 +241,11 @@ export function SequenceComparison({
                     </span>
                     <span className={`font-medium ${isInExpected ? '' : 'text-orange-600'}`}>
                       {msg.name || <span className="italic text-muted-foreground">(sin nombre)</span>}
+                      {msg.message_sort && (
+                        <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1 uppercase">
+                          {msg.message_sort}
+                        </Badge>
+                      )}
                       {!isInExpected && (
                         <Badge variant="secondary" className="ml-2 text-[10px] py-0 px-1 bg-orange-100 text-orange-700">
                           extra

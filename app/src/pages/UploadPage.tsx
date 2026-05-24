@@ -41,6 +41,12 @@ interface TypeWeights {
   attributes: number;
   methods: number;
   relationships: number;
+  sync_messages?: number;
+  async_messages?: number;
+  creation_messages?: number;
+  fragment_usage?: number;
+  controller_methods?: number;
+  service_methods?: number;
   include_relations?: number;
   extend_relations?: number;
 }
@@ -53,6 +59,12 @@ const DIAGRAM_TYPES = [
 
 const DEFAULT_WEIGHTS: Record<string, TypeWeights> = {
   class: { classes: 35, attributes: 25, methods: 25, relationships: 15 },
+  
+  sequence: {
+    classes: 40, attributes: 0, methods: 0, relationships: 60,
+    sync_messages: 35, async_messages: 20, creation_messages: 15,
+    fragment_usage: 30, controller_methods: 0, service_methods: 0,
+  },
   usecase: {
     classes: 15,
     attributes: 25,
@@ -61,7 +73,7 @@ const DEFAULT_WEIGHTS: Record<string, TypeWeights> = {
     extend_relations: 15,
     relationships: 0,
   },
-  sequence: { classes: 40, attributes: 0, methods: 0, relationships: 60 },
+  
 };
 
 function WeightSlider({
@@ -196,24 +208,71 @@ function WeightsPanel({
     );
   }
 
-  const total = weights.classes + weights.relationships;
+  const total =
+    (weights.sync_messages ?? 35) +
+    (weights.async_messages ?? 20) +
+    (weights.creation_messages ?? 15) +
+    (weights.fragment_usage ?? 30) +
+    (weights.controller_methods ?? 0) +
+    (weights.service_methods ?? 0);
   const isValid = Math.abs(total - 100) < 0.01;
   return (
     <div className="mt-3 p-3 border rounded-lg bg-muted/10">
-      <div className="grid grid-cols-2 gap-3">
-        <WeightSlider label="Líneas de vida" color="text-blue-600" value={weights.classes} onChange={(v) => onChange({ ...weights, classes: v })} />
-        <WeightSlider label="Mensajes" color="text-orange-600" value={weights.relationships} onChange={(v) => onChange({ ...weights, relationships: v })} />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <WeightSlider
+          label="Mensajes síncronos"
+          color="text-blue-600"
+          value={weights.sync_messages ?? 35}
+          onChange={(v) => onChange({ ...weights, sync_messages: v })}
+        />
+        <WeightSlider
+          label="Mensajes asíncronos"
+          color="text-purple-600"
+          value={weights.async_messages ?? 20}
+          onChange={(v) => onChange({ ...weights, async_messages: v })}
+        />
+        <WeightSlider
+          label="Mensajes de creación"
+          color="text-teal-600"
+          value={weights.creation_messages ?? 15}
+          onChange={(v) => onChange({ ...weights, creation_messages: v })}
+        />
+        <WeightSlider
+          label="Uso de fragmentos"
+          color="text-orange-600"
+          value={weights.fragment_usage ?? 30}
+          onChange={(v) => onChange({ ...weights, fragment_usage: v })}
+        />
+        <WeightSlider
+          label="Métodos controladora (futuro)"
+          color="text-slate-600"
+          value={weights.controller_methods ?? 0}
+          onChange={(v) => onChange({ ...weights, controller_methods: v })}
+        />
+        <WeightSlider
+          label="Métodos servicios (futuro)"
+          color="text-gray-600"
+          value={weights.service_methods ?? 0}
+          onChange={(v) => onChange({ ...weights, service_methods: v })}
+        />
       </div>
       <div className="mt-2 flex items-center gap-2">
         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
-          <div className="h-full bg-blue-500 transition-all" style={{ width: total > 0 ? (weights.classes / total) * 100 + '%' : '50%' }} />
-          <div className="h-full bg-orange-500 transition-all" style={{ width: total > 0 ? (weights.relationships / total) * 100 + '%' : '50%' }} />
+          <div className="h-full bg-blue-500 transition-all" style={{ width: total > 0 ? ((weights.sync_messages ?? 35) / total) * 100 + '%' : '0%' }} />
+          <div className="h-full bg-purple-500 transition-all" style={{ width: total > 0 ? ((weights.async_messages ?? 20) / total) * 100 + '%' : '0%' }} />
+          <div className="h-full bg-teal-500 transition-all" style={{ width: total > 0 ? ((weights.creation_messages ?? 15) / total) * 100 + '%' : '0%' }} />
+          <div className="h-full bg-orange-500 transition-all" style={{ width: total > 0 ? ((weights.fragment_usage ?? 30) / total) * 100 + '%' : '0%' }} />
+          <div className="h-full bg-slate-500 transition-all" style={{ width: total > 0 ? ((weights.controller_methods ?? 0) / total) * 100 + '%' : '0%' }} />
+          <div className="h-full bg-gray-500 transition-all" style={{ width: total > 0 ? ((weights.service_methods ?? 0) / total) * 100 + '%' : '0%' }} />
         </div>
         <span className={'text-xs font-medium ' + (isValid ? 'text-green-600' : 'text-red-500')}>
           Total: {Math.round(total)}%
         </span>
       </div>
       {!isValid && <p className="text-xs text-red-500 mt-1">Debe sumar 100%.</p>}
+      <p className="text-xs text-muted-foreground mt-1">
+        Controladora/servicios quedan como criterio futuro; puedes dejar ambos en 0%.
+      </p>
     </div>
   );
 }
@@ -445,6 +504,14 @@ export default function UploadPage() {
         formData.append(`${typeKey}_weight_classes`, String(w.classes));
         formData.append(`${typeKey}_weight_attributes`, String(w.attributes));
         formData.append(`${typeKey}_weight_methods`, String(w.methods));
+        formData.append(`${typeKey}_weight_relationships`, String(w.relationships));
+        if (typeKey === 'sequence') {
+          formData.append('sequence_weight_sync_messages', String(w.sync_messages ?? 35));
+          formData.append('sequence_weight_async_messages', String(w.async_messages ?? 20));
+          formData.append('sequence_weight_creation_messages', String(w.creation_messages ?? 15));
+          formData.append('sequence_weight_fragment_usage', String(w.fragment_usage ?? 30));
+          formData.append('sequence_weight_controller_methods', String(w.controller_methods ?? 0));
+          formData.append('sequence_weight_service_methods', String(w.service_methods ?? 0));
         if (typeKey === 'usecase') {
           formData.append(`${typeKey}_weight_include`, String(w.include_relations ?? 20));
           formData.append(`${typeKey}_weight_extend`, String(w.extend_relations ?? 15));

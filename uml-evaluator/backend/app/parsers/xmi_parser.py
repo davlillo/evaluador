@@ -1698,7 +1698,9 @@ class XMIParserV11:
                             # actionType=2 + isAsynchronous=true  → reply (mensaje de retorno)
                             # actionType=1 + isAsynchronous=true  → asynchCall
                             # actionType=1 + isAsynchronous=false → synchCall
-                            if action_type == '2' and is_async:
+                            if action_type == '0':
+                                msg_sort = 'createMessage'
+                            elif action_type == '2' and is_async:
                                 msg_sort = 'reply'
                             elif is_async:
                                 msg_sort = 'asynchCall'

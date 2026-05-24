@@ -73,6 +73,12 @@ function Slice({
 export function SequenceResultsView({ result, onBack, onViewReport, showNavActions = true }: SequenceResultsViewProps) {
   const b = result.breakdown;
   const w = result.weights_used;
+  const hasV2 =
+    !!b.sync_messages ||
+    !!b.async_messages ||
+    !!b.creation_messages ||
+    !!b.fragment_usage;
+  const orderScore = b.order_score ?? b.messages?.order_score ?? 0;
 
   return (
     <div className="space-y-6">
@@ -87,33 +93,88 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
           <div className={'text-5xl font-bold tabular-nums ' + percentColor(result.overall_similarity)}>
             {result.overall_similarity.toFixed(1)}%
           </div>
-          <p className="text-sm text-muted-foreground">Similitud global (líneas de vida + mensajes)</p>
+          <p className="text-sm text-muted-foreground">
+            {hasV2 ? 'Similitud global (criterios de secuencia)' : 'Similitud global (líneas de vida + mensajes)'}
+          </p>
           <Badge variant="outline" className="text-xs">
-            Orden de mensajes: {b.messages.order_score.toFixed(1)}%
+            Orden de mensajes: {orderScore.toFixed(1)}%
           </Badge>
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <Slice
-          title="Líneas de vida"
-          value={b.lifelines.similarity}
-          expected={b.lifelines.expected}
-          found={b.lifelines.found}
-          correct={b.lifelines.correct}
-          missing={b.lifelines.missing}
-          extra={b.lifelines.extra}
-        />
-        <Slice
-          title="Mensajes"
-          value={b.messages.similarity}
-          expected={b.messages.expected}
-          found={b.messages.found}
-          correct={b.messages.correct}
-          missing={b.messages.missing}
-          extra={b.messages.extra}
-        />
-      </div>
+      {hasV2 ? (
+        <div className="grid md:grid-cols-2 gap-4">
+          {b.sync_messages && (
+            <Slice
+              title="Mensajes síncronos"
+              value={b.sync_messages.similarity}
+              expected={b.sync_messages.expected}
+              found={b.sync_messages.found}
+              correct={b.sync_messages.correct}
+              missing={b.sync_messages.missing}
+              extra={b.sync_messages.extra}
+            />
+          )}
+          {b.async_messages && (
+            <Slice
+              title="Mensajes asíncronos"
+              value={b.async_messages.similarity}
+              expected={b.async_messages.expected}
+              found={b.async_messages.found}
+              correct={b.async_messages.correct}
+              missing={b.async_messages.missing}
+              extra={b.async_messages.extra}
+            />
+          )}
+          {b.creation_messages && (
+            <Slice
+              title="Mensajes de creación"
+              value={b.creation_messages.similarity}
+              expected={b.creation_messages.expected}
+              found={b.creation_messages.found}
+              correct={b.creation_messages.correct}
+              missing={b.creation_messages.missing}
+              extra={b.creation_messages.extra}
+            />
+          )}
+          {b.fragment_usage && (
+            <Slice
+              title="Uso de fragmentos (loop/alt/opt)"
+              value={b.fragment_usage.similarity}
+              expected={b.fragment_usage.expected}
+              found={b.fragment_usage.found}
+              correct={b.fragment_usage.correct}
+              missing={b.fragment_usage.missing}
+              extra={b.fragment_usage.extra}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-4">
+          {b.lifelines && (
+            <Slice
+              title="Líneas de vida"
+              value={b.lifelines.similarity}
+              expected={b.lifelines.expected}
+              found={b.lifelines.found}
+              correct={b.lifelines.correct}
+              missing={b.lifelines.missing}
+              extra={b.lifelines.extra}
+            />
+          )}
+          {b.messages && (
+            <Slice
+              title="Mensajes"
+              value={b.messages.similarity}
+              expected={b.messages.expected}
+              found={b.messages.found}
+              correct={b.messages.correct}
+              missing={b.messages.missing}
+              extra={b.messages.extra}
+            />
+          )}
+        </div>
+      )}
 
       {w && (
         <Card className="bg-muted/40 border-dashed">
@@ -125,8 +186,12 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">Líneas de vida: {w.classes}%</Badge>
-              <Badge variant="outline">Mensajes: {w.relationships}%</Badge>
+              {'sync_messages' in w && <Badge variant="outline">Síncronos: {(w as unknown as Record<string, number>).sync_messages}%</Badge>}
+              {'async_messages' in w && <Badge variant="outline">Asíncronos: {(w as unknown as Record<string, number>).async_messages}%</Badge>}
+              {'creation_messages' in w && <Badge variant="outline">Creación: {(w as unknown as Record<string, number>).creation_messages}%</Badge>}
+              {'fragment_usage' in w && <Badge variant="outline">Fragmentos: {(w as unknown as Record<string, number>).fragment_usage}%</Badge>}
+              {!('sync_messages' in w) && <Badge variant="outline">Líneas de vida: {w.classes}%</Badge>}
+              {!('sync_messages' in w) && <Badge variant="outline">Mensajes: {w.relationships}%</Badge>}
             </div>
           </CardContent>
         </Card>
