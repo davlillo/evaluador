@@ -6,6 +6,7 @@ interface MessageInfo {
   name: string;
   source_lifeline: string;
   target_lifeline: string;
+  fragment?: string;
 }
 
 // Construye un set de claves de mensajes para comparación

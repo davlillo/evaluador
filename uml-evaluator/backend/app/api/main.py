@@ -203,6 +203,14 @@ def _normalize_global_weights(class_w: float, usecase_w: float, sequence_w: floa
     return {k: v / total for k, v in raw.items()}
 
 
+def _enriched_comparison(comparison, expected_diagram, student_diagram) -> dict:
+    """Incluye diagramas parseados para comparación visual y exportación PDF."""
+    payload = comparison.to_dict()
+    payload['expected_diagram'] = expected_diagram.to_dict()
+    payload['student_diagram'] = student_diagram.to_dict()
+    return payload
+
+
 @app.get("/", response_model=HealthResponse)
 async def root():
     """Endpoint raíz con información del sistema."""
@@ -752,7 +760,11 @@ async def compare_global_files(
                         'status': 'ok',
                         'similarity': sim,
                         'student_file': os.path.basename(student_file_path),
-                        'comparison': comparison.to_dict(),
+                        'comparison': _enriched_comparison(
+                            comparison,
+                            expected_diagrams[kind],
+                            student_diagram,
+                        ),
                     }
                 except Exception as e:
                     complete = False
@@ -788,6 +800,7 @@ async def compare_global_files(
             'students_total': total_students,
             'students_complete': complete_count,
             'students_incomplete': total_students - complete_count,
+            'expected_diagrams': {k: v.to_dict() for k, v in expected_diagrams.items()},
             'results': results,
         }
 
@@ -1030,7 +1043,11 @@ async def compare_batch(
                     runs[kind] = {
                         'status': 'ok',
                         'similarity': sim,
-                        'comparison': comparison.to_dict(),
+                        'comparison': _enriched_comparison(
+                            comparison,
+                            exp_diag,
+                            stu_diag,
+                        ),
                     }
                 except Exception as e:
                     all_ok = False
@@ -1057,6 +1074,7 @@ async def compare_batch(
             'students_incomplete': len(results) - complete_count,
             'global_weights_used': {k: round(v * 100, 1) for k, v in detected_weights.items()},
             'detected_diagrams': detected_types,
+            'expected_diagrams': {k: v.to_dict() for k, v in expected_diagrams.items()},
         }
 
     except HTTPException:

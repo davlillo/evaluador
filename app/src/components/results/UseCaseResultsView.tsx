@@ -11,6 +11,7 @@ interface UseCaseResultsViewProps {
   result: Omit<ComparisonResult, 'breakdown'> & { breakdown: UseCaseBreakdown };
   onBack: () => void;
   onViewReport: () => void;
+  showNavActions?: boolean;
 }
 
 function Gauge({ value, label }: { value: number; label: string }) {
@@ -87,7 +88,7 @@ function SliceCard({
   );
 }
 
-export function UseCaseResultsView({ result, onBack, onViewReport }: UseCaseResultsViewProps) {
+export function UseCaseResultsView({ result, onBack, onViewReport, showNavActions = true }: UseCaseResultsViewProps) {
   const b = result.breakdown;
   const w = result.weights_used;
 
@@ -157,9 +158,11 @@ export function UseCaseResultsView({ result, onBack, onViewReport }: UseCaseResu
       )}
 
       <div className="flex justify-center gap-4">
-        <Button onClick={onBack} variant="outline">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Nueva comparación
-        </Button>
+        {showNavActions && (
+          <Button onClick={onBack} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Nueva comparación
+          </Button>
+        )}
         <Button onClick={onViewReport}>
           <FileText className="w-4 h-4 mr-2" /> Ver reporte detallado
         </Button>

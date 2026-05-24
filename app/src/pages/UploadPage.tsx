@@ -1,11 +1,11 @@
-﻿import { useState, useCallback } from 'react';
+﻿import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, FileCode, CheckCircle, AlertCircle, ArrowRight, Settings, ChevronDown, ChevronUp, ChevronRight, FolderArchive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Accordion,
   AccordionItem,
@@ -13,6 +13,8 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
+import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
+import { DownloadBatchReportsZipButton } from '@/components/report/DownloadBatchReportsZipButton';
 import type { ComparisonResult } from '@/types/comparison';
 import type { BatchCompareResponse } from '@/types/evaluation-session';
 
@@ -349,6 +351,7 @@ function formatScore(value?: number | null): string {
 
 export default function UploadPage() {
   const { setResult } = useEvaluationResult();
+  const { batchResult, setBatchEvaluation, clearGlobalEvaluation } = useGlobalEvaluation();
   const navigate = useNavigate();
 
   const [uploadMode, setUploadMode] = useState<'simple' | 'batch'>('simple');
@@ -358,7 +361,6 @@ export default function UploadPage() {
   const [studentFile, setStudentFile] = useState<File | null>(null);
 
   const [batchZipFile, setBatchZipFile] = useState<File | null>(null);
-  const [batchResult, setBatchResult] = useState<BatchCompareResponse | null>(null);
 
   // Shared state
   const [loading, setLoading] = useState(false);
@@ -371,6 +373,12 @@ export default function UploadPage() {
   const [globalWeights, setGlobalWeights] = useState<Record<string, number>>({
     class: 40, usecase: 35, sequence: 25,
   });
+
+  useEffect(() => {
+    if (batchResult) {
+      setUploadMode('batch');
+    }
+  }, [batchResult]);
 
   const updateGlobalWeight = (key: string, value: number) => {
     setGlobalWeights((prev) => ({ ...prev, [key]: value }));
@@ -445,7 +453,7 @@ export default function UploadPage() {
     }
     setLoading(true);
     setError(null);
-    setBatchResult(null);
+    clearGlobalEvaluation();
     try {
       const formData = new FormData();
       formData.append('expected_file', expectedFile);
@@ -463,7 +471,8 @@ export default function UploadPage() {
         throw new Error(payload.detail || 'Error al evaluar lote');
       }
       const data: BatchCompareResponse = await response.json();
-      setBatchResult(data);
+      setBatchEvaluation(data);
+      setUploadMode('batch');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -650,6 +659,14 @@ export default function UploadPage() {
       {batchResult && (
         <div className="space-y-4">
           <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Exportación masiva</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <DownloadBatchReportsZipButton />
+            </CardContent>
+          </Card>
+          <Card>
             <CardContent className="pt-4">
               <p className="text-sm text-muted-foreground mb-3">
                 Estudiantes: {batchResult.students_total} | Completos: {batchResult.students_complete} | Incompletos: {batchResult.students_incomplete}
@@ -682,7 +699,7 @@ export default function UploadPage() {
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={() => navigate('/evaluar/global/desglose', { state: { student: { ...row, runs: { class: row.runs.class || { status: 'missing', similarity: null }, usecase: row.runs.usecase || { status: 'missing', similarity: null }, sequence: row.runs.sequence || { status: 'missing', similarity: null } } } } })}
+                          onClick={() => navigate('/evaluar/global/desglose', { state: { studentId: row.student_id } })}
                         >
                           <ChevronRight className="w-4 h-4 mr-2" />
                           Ver desglose detallado

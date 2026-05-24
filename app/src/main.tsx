@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/context/AuthContext';
 import { EvaluationWizardProvider } from '@/context/EvaluationWizardContext';
 import { EvaluationResultProvider } from '@/context/EvaluationResultContext';
+import { GlobalEvaluationProvider } from '@/context/GlobalEvaluationContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -15,7 +16,9 @@ createRoot(document.getElementById('root')!).render(
         <AuthProvider>
           <EvaluationWizardProvider>
             <EvaluationResultProvider>
-              <App />
+              <GlobalEvaluationProvider>
+                <App />
+              </GlobalEvaluationProvider>
             </EvaluationResultProvider>
           </EvaluationWizardProvider>
         </AuthProvider>

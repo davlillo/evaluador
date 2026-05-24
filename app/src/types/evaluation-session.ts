@@ -3,7 +3,7 @@
  */
 
 import type { DiagramKind } from '@/types/diagram';
-import type { ComparisonResult } from '@/types/comparison';
+import type { ComparisonResult, DiagramInfo } from '@/types/comparison';
 
 export type EvaluationMode = 'single' | 'global';
 export type XmiSource = 'astah' | 'visual_paradigm';
@@ -54,6 +54,7 @@ export interface GlobalComparisonResponse {
   students_total: number;
   students_complete: number;
   students_incomplete: number;
+  expected_diagrams?: Record<string, DiagramInfo>;
   results: GlobalStudentResult[];
 }
 
@@ -79,4 +80,5 @@ export interface BatchCompareResponse {
   students_incomplete: number;
   global_weights_used: GlobalDiagramWeights;
   detected_diagrams: string[];
+  expected_diagrams?: Record<string, DiagramInfo>;
 }

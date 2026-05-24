@@ -14,6 +14,8 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion';
 import { useEvaluationWizard } from '@/context/EvaluationWizardContext';
+import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
+import { DownloadBatchReportsZipButton } from '@/components/report/DownloadBatchReportsZipButton';
 import type { GlobalComparisonResponse, GlobalDiagramWeights } from '@/types/evaluation-session';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -109,10 +111,10 @@ function formatScore(value?: number | null) {
 export default function GlobalEvaluationPlaceholderPage() {
   const navigate = useNavigate();
   const { mode, xmiSource } = useEvaluationWizard();
+  const { globalResult, setGlobalEvaluation, clearGlobalEvaluation } = useGlobalEvaluation();
   const [w, setW] = useState<GlobalDiagramWeights>(defaultWeights);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<GlobalComparisonResponse | null>(null);
 
   const [expectedClassFile, setExpectedClassFile] = useState<File | null>(null);
   const [studentsClassZip, setStudentsClassZip] = useState<File | null>(null);
@@ -153,6 +155,7 @@ export default function GlobalEvaluationPlaceholderPage() {
 
     setLoading(true);
     setError(null);
+    clearGlobalEvaluation();
     try {
       const formData = new FormData();
       formData.append('expected_class_file', expectedClassFile as File);
@@ -185,7 +188,7 @@ export default function GlobalEvaluationPlaceholderPage() {
         throw new Error(payload.detail || 'No se pudo ejecutar la evaluacion global.');
       }
       const data = (await response.json()) as GlobalComparisonResponse;
-      setResult(data);
+      setGlobalEvaluation(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido.');
     } finally {
@@ -367,19 +370,30 @@ export default function GlobalEvaluationPlaceholderPage() {
         </Button>
       </div>
 
-      {result && (
+      {globalResult && (
         <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Exportación masiva</CardTitle>
+              <CardDescription>
+                ZIP con una carpeta por alumno y un PDF por cada tipo de diagrama evaluado.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <DownloadBatchReportsZipButton />
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Resultados globales</CardTitle>
               <CardDescription>
-                Estudiantes: {result.students_total} | Completos: {result.students_complete} | Incompletos:{' '}
-                {result.students_incomplete}
+                Estudiantes: {globalResult.students_total} | Completos: {globalResult.students_complete} | Incompletos:{' '}
+                {globalResult.students_incomplete}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="w-full">
-                {result.results.map((row) => (
+                {globalResult.results.map((row) => (
                   <AccordionItem key={row.student_id} value={row.student_id}>
                     <AccordionTrigger className="hover:bg-muted/40 px-3 rounded-lg">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -414,7 +428,7 @@ export default function GlobalEvaluationPlaceholderPage() {
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={() => navigate('/evaluar/global/desglose', { state: { student: row } })}
+                          onClick={() => navigate('/evaluar/global/desglose', { state: { studentId: row.student_id } })}
                         >
                           <ChevronRight className="w-4 h-4 mr-2" />
                           Ver desglose detallado

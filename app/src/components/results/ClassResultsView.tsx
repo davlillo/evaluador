@@ -9,6 +9,7 @@ interface ClassResultsViewProps {
   result: Omit<ComparisonResult, 'breakdown'> & { breakdown: Breakdown };
   onBack: () => void;
   onViewReport: () => void;
+  showNavActions?: boolean;
 }
 
 function SimilarityGauge({ value, label, size = 'md' }: { value: number; label: string; size?: 'sm' | 'md' | 'lg' }) {
@@ -98,7 +99,7 @@ function ScoreCard({
   );
 }
 
-export function ClassResultsView({ result, onBack, onViewReport }: ClassResultsViewProps) {
+export function ClassResultsView({ result, onBack, onViewReport, showNavActions = true }: ClassResultsViewProps) {
   const weights = result.weights_used;
   return (
     <div className="space-y-6">
@@ -136,7 +137,9 @@ export function ClassResultsView({ result, onBack, onViewReport }: ClassResultsV
       )}
 
       <div className="flex justify-center gap-4">
-        <Button onClick={onBack} variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Nueva Comparación</Button>
+        {showNavActions && (
+          <Button onClick={onBack} variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Nueva Comparación</Button>
+        )}
         <Button onClick={onViewReport}><FileText className="w-4 h-4 mr-2" /> Ver Reporte Completo</Button>
       </div>
     </div>

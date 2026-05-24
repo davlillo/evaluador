@@ -38,6 +38,17 @@ UC_VERBS = {
 }
 
 
+def decode_xmi_name(name: str) -> str:
+    """Decodifica nombres exportados en URL-form ('+' como espacio)."""
+    import urllib.parse
+    if not name:
+        return ''
+    try:
+        return urllib.parse.unquote_plus(name).strip()
+    except Exception:
+        return name.strip()
+
+
 class XMIParser:
     """Parser para archivos XMI/XML de diagramas UML."""
 
@@ -450,7 +461,7 @@ class XMIParser:
             elem_type = elem.get(f'{self.ns_xmi}type', '') or elem.get('type', '')
             tag_local = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
             elem_id = elem.get(f'{self.ns_xmi}id') or elem.get('id')
-            name = elem.get('name', '').strip()
+            name = decode_xmi_name(elem.get('name', ''))
 
             if not name:
                 continue
@@ -498,7 +509,7 @@ class XMIParser:
             elem_type = elem.get(f'{self.ns_xmi}type', '') or elem.get('type', '')
             tag_local = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
             elem_id = elem.get(f'{self.ns_xmi}id') or elem.get('id')
-            name = elem.get('name', '').strip()
+            name = decode_xmi_name(elem.get('name', ''))
             if not name or name.lower() in PRIMITIVE_TYPES:
                 continue
             is_class_elem = (
@@ -1175,19 +1186,63 @@ class XMIParserV11:
         return diagrams
 
     def _build_id_maps(self, root: ET.Element):
-        import urllib.parse
         for elem in root.iter():
             elem_id = self._xmi_attr(elem, 'id')
             if elem_id:
                 self.all_elements_by_id[elem_id] = elem
-                name = elem.get('name', '')
+                name = self._decode_name(elem.get('name', ''))
                 if name:
-                    # Decodificar URL-form encoding ('+' = espacio, '%XX' = caracter)
-                    try:
-                        name = urllib.parse.unquote_plus(name)
-                    except Exception:
-                        pass
                     self.id_to_name[elem_id] = name
+
+    def _build_parent_map(self, root: ET.Element) -> Dict[ET.Element, ET.Element]:
+        parent_map: Dict[ET.Element, ET.Element] = {}
+        for parent in root.iter():
+            for child in parent:
+                parent_map[child] = parent
+        return parent_map
+
+    def _is_java_boilerplate_element(self, elem: ET.Element, parent_map: Dict[ET.Element, ET.Element]) -> bool:
+        """True si el elemento vive bajo paquetes java/javax embebidos por Astah."""
+        java_packages = {'java', 'javax', 'lang', 'util'}
+        current: Optional[ET.Element] = elem
+        while current is not None:
+            if self._local_tag(current) == 'Package':
+                pkg_name = self._decode_name(current.get('name', '')).lower()
+                if pkg_name in java_packages:
+                    return True
+            current = parent_map.get(current)
+        return False
+
+    def _get_usecase_diagram_scope_ids(self, root: ET.Element) -> set:
+        """IDs semánticos (Actor/UseCase) presentes en diagramas JUDE de casos de uso."""
+        scoped: set = set()
+        for elem in root.iter():
+            if self._local_tag(elem) != 'Diagram':
+                continue
+            type_info = (elem.get('typeInfo') or elem.get('typeinfo') or '').lower()
+            if 'usecase' not in type_info.replace(' ', ''):
+                continue
+            for node in elem.iter():
+                if self._local_tag(node) not in ('Actor', 'UseCase', 'Classifier'):
+                    continue
+                ref = self._xmi_attr(node, 'idref')
+                if ref:
+                    scoped.add(ref)
+        return scoped
+
+    def _count_domain_classes(self, root: ET.Element) -> int:
+        parent_map = self._build_parent_map(root)
+        count = 0
+        for elem in root.iter():
+            if self._local_tag(elem) not in ('Class',):
+                continue
+            name = self._decode_name(elem.get('name', ''))
+            if not name or name.lower() in PRIMITIVE_TYPES:
+                continue
+            if self._is_java_boilerplate_element(elem, parent_map):
+                continue
+            count += 1
+        return count
 
     def _detect_diagram_types(self, root: ET.Element) -> List[str]:
         """Detecta qué tipos de diagramas existen en el archivo XMI 1.1."""
@@ -1209,6 +1264,9 @@ class XMIParserV11:
         # (Astah lo exporta como UML:Actor aunque no haya diagrama de CU).
         if has_use_cases:
             types.add('usecase')
+            # Astah embebe java.* en el mismo XMI; no tratarlo como diagrama de clases.
+            if self._count_domain_classes(root) == 0 and 'class' in types:
+                types.discard('class')
 
         # Detección primaria: tag JUDE:SequenceDiagram en la sección de extension
         has_jude_sequence = False
@@ -1249,13 +1307,16 @@ class XMIParserV11:
         """Extrae el diagrama de clases del XMI 1.1."""
         diagram = UMLDiagram(name='Class Diagram', diagram_type='class')
         class_map: Dict[str, UMLClass] = {}
+        parent_map = self._build_parent_map(root)
 
         for elem in root.iter():
             if self._local_tag(elem) not in ('Class',):
                 continue
 
-            name = elem.get('name', '').strip()
+            name = self._decode_name(elem.get('name', ''))
             if not name or name.lower() in PRIMITIVE_TYPES:
+                continue
+            if self._is_java_boilerplate_element(elem, parent_map):
                 continue
 
             elem_id = self._xmi_attr(elem, 'id')
@@ -1313,16 +1374,21 @@ class XMIParserV11:
         actors: List[UMLActor] = []
         use_cases: List[UMLUseCase] = []
         actor_ids: set = set()
+        scope_ids = self._get_usecase_diagram_scope_ids(root)
 
         for elem in root.iter():
             local = self._local_tag(elem)
-            name = elem.get('name', '').strip()
+            name = self._decode_name(elem.get('name', ''))
             elem_id = self._xmi_attr(elem, 'id')
+
+            if scope_ids and elem_id and elem_id not in scope_ids:
+                continue
 
             if local == 'Actor' and name and elem_id not in actor_ids:
                 actors.append(UMLActor(name=name))
                 actor_ids.add(elem_id)
-                self.id_to_name[elem_id] = name
+                if elem_id:
+                    self.id_to_name[elem_id] = name
 
             if local == 'UseCase' and name:
                 use_cases.append(UMLUseCase(name=name))
@@ -1776,6 +1842,9 @@ class XMIParserV11:
             return urllib.parse.unquote_plus(text)
         except Exception:
             return text
+
+    def _decode_name(self, name: str) -> str:
+        return decode_xmi_name(name)
 
 
 def parse_xmi_file_multi(file_path: str) -> Dict[str, UMLDiagram]:
