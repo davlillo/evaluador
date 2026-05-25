@@ -504,7 +504,12 @@ export default function UploadPage() {
         formData.append(`${typeKey}_weight_classes`, String(w.classes));
         formData.append(`${typeKey}_weight_attributes`, String(w.attributes));
         formData.append(`${typeKey}_weight_methods`, String(w.methods));
-        formData.append(`${typeKey}_weight_relationships`, String(w.relationships));
+        if (typeKey === 'usecase') {
+          formData.append(`${typeKey}_weight_include`, String(w.include_relations ?? 20));
+          formData.append(`${typeKey}_weight_extend`, String(w.extend_relations ?? 15));
+        } else {
+          formData.append(`${typeKey}_weight_relationships`, String(w.relationships));
+        }
         if (typeKey === 'sequence') {
           formData.append('sequence_weight_sync_messages', String(w.sync_messages ?? 35));
           formData.append('sequence_weight_async_messages', String(w.async_messages ?? 20));
@@ -512,11 +517,6 @@ export default function UploadPage() {
           formData.append('sequence_weight_fragment_usage', String(w.fragment_usage ?? 30));
           formData.append('sequence_weight_controller_methods', String(w.controller_methods ?? 0));
           formData.append('sequence_weight_service_methods', String(w.service_methods ?? 0));
-        if (typeKey === 'usecase') {
-          formData.append(`${typeKey}_weight_include`, String(w.include_relations ?? 20));
-          formData.append(`${typeKey}_weight_extend`, String(w.extend_relations ?? 15));
-        } else {
-          formData.append(`${typeKey}_weight_relationships`, String(w.relationships));
         }
       }
       const response = await fetch(API_URL + '/api/compare-auto', {
