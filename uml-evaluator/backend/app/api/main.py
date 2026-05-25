@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from app.parsers.xmi_parser import parse_xmi_file, parse_xmi_string, parse_xmi_file_multi
 from app.comparator.uml_comparator import compare_uml_diagrams
+from app.utils import normalize_weights_dict
 from app.users_file import USERS_JSON_PATH, append_user_if_new, find_user_by_credentials
 
 
@@ -104,6 +105,15 @@ GENERIC_STUDENT_IDS = {
     'secuencia', 'sequence',
     'dc', 'dcu', 'ds',
 }
+
+
+def _validate_uml_extension(filename: str, context: str = "Archivo") -> None:
+    ext = os.path.splitext(filename.lower())[1]
+    if ext not in VALID_UML_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{context}: extensión '{ext}' no válida. Use: {VALID_UML_EXTENSIONS}",
+        )
 
 
 def _is_hidden_or_system_path(path_parts: List[str]) -> bool:
@@ -197,10 +207,8 @@ def _normalize_global_weights(class_w: float, usecase_w: float, sequence_w: floa
         'usecase': max(0.0, usecase_w),
         'sequence': max(0.0, sequence_w),
     }
-    total = sum(raw.values())
-    if total <= 0:
-        return {'class': 1 / 3, 'usecase': 1 / 3, 'sequence': 1 / 3}
-    return {k: v / total for k, v in raw.items()}
+    defaults = {'class': 1 / 3, 'usecase': 1 / 3, 'sequence': 1 / 3}
+    return normalize_weights_dict(raw, defaults)
 
 
 def _build_usecase_weights(
@@ -232,10 +240,8 @@ def _build_usecase_weights(
         'include_relations': max(0.0, w_inc),
         'extend_relations': max(0.0, w_ext),
     }
-    total = sum(raw.values())
-    if total <= 0:
-        return {'classes': 0.15, 'attributes': 0.25, 'methods': 0.25, 'include_relations': 0.20, 'extend_relations': 0.15}
-    return {k: v / total for k, v in raw.items()}
+    defaults = {'classes': 0.15, 'attributes': 0.25, 'methods': 0.25, 'include_relations': 0.20, 'extend_relations': 0.15}
+    return normalize_weights_dict(raw, defaults)
 
 
 def _enriched_comparison(comparison, expected_diagram, student_diagram) -> dict:
@@ -315,10 +321,6 @@ async def compare_files(
     ),
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
     semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica (0.55 a 1.00)"),
-    xmi_source: str = Form(
-        'astah',
-        description="Origen del XMI: astah o visual_paradigm.",
-    ),
 ):
     """
     Compara dos archivos XMI/XML de diagramas UML.
@@ -333,21 +335,8 @@ async def compare_files(
     Retorna un JSON con el porcentaje de similitud, detalles de comparación
     y la estructura completa de ambos diagramas.
     """
-    valid_extensions = VALID_UML_EXTENSIONS
-    expected_ext = os.path.splitext(expected_file.filename.lower())[1]
-    student_ext = os.path.splitext(student_file.filename.lower())[1]
-
-    if expected_ext not in valid_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Archivo de solución: extensión '{expected_ext}' no válida. Use: {valid_extensions}",
-        )
-
-    if student_ext not in valid_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Archivo del estudiante: extensión '{student_ext}' no válida. Use: {valid_extensions}",
-        )
+    _validate_uml_extension(expected_file.filename, "Archivo de solución")
+    _validate_uml_extension(student_file.filename, "Archivo del estudiante")
 
     expected_path = None
     student_path = None
@@ -362,14 +351,6 @@ async def compare_files(
         with open(student_path, "wb") as f:
             f.write(await student_file.read())
 
-        source = str(xmi_source).strip().lower() or 'astah'
-        allowed_sources = {'astah', 'visual_paradigm'}
-        if source not in allowed_sources:
-            raise HTTPException(
-                status_code=400,
-                detail="xmi_source debe ser astah o visual_paradigm.",
-            )
-
         # Normalizar pesos
         raw_weights = {
             'classes': max(0.0, weight_classes),
@@ -381,8 +362,8 @@ async def compare_files(
         normalized_weights = {k: v / total_w for k, v in raw_weights.items()}
 
         try:
-            expected_diagrams = parse_xmi_file_multi(expected_path, xmi_source=source)
-            student_diagrams = parse_xmi_file_multi(student_path, xmi_source=source)
+            expected_diagrams = parse_xmi_file_multi(expected_path)
+            student_diagrams = parse_xmi_file_multi(student_path)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al parsear archivos: {str(e)}")
 
@@ -444,8 +425,6 @@ async def compare_files(
         }
         response['expected_diagram'] = expected_diagram.to_dict()
         response['student_diagram'] = student_diagram.to_dict()
-        response['xmi_source_used'] = source
-        # Ayuda a comprobar que el servidor usa la lógica F1 y parser actualizado
         response['evaluator_version'] = '2-f1'
 
         return response
@@ -468,7 +447,6 @@ async def compare_files_auto(
     student_file: UploadFile = File(..., description="Archivo XMI/XML del estudiante (puede contener múltiples diagramas)"),
     case_sensitive: bool = Form(False),
     strict_types: bool = Form(True),
-    xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
     semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica (0.55 a 1.00)"),
     selected_types: Optional[str] = Form(None, description="Tipos a evaluar: 'class,usecase,sequence'"),
@@ -499,21 +477,8 @@ async def compare_files_auto(
     Compara dos archivos XMI detectando automáticamente los tipos de diagramas contenidos.
     Soporta XMI 1.1 de Astah/JUDE con múltiples diagramas en un solo archivo.
     """
-    valid_extensions = VALID_UML_EXTENSIONS
-    expected_ext = os.path.splitext(expected_file.filename.lower())[1]
-    student_ext = os.path.splitext(student_file.filename.lower())[1]
-
-    if expected_ext not in valid_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Archivo de solución: extensión '{expected_ext}' no válida. Use: {valid_extensions}",
-        )
-
-    if student_ext not in valid_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Archivo del estudiante: extensión '{student_ext}' no válida. Use: {valid_extensions}",
-        )
+    _validate_uml_extension(expected_file.filename, "Archivo de solución")
+    _validate_uml_extension(student_file.filename, "Archivo del estudiante")
 
     expected_path = None
     student_path = None
@@ -528,15 +493,13 @@ async def compare_files_auto(
         with open(student_path, "wb") as f:
             f.write(await student_file.read())
 
-        source = str(xmi_source).strip().lower() or 'astah'
-
         try:
-            expected_diagrams = parse_xmi_file_multi(expected_path, xmi_source=source)
+            expected_diagrams = parse_xmi_file_multi(expected_path)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al parsear archivo de solución: {str(e)}")
 
         try:
-            student_diagrams = parse_xmi_file_multi(student_path, xmi_source=source)
+            student_diagrams = parse_xmi_file_multi(student_path)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al parsear archivo del estudiante: {str(e)}")
 
@@ -666,7 +629,6 @@ async def compare_files_auto(
             'overall_similarity': overall_similarity,
             'expected_diagrams': {k: v.to_dict() for k, v in expected_diagrams.items()},
             'student_diagrams': {k: v.to_dict() for k, v in student_diagrams.items()},
-            'xmi_source_used': source,
             'evaluator_version': '3-auto',
             'weights_used': {
                 kind: {k: round(v * 100, 1) for k, v in w.items()}
@@ -700,11 +662,7 @@ async def compare_global_files(
     global_weight_sequence: float = Form(25, description="Peso global de secuencia (0-100)"),
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
     semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica (0.55 a 1.00)"),
-    xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
 ):
-    source = str(xmi_source).strip().lower() or 'astah'
-    if source not in {'astah', 'visual_paradigm'}:
-        raise HTTPException(status_code=400, detail="xmi_source debe ser astah o visual_paradigm.")
 
     expected_files = {
         'class': expected_class_file,
@@ -718,12 +676,7 @@ async def compare_global_files(
     }
 
     for kind, f in expected_files.items():
-        ext = os.path.splitext((f.filename or '').lower())[1]
-        if ext not in VALID_UML_EXTENSIONS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Archivo de solución {kind}: extensión '{ext}' no válida. Use: {VALID_UML_EXTENSIONS}",
-            )
+        _validate_uml_extension(f.filename or '', f"Archivo de solución {kind}")
     for kind, f in zip_files.items():
         ext = os.path.splitext((f.filename or '').lower())[1]
         if ext != '.zip':
@@ -755,7 +708,7 @@ async def compare_global_files(
         # Parsear soluciones del docente
         for kind in ('class', 'usecase', 'sequence'):
             try:
-                parsed_multi = parse_xmi_file_multi(expected_paths[kind], xmi_source=source)
+                parsed_multi = parse_xmi_file_multi(expected_paths[kind])
             except Exception as e:
                 raise HTTPException(
                     status_code=400,
@@ -818,7 +771,7 @@ async def compare_global_files(
                     continue
 
                 try:
-                    student_multi = parse_xmi_file_multi(student_file_path, xmi_source=source)
+                    student_multi = parse_xmi_file_multi(student_file_path)
                     if kind not in student_multi:
                         complete = False
                         runs[kind] = {
@@ -878,7 +831,6 @@ async def compare_global_files(
         total_students = len(results)
 
         return {
-            'xmi_source_used': source,
             'global_weights_used': {
                 'class': round(normalized_global['class'] * 100, 2),
                 'usecase': round(normalized_global['usecase'] * 100, 2),
@@ -955,14 +907,7 @@ async def parse_file(file: UploadFile = File(..., description="Archivo XMI/XML a
     
     Útil para verificar que el archivo se puede leer correctamente.
     """
-    valid_extensions = {'.xmi', '.xml', '.uml'}
-    file_ext = os.path.splitext(file.filename.lower())[1]
-    
-    if file_ext not in valid_extensions:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Extensión '{file_ext}' no válida. Use: {valid_extensions}"
-        )
+    _validate_uml_extension(file.filename, "Archivo")
     
     temp_path = None
     
@@ -1027,14 +972,11 @@ async def compare_batch(
     students_zip: UploadFile = File(..., description="ZIP con los archivos XMI de cada estudiante"),
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico"),
     semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica"),
-    xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
     global_weight_class: float = Form(40, description="Peso global de clases (0-100)"),
     global_weight_usecase: float = Form(35, description="Peso global de casos de uso (0-100)"),
     global_weight_sequence: float = Form(25, description="Peso global de secuencia (0-100)"),
 ):
-    ext = os.path.splitext(expected_file.filename.lower())[1]
-    if ext not in VALID_UML_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"Extensión '{ext}' no válida. Use: {VALID_UML_EXTENSIONS}")
+    _validate_uml_extension(expected_file.filename, "Archivo de solución")
     if os.path.splitext(students_zip.filename.lower())[1] != '.zip':
         raise HTTPException(status_code=400, detail="El archivo de estudiantes debe ser .zip.")
 
@@ -1051,11 +993,9 @@ async def compare_batch(
         with open(zip_path, "wb") as f:
             f.write(await students_zip.read())
 
-        source = str(xmi_source).strip().lower() or 'astah'
-
         # Parsear solución (multi-diagrama)
         try:
-            expected_diagrams = parse_xmi_file_multi(expected_path, xmi_source=source)
+            expected_diagrams = parse_xmi_file_multi(expected_path)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al parsear solución: {str(e)}")
 
@@ -1099,7 +1039,7 @@ async def compare_batch(
 
         for student_id, student_path in sorted(student_files.items()):
             try:
-                student_diagrams = parse_xmi_file_multi(student_path, xmi_source=source)
+                student_diagrams = parse_xmi_file_multi(student_path)
             except Exception:
                 results.append({
                     'student_id': student_id,

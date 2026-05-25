@@ -13,6 +13,7 @@ from app.models.uml_elements import (
 )
 from app.comparator.semantic_matcher import SemanticMatcher
 from app.parsers.xmi_parser import looks_like_use_case_name
+from app.utils import normalize_weights_dict
 
 
 @dataclass
@@ -355,16 +356,14 @@ class UMLComparator:
             w['methods'] = w.get('methods', 0.0) + third
             w['include_relations'] = w.get('include_relations', 0.0) + third
             w['extend_relations'] = w.get('extend_relations', 0.0) + third
-        total = sum(v for v in w.values() if v > 0)
-        if total <= 0:
-            return {
-                'classes': 0.15,
-                'attributes': 0.25,
-                'methods': 0.25,
-                'include_relations': 0.20,
-                'extend_relations': 0.15,
-            }
-        return {k: v / total for k, v in w.items() if v > 0}
+        defaults = {
+            'classes': 0.15,
+            'attributes': 0.25,
+            'methods': 0.25,
+            'include_relations': 0.20,
+            'extend_relations': 0.15,
+        }
+        return normalize_weights_dict(w, defaults)
 
     def _compare_use_cases_diagram(
         self, expected: UMLDiagram, student: UMLDiagram
