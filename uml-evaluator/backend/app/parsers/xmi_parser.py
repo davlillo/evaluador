@@ -1365,11 +1365,9 @@ class XMIParserV11:
         valid_names = actor_names | uc_names
 
         relationships = []
+        found_rels: set = set()
         for elem in root.iter():
             local = self._local_tag(elem)
-
-            if scope_ids and elem.get('xmi.id') and elem.get('xmi.id') not in scope_ids:
-                continue
 
             if local == 'Association':
                 source_name, target_name, _, _, _, _ = self._extract_association_ends_v11(elem)
@@ -1377,6 +1375,10 @@ class XMIParserV11:
                     continue
                 if source_name not in valid_names or target_name not in valid_names:
                     continue
+                rel_key = f"{source_name}_{target_name}_{RelationshipType.ASSOCIATION.value}"
+                if rel_key in found_rels:
+                    continue
+                found_rels.add(rel_key)
                 relationships.append(UMLRelationship(
                     source=source_name,
                     target=target_name,
@@ -1399,11 +1401,14 @@ class XMIParserV11:
                 base_name = self.id_to_name.get(base_id, '')
                 addition_name = self.id_to_name.get(addition_id, '')
                 if base_name in valid_names and addition_name in valid_names:
-                    relationships.append(UMLRelationship(
-                        source=base_name,
-                        target=addition_name,
-                        relationship_type=RelationshipType.INCLUDE
-                    ))
+                    rel_key = f"{base_name}_{addition_name}_{RelationshipType.INCLUDE.value}"
+                    if rel_key not in found_rels:
+                        found_rels.add(rel_key)
+                        relationships.append(UMLRelationship(
+                            source=base_name,
+                            target=addition_name,
+                            relationship_type=RelationshipType.INCLUDE
+                        ))
 
             elif local == 'Extend':
                 base_id = None
@@ -1421,11 +1426,14 @@ class XMIParserV11:
                 base_name = self.id_to_name.get(base_id, '')
                 extension_name = self.id_to_name.get(extension_id, '')
                 if base_name in valid_names and extension_name in valid_names:
-                    relationships.append(UMLRelationship(
-                        source=extension_name,
-                        target=base_name,
-                        relationship_type=RelationshipType.EXTEND
-                    ))
+                    rel_key = f"{extension_name}_{base_name}_{RelationshipType.EXTEND.value}"
+                    if rel_key not in found_rels:
+                        found_rels.add(rel_key)
+                        relationships.append(UMLRelationship(
+                            source=extension_name,
+                            target=base_name,
+                            relationship_type=RelationshipType.EXTEND
+                        ))
 
         diagram.relationships = relationships
         return diagram
