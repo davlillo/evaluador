@@ -76,18 +76,47 @@ const DEFAULT_WEIGHTS: Record<string, TypeWeights> = {
   
 };
 
+const isTotalValid = (total: number) => Math.abs(total - 100) < 0.01;
+
+function getTypeWeightTotal(typeKey: string, weights: TypeWeights): number {
+  if (typeKey === 'class') {
+    return weights.classes + weights.attributes + weights.methods + weights.relationships;
+  }
+
+  if (typeKey === 'usecase') {
+    return (
+      weights.classes +
+      weights.attributes +
+      weights.methods +
+      (weights.include_relations ?? 20) +
+      (weights.extend_relations ?? 15)
+    );
+  }
+
+  return (
+    (weights.sync_messages ?? 35) +
+    (weights.async_messages ?? 20) +
+    (weights.creation_messages ?? 15) +
+    (weights.fragment_usage ?? 30) +
+    (weights.controller_methods ?? 0) +
+    (weights.service_methods ?? 0)
+  );
+}
+
 function WeightSlider({
   label,
   value,
   onChange,
   color,
   disabled,
+  max = 100,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   color: string;
   disabled?: boolean;
+  max?: number;
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -96,11 +125,11 @@ function WeightSlider({
         <input
           type="number"
           min={0}
-          max={100}
+          max={max}
           step={1}
           value={value}
           disabled={disabled}
-          onChange={(e) => onChange(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+          onChange={(e) => onChange(Math.max(0, Math.min(max, Number(e.target.value) || 0)))}
           className="w-full border rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background disabled:bg-muted disabled:cursor-not-allowed"
         />
         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
@@ -136,6 +165,7 @@ function WeightsPanel({
               label={label}
               color={color}
               value={weights[key]}
+              max={weights[key] + Math.max(0, 100 - total)}
               onChange={(v) => onChange({ ...weights, [key]: v })}
             />
           ))}
@@ -185,6 +215,7 @@ function WeightsPanel({
               label={label}
               color={color}
               value={valueFor(key)}
+              max={valueFor(key) + Math.max(0, 100 - total)}
               onChange={(v) => onChange({ ...weights, [key]: v, relationships: 0 })}
             />
           ))}
@@ -223,36 +254,42 @@ function WeightsPanel({
           label="Mensajes síncronos"
           color="text-blue-600"
           value={weights.sync_messages ?? 35}
+          max={(weights.sync_messages ?? 35) + Math.max(0, 100 - total)}
           onChange={(v) => onChange({ ...weights, sync_messages: v })}
         />
         <WeightSlider
           label="Mensajes asíncronos"
           color="text-purple-600"
           value={weights.async_messages ?? 20}
+          max={(weights.async_messages ?? 20) + Math.max(0, 100 - total)}
           onChange={(v) => onChange({ ...weights, async_messages: v })}
         />
         <WeightSlider
           label="Mensajes de creación"
           color="text-teal-600"
           value={weights.creation_messages ?? 15}
+          max={(weights.creation_messages ?? 15) + Math.max(0, 100 - total)}
           onChange={(v) => onChange({ ...weights, creation_messages: v })}
         />
         <WeightSlider
           label="Uso de fragmentos"
           color="text-orange-600"
           value={weights.fragment_usage ?? 30}
+          max={(weights.fragment_usage ?? 30) + Math.max(0, 100 - total)}
           onChange={(v) => onChange({ ...weights, fragment_usage: v })}
         />
         <WeightSlider
           label="Métodos controladora (futuro)"
           color="text-slate-600"
           value={weights.controller_methods ?? 0}
+          max={(weights.controller_methods ?? 0) + Math.max(0, 100 - total)}
           onChange={(v) => onChange({ ...weights, controller_methods: v })}
         />
         <WeightSlider
           label="Métodos servicios (futuro)"
           color="text-gray-600"
           value={weights.service_methods ?? 0}
+          max={(weights.service_methods ?? 0) + Math.max(0, 100 - total)}
           onChange={(v) => onChange({ ...weights, service_methods: v })}
         />
       </div>
@@ -306,6 +343,7 @@ function GlobalWeightsPanel({
             color={color}
             value={selectedTypes.has(key) ? weights[key] : 0}
             disabled={!selectedTypes.has(key)}
+            max={selectedTypes.has(key) ? (weights[key] + Math.max(0, 100 - total)) : 0}
             onChange={(v) => onChange(key, v)}
           />
         ))}
@@ -451,6 +489,17 @@ export default function UploadPage() {
     class: 40, usecase: 35, sequence: 25,
   });
 
+  const selectedTypeWeightsValid = DIAGRAM_TYPES
+    .filter(({ key }) => selectedTypes.has(key))
+    .every(({ key }) => isTotalValid(getTypeWeightTotal(key, weightsByType[key] || DEFAULT_WEIGHTS[key])));
+
+  const selectedGlobalWeightTotal = DIAGRAM_TYPES
+    .filter(({ key }) => selectedTypes.has(key))
+    .reduce((sum, { key }) => sum + (globalWeights[key] || 0), 0);
+
+  const globalWeightsValid = isTotalValid(selectedGlobalWeightTotal);
+  const allWeightsValid = selectedTypeWeightsValid && globalWeightsValid;
+
   useEffect(() => {
     if (batchResult) {
       setUploadMode('batch');
@@ -482,6 +531,10 @@ export default function UploadPage() {
     }
     if (selectedTypes.size === 0) {
       setError('Seleccioná al menos un tipo de diagrama.');
+      return;
+    }
+    if (!allWeightsValid) {
+      setError('Revisá las ponderaciones: cada diagrama seleccionado y el peso global deben sumar 100%.');
       return;
     }
     setLoading(true);
@@ -539,6 +592,10 @@ export default function UploadPage() {
   const handleBatchCompare = async () => {
     if (!expectedFile || !batchZipFile) {
       setError('Por favor selecciona la solución XMI y el ZIP de estudiantes.');
+      return;
+    }
+    if (!allWeightsValid) {
+      setError('Revisá las ponderaciones: cada diagrama seleccionado y el peso global deben sumar 100%.');
       return;
     }
     setLoading(true);
@@ -728,7 +785,8 @@ export default function UploadPage() {
             (uploadMode === 'simple'
               ? !expectedFile || !studentFile
               : !expectedFile || !batchZipFile) ||
-            selectedTypes.size === 0
+            selectedTypes.size === 0 ||
+            !allWeightsValid
           }
           className="min-w-[250px]"
         >
@@ -745,6 +803,11 @@ export default function UploadPage() {
           )}
         </Button>
       </div>
+      {!allWeightsValid && (
+        <p className="text-center text-xs text-red-500">
+          Debes ajustar las ponderaciones: cada diagrama seleccionado y el peso global deben sumar 100%.
+        </p>
+      )}
 
       {batchResult && (
         <div className="space-y-4">
