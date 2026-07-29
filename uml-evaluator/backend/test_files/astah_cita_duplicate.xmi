@@ -1,0 +1,69 @@
+<?xml version = "1.0" encoding = "UTF-8" standalone = "yes"?>
+<XMI xmi.version="1.1" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/" xmlns:UML="org.omg.xmi.namespace.UML">
+  <XMI.content>
+    <UML:Model xmi.id="m0" name="clinica" xmlns:UML="org.omg.xmi.namespace.UML">
+      <UML:Namespace.ownedElement>
+        <UML:DataType xmi.id="dt-date" name="Date"/>
+        <UML:DataType xmi.id="dt-string" name="String"/>
+        <!-- Clase vacía duplicada (como a veces exporta Astah) -->
+        <UML:Class xmi.id="c-cita-empty" name="cita"/>
+        <!-- Clase completa -->
+        <UML:Class xmi.id="c-cita-full" name="Cita">
+          <UML:Classifier.feature>
+            <UML:Attribute xmi.id="a-fecha" name="fechaHora">
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="dt-date"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="a-estado" name="estado">
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="dt-string"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="a-motivo" name="motivo">
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="dt-string"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Operation xmi.id="o-prog" name="programar">
+              <UML:BehavioralFeature.parameter>
+                <UML:Parameter xmi.id="p-ret1" kind="return">
+                  <UML:Parameter.type>
+                    <UML:Classifier xmi.idref="dt-void" name="void"/>
+                  </UML:Parameter.type>
+                </UML:Parameter>
+              </UML:BehavioralFeature.parameter>
+            </UML:Operation>
+            <UML:Operation xmi.id="o-canc" name="cancelar"/>
+          </UML:Classifier.feature>
+        </UML:Class>
+        <UML:Class xmi.id="c-doc" name="Doctor"/>
+        <UML:Association xmi.id="assoc1">
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="e1">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="c-doc"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="e2">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="c-cita-full"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+      </UML:Namespace.ownedElement>
+    </UML:Model>
+    <XMI.extension>
+      <JUDE:Diagram xmi.id="d0" name="Class Diagram0" typeInfo="Class Diagram" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/">
+        <JUDE:Diagram.presentations>
+          <JUDE:ClassPresentation xmi.id="p1">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="c-cita-full"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:ClassPresentation>
+        </JUDE:Diagram.presentations>
+      </JUDE:Diagram>
+    </XMI.extension>
+  </XMI.content>
+</XMI>
