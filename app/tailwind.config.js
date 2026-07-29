@@ -38,6 +38,22 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        match: {
+          DEFAULT: "hsl(var(--match))",
+          foreground: "hsl(var(--match-foreground))",
+        },
+        partial: {
+          DEFAULT: "hsl(var(--partial))",
+          foreground: "hsl(var(--partial-foreground))",
+        },
+        mismatch: {
+          DEFAULT: "hsl(var(--mismatch))",
+          foreground: "hsl(var(--mismatch-foreground))",
+        },
+        extra: {
+          DEFAULT: "hsl(var(--extra))",
+          foreground: "hsl(var(--extra-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

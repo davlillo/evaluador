@@ -67,6 +67,14 @@ uml-evaluator/backend/models/*.kv
 uml-evaluator/backend/models/*.kv.vectors.npy
 uml-evaluator/backend/models/*.vec
 
+# Herramientas de IA / caches locales
+.opencode/
+.atl/
+.claude/
+
+# Carpetas de trabajo sueltas (no versionar)
+Nueva carpeta*/
+
 # OS
 .DS_Store
 Thumbs.db

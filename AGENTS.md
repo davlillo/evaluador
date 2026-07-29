@@ -33,9 +33,18 @@ pip install -r requirements.txt
 python run.py            # Start dev server with hot reload
 ```
 
-**No test framework is configured.** To add tests, use pytest (`pip install pytest httpx`) and run `pytest`.
+**Matching semántico con embeddings (opcional pero recomendado):** sin el modelo, el matcher usa solo heurística (typos/normalización). Para sinónimos automáticos (`doctor`/`medico`, `cantante`/`artista`, etc.):
 
-## Code Style — Frontend (TypeScript/React)
+```bash
+cd uml-evaluator/backend
+pip install -r requirements.txt
+python app/scripts/download_fasttext.py   # ~1.2 GB .vec, solo si no tienes modelo
+python app/scripts/preprocess_model.py    # genera models/cc.es.300.kv desde .vec o .bin
+```
+
+Si ya tienes `models/cc.es.300.bin` (FastText Facebook), basta con `preprocess_model.py` (no hace falta redescargar). Los archivos del modelo viven en `uml-evaluator/backend/models/` (ignorados por git).
+
+**Tests:** `pip install pytest` (o `requirements-dev.txt` si existe) y `pytest`.## Code Style — Frontend (TypeScript/React)
 
 ### Imports
 - Use `@/*` path alias for `src/*` (e.g., `@/components/ui/button`)
