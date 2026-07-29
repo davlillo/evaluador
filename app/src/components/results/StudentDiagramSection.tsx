@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, EyeOff, GitCompare } from 'lucide-react';
+import { GitCompare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,12 +9,6 @@ import { SequenceResultsView } from '@/components/results/SequenceResultsView';
 import { ClassDiagramComparison } from '@/components/results/ClassDiagramComparison';
 import { UseCaseComparison } from '@/components/results/UseCaseComparison';
 import { SequenceComparison } from '@/components/results/SequenceComparison';
-import {
-  MermaidRenderer,
-  buildClassDiagramMermaid,
-  buildUseCaseDiagramMermaid,
-  buildSequenceDiagramMermaid,
-} from '@/components/results/MermaidRenderer';
 import type {
   ComparisonResult,
   Breakdown,
@@ -23,6 +17,7 @@ import type {
   DiagramInfo,
 } from '@/types/comparison';
 import { isSequenceBreakdown, isUseCaseBreakdown } from '@/types/comparison';
+import { percentTextClass } from '@/lib/status-colors';
 
 export interface DiagramResultEntry {
   diagram_type: string;
@@ -39,11 +34,7 @@ export function getDiagramLabel(diagramType: string): string {
   return labels[diagramType] || diagramType;
 }
 
-export function getSimilarityColor(similarity: number): string {
-  if (similarity >= 80) return 'text-green-500';
-  if (similarity >= 60) return 'text-yellow-500';
-  return 'text-red-500';
-}
+export const getSimilarityColor = percentTextClass;
 
 interface StudentDiagramSectionProps {
   diagResult: DiagramResultEntry;
@@ -65,7 +56,6 @@ export function StudentDiagramSection({
   showNavActions = true,
 }: StudentDiagramSectionProps) {
   const [showComparison, setShowComparison] = useState(false);
-  const [showMermaid, setShowMermaid] = useState(false);
 
   const comparison = diagResult.comparison;
   const expInfo = expectedDiagrams[diagramType] ?? comparison.expected_diagram;
@@ -74,25 +64,6 @@ export function StudentDiagramSection({
   const isClass = diagramType === 'class';
   const isUseCase = diagramType === 'usecase';
   const isSequence = diagramType === 'sequence';
-
-  let mermaidChart = '';
-  if (isClass && expInfo) {
-    mermaidChart = buildClassDiagramMermaid(
-      expInfo.classes || [],
-      expInfo.relationships || [],
-    );
-  } else if (isUseCase && expInfo) {
-    mermaidChart = buildUseCaseDiagramMermaid(
-      expInfo.actors || [],
-      expInfo.use_cases || [],
-      expInfo.relationships || [],
-    );
-  } else if (isSequence && expInfo) {
-    mermaidChart = buildSequenceDiagramMermaid(
-      expInfo.lifelines || [],
-      expInfo.messages || [],
-    );
-  }
 
   const navProps = showNavActions
     ? { onBack, onViewReport, showNavActions: true as const }
@@ -145,14 +116,8 @@ export function StudentDiagramSection({
         <div className="flex flex-wrap gap-2 pt-2 border-t">
           <Button variant="outline" size="sm" onClick={() => setShowComparison(!showComparison)}>
             <GitCompare className="w-4 h-4 mr-2" />
-            {showComparison ? 'Ocultar Comparación' : 'Ver Comparación Detallada'}
+            {showComparison ? 'Ocultar diagramas' : 'Ver diagramas comparados'}
           </Button>
-          {mermaidChart && (
-            <Button variant="outline" size="sm" onClick={() => setShowMermaid(!showMermaid)}>
-              {showMermaid ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-              {showMermaid ? 'Ocultar Diagrama' : 'Reconstruir Diagrama'}
-            </Button>
-          )}
         </div>
 
         {showComparison && expInfo && (
@@ -184,11 +149,6 @@ export function StudentDiagramSection({
           </div>
         )}
 
-        {showMermaid && mermaidChart && (
-          <div className="border rounded-lg p-4 bg-white dark:bg-gray-900">
-            <MermaidRenderer chart={mermaidChart} id={`mermaid-${diagramType}`} />
-          </div>
-        )}
       </CardContent>
     </Card>
   );
