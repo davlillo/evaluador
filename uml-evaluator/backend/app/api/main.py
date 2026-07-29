@@ -17,17 +17,18 @@ from pydantic import BaseModel
 
 from app.parsers.xmi_parser import parse_xmi_file, parse_xmi_string, parse_xmi_file_multi
 from app.comparator.uml_comparator import compare_uml_diagrams
-from app.users_file import USERS_JSON_PATH, append_user_if_new, find_user_by_credentials
+from app.grading import grade_summary
 
 
-# Configuración de CORS
+# Configuración de CORS.
+# Sin credenciales (la app no usa login), por lo que podemos permitir cualquier origen
+# de forma válida usando el patrón de regex (no se puede combinar "*" con credenciales).
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:4173",
-    "https://*.vercel.app",
-    "*"  # Permitir todas las origenes en desarrollo
 ]
+ALLOWED_ORIGIN_REGEX = r"https://.*\.vercel\.app"
 
 # Crear directorio de uploads si no existe
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
@@ -39,7 +40,6 @@ async def lifespan(app: FastAPI):
     """Gestión del ciclo de vida de la aplicación."""
     # Startup
     print("Iniciando UML Evaluator API...")
-    print(f"Archivo de usuarios (auth): {USERS_JSON_PATH}")
     yield
     # Shutdown
     print("Cerrando UML Evaluator API...")
@@ -58,7 +58,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -79,22 +80,6 @@ class HealthResponse(BaseModel):
     """Modelo para respuesta de health check."""
     status: str
     version: str
-
-
-class AuthLoginRequest(BaseModel):
-    email: str
-    password: str
-
-
-class AuthRegisterRequest(BaseModel):
-    email: str
-    password: str
-    name: str
-
-
-class AuthUserResponse(BaseModel):
-    email: str
-    name: str
 
 
 VALID_UML_EXTENSIONS = {'.xmi', '.xml', '.uml'}
@@ -262,41 +247,6 @@ async def health_check():
         status="healthy",
         version="1.0.0"
     )
-
-
-@app.post("/api/auth/login", response_model=AuthUserResponse)
-async def auth_login(body: AuthLoginRequest):
-    """Valida credenciales contra usuarios en app/src/data/users.json (o USERS_JSON_PATH)."""
-    found = find_user_by_credentials(body.email, body.password)
-    if not found:
-        raise HTTPException(
-            status_code=401,
-            detail="Correo o contraseña incorrectos.",
-        )
-    return AuthUserResponse(email=found["email"], name=found["name"])
-
-
-@app.post("/api/auth/register", response_model=AuthUserResponse, status_code=201)
-async def auth_register(body: AuthRegisterRequest):
-    """Registra un usuario y lo persiste en el archivo JSON de usuarios."""
-    trimmed_email = body.email.strip()
-    trimmed_name = body.name.strip()
-    if not trimmed_email or not trimmed_name:
-        raise HTTPException(
-            status_code=400,
-            detail="Completá correo y nombre.",
-        )
-    record = {
-        "email": trimmed_email,
-        "password": body.password,
-        "name": trimmed_name,
-    }
-    if not append_user_if_new(record):
-        raise HTTPException(
-            status_code=400,
-            detail="Ya existe una cuenta con ese correo.",
-        )
-    return AuthUserResponse(email=trimmed_email, name=trimmed_name)
 
 
 @app.post("/api/compare")
@@ -489,8 +439,6 @@ async def compare_files_auto(
     sequence_weight_async_messages: Optional[float] = Form(None),
     sequence_weight_creation_messages: Optional[float] = Form(None),
     sequence_weight_fragment_usage: Optional[float] = Form(None),
-    sequence_weight_controller_methods: Optional[float] = Form(None),
-    sequence_weight_service_methods: Optional[float] = Form(None),
     global_weight_class: Optional[float] = Form(None),
     global_weight_usecase: Optional[float] = Form(None),
     global_weight_sequence: Optional[float] = Form(None),
@@ -592,18 +540,14 @@ async def compare_files_auto(
                 async_w = sequence_weight_async_messages
                 creation_w = sequence_weight_creation_messages
                 fragment_w = sequence_weight_fragment_usage
-                controller_w = sequence_weight_controller_methods
-                service_w = sequence_weight_service_methods
 
                 default = {}
-                if any(v is not None for v in (sync_w, async_w, creation_w, fragment_w, controller_w, service_w)):
+                if any(v is not None for v in (sync_w, async_w, creation_w, fragment_w)):
                     default = {
                         'sync_messages': max(0.0, float(sync_w or 35)) / 100.0,
                         'async_messages': max(0.0, float(async_w or 20)) / 100.0,
                         'creation_messages': max(0.0, float(creation_w or 15)) / 100.0,
                         'fragment_usage': max(0.0, float(fragment_w or 30)) / 100.0,
-                        'controller_methods': max(0.0, float(controller_w or 0)) / 100.0,
-                        'service_methods': max(0.0, float(service_w or 0)) / 100.0,
                     }
                 else:
                     default['classes'] = max(0.0, float(sequence_weight_classes or 40)) / 100.0
@@ -659,11 +603,14 @@ async def compare_files_auto(
             })
 
         overall_similarity = round(weighted_sum, 2)
+        grade = grade_summary(overall_similarity)
 
         return {
             'detected_diagrams': detected_types,
             'results': results,
             'overall_similarity': overall_similarity,
+            'nota': grade['nota'],
+            'aprobado': grade['aprobado'],
             'expected_diagrams': {k: v.to_dict() for k, v in expected_diagrams.items()},
             'student_diagrams': {k: v.to_dict() for k, v in student_diagrams.items()},
             'xmi_source_used': source,
@@ -1105,6 +1052,10 @@ async def compare_batch(
                     'student_id': student_id,
                     'status': 'error',
                     'error': 'No se pudo parsear el archivo XMI.',
+                    'complete': False,
+                    'final_score': 0.0,
+                    'nota': 0.0,
+                    'aprobado': False,
                     'runs': {},
                 })
                 continue
@@ -1147,11 +1098,14 @@ async def compare_batch(
             if all_ok:
                 complete_count += 1
 
+            grade = grade_summary(final_score)
             results.append({
                 'student_id': student_id,
                 'status': 'ok',
                 'complete': all_ok,
                 'final_score': final_score,
+                'nota': grade['nota'],
+                'aprobado': grade['aprobado'],
                 'runs': runs,
             })
 
