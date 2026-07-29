@@ -886,10 +886,11 @@ class XMIParser:
                 multiplicity = self._format_multiplicity(lower, upper)
 
                 # Detectar aggregation en el ownedEnd
-                agg = child.get('aggregation', '')
+                # Astah XMI 1.1 usa aggregation="aggregate" (equivale a shared UML).
+                agg = (child.get('aggregation') or '').strip().lower()
                 if agg == 'composite':
                     determined_rel_type = RelationshipType.COMPOSITION
-                elif agg == 'shared':
+                elif agg in ('shared', 'aggregate'):
                     determined_rel_type = RelationshipType.AGGREGATION
 
                 # Detectar navigability
@@ -903,15 +904,34 @@ class XMIParser:
                 })
 
         if len(owned_ends) >= 2:
+            # Si hay agregación/composición, source = todo (el otro extremo al que apunta
+            # el ownedEnd con aggregation, o el owner del end con aggregation).
+            agg_end = next(
+                (e for e in owned_ends if e.get('aggregation') in ('shared', 'aggregate', 'composite')),
+                None,
+            )
+            if agg_end:
+                # El end con aggregation tiene type = parte; el todo es el otro end.
+                other = owned_ends[1] if owned_ends[0] is agg_end else owned_ends[0]
+                # Convención: type del end con agg = parte; type del otro = todo
+                # (Eclipse/StarUML). Si no, invertir por nombre disponible.
+                whole_name = other['name']
+                part_name = agg_end['name']
+                if whole_name and part_name:
+                    source_name = whole_name
+                    target_name = part_name
+                    source_mult = other['multiplicity']
+                    target_mult = agg_end['multiplicity']
+
             nav_ends = [e for e in owned_ends if e['is_navigable']]
             non_nav_ends = [e for e in owned_ends if not e['is_navigable']]
 
-            if non_nav_ends and nav_ends:
+            if not source_name and non_nav_ends and nav_ends:
                 source_name = non_nav_ends[0]['name']
                 target_name = nav_ends[0]['name']
                 source_mult = non_nav_ends[0]['multiplicity']
                 target_mult = nav_ends[0]['multiplicity']
-            elif len(owned_ends) >= 2:
+            elif not source_name and len(owned_ends) >= 2:
                 # Ambos navegables: usar cardinalidad para inferir dirección
                 # En UML la flecha va del lado "uno" al lado "muchos"
                 # source = lado con menor cardinalidad, target = lado con mayor cardinalidad
@@ -967,8 +987,10 @@ class XMIParser:
                         type_ref = ''
                         lower = None
                         upper = None
+                        agg = ''
                         if end_elem:
                             type_ref = end_elem.get('type', '')
+                            agg = (end_elem.get('aggregation') or '').strip().lower()
                             for gc in end_elem:
                                 gc_tag = gc.tag.split('}')[-1] if '}' in gc.tag else gc.tag
                                 if gc_tag == 'lowerValue':
@@ -978,9 +1000,24 @@ class XMIParser:
                         if not owner and type_ref:
                             owner = id_to_name.get(type_ref, type_ref)
                         mult = self._format_multiplicity(lower, upper)
-                        end_data.append({'owner': owner, 'mult': mult, 'type_ref': type_ref})
+                        end_data.append({
+                            'owner': owner,
+                            'mult': mult,
+                            'type_ref': type_ref,
+                            'aggregation': agg,
+                        })
 
                     if len(end_data) >= 2:
+                        # Detectar agregación/composición en cualquier extremo.
+                        # UML: shared/composite; Astah XMI 1.1: aggregate ≡ shared.
+                        for ed in end_data:
+                            if ed['aggregation'] == 'composite':
+                                determined_rel_type = RelationshipType.COMPOSITION
+                                break
+                            if ed['aggregation'] in ('shared', 'aggregate'):
+                                determined_rel_type = RelationshipType.AGGREGATION
+                                break
+
                         # La cardinalidad en end[i] es la mult del OTRO extremo
                         # mult at end_data[0].owner end = end_data[1].mult
                         # mult at end_data[1].owner end = end_data[0].mult
@@ -999,24 +1036,41 @@ class XMIParser:
                             except ValueError:
                                 return 1
 
-                        w0 = cardinality_weight(mult_at_0)
-                        w1 = cardinality_weight(mult_at_1)
-
-                        if w0 < w1:
-                            source_name = end_data[0]['owner']
-                            target_name = end_data[1]['owner']
-                            source_mult = mult_at_0
-                            target_mult = mult_at_1
-                        elif w1 < w0:
-                            source_name = end_data[1]['owner']
-                            target_name = end_data[0]['owner']
-                            source_mult = mult_at_1
-                            target_mult = mult_at_0
+                        # Si hay agregación, source = todo (owner del end con aggregation).
+                        agg_whole = next(
+                            (ed for ed in end_data if ed['aggregation'] in ('shared', 'aggregate', 'composite')),
+                            None,
+                        )
+                        if agg_whole and agg_whole['owner']:
+                            other = end_data[1] if end_data[0] is agg_whole else end_data[0]
+                            source_name = agg_whole['owner']
+                            target_name = other['owner']
+                            # Mult en el extremo del todo / de la parte
+                            if end_data[0] is agg_whole:
+                                source_mult = mult_at_0
+                                target_mult = mult_at_1
+                            else:
+                                source_mult = mult_at_1
+                                target_mult = mult_at_0
                         else:
-                            source_name = end_data[0]['owner']
-                            target_name = end_data[1]['owner']
-                            source_mult = mult_at_0
-                            target_mult = mult_at_1
+                            w0 = cardinality_weight(mult_at_0)
+                            w1 = cardinality_weight(mult_at_1)
+
+                            if w0 < w1:
+                                source_name = end_data[0]['owner']
+                                target_name = end_data[1]['owner']
+                                source_mult = mult_at_0
+                                target_mult = mult_at_1
+                            elif w1 < w0:
+                                source_name = end_data[1]['owner']
+                                target_name = end_data[0]['owner']
+                                source_mult = mult_at_1
+                                target_mult = mult_at_0
+                            else:
+                                source_name = end_data[0]['owner']
+                                target_name = end_data[1]['owner']
+                                source_mult = mult_at_0
+                                target_mult = mult_at_1
 
         # Estrategia 2b (Visual Paradigm): fallback explícito cuando owner quedó vacío.
         if (not source_name or not target_name) and self.xmi_source == 'visual_paradigm':
@@ -1359,11 +1413,11 @@ class XMIParserV11:
             if has_messages or has_jude_sequence:
                 types.add('sequence')
 
-        # Si el archivo contiene un JUDE:SequenceDiagram, las clases detectadas
-        # son el boilerplate de Java (java.lang, java.util) que Astah embebe.
-        # El actor/casos de uso detectados pertenecen al propio diagrama de secuencia,
-        # no a diagramas independientes. Se descarta el tipo 'class'.
-        if has_jude_sequence:
+        # Si hay SequenceDiagram pero no hay clases de dominio, las UML:Class
+        # suelen ser boilerplate Java (java.lang, java.util) que Astah embebe.
+        # Si hay clases de dominio reales (p. ej. Class Diagram + Sequence en el
+        # mismo XMI), conservar 'class'.
+        if has_jude_sequence and self._count_domain_classes(root) == 0:
             types.discard('class')
 
         if not types:
@@ -1375,6 +1429,7 @@ class XMIParserV11:
         """Extrae el diagrama de clases del XMI 1.1."""
         diagram = UMLDiagram(name='Class Diagram', diagram_type='class')
         class_map: Dict[str, UMLClass] = {}
+        classes_by_name: Dict[str, UMLClass] = {}
         parent_map = self._build_parent_map(root)
 
         for elem in root.iter():
@@ -1388,53 +1443,95 @@ class XMIParserV11:
                 continue
 
             elem_id = self._xmi_attr(elem, 'id')
-            uml_class = UMLClass(name=name, is_abstract=False, is_interface=False)
+            name_key = name.lower()
+            uml_class = classes_by_name.get(name_key)
+            if uml_class is None:
+                uml_class = UMLClass(name=name, is_abstract=False, is_interface=False)
+                classes_by_name[name_key] = uml_class
+                diagram.classes.append(uml_class)
+            elif name != name.lower() and uml_class.name == uml_class.name.lower():
+                uml_class.name = name
+
+            seen_attrs = {a.name.lower() for a in uml_class.attributes}
+            seen_methods = {m.name.lower() for m in uml_class.methods}
 
             for child in elem:
                 child_local = self._local_tag(child)
                 if child_local.endswith('feature') or child_local == 'Feature':
-                    for attr_elem in child:
-                        if self._local_tag(attr_elem) == 'Attribute':
-                            attr_name = attr_elem.get('name', '').strip()
-                            if attr_name:
-                                type_ref = attr_elem.get('type', '')
-                                attr_type = self._resolve_type(type_ref)
-                                uml_class.attributes.append(UMLAttribute(
-                                    name=attr_name,
-                                    type=attr_type,
-                                    visibility=Visibility.PRIVATE
-                                ))
-                        elif self._local_tag(attr_elem) == 'Operation':
-                            op_name = attr_elem.get('name', '').strip()
-                            if op_name:
-                                return_type = 'void'
-                                for param in attr_elem:
-                                    param_local = self._local_tag(param)
-                                    if param_local.endswith('parameter'):
-                                        p_kind = param.get('kind', '')
-                                        if p_kind == 'return':
-                                            for p_type in param:
-                                                pt_local = self._local_tag(p_type)
-                                                if pt_local == 'type':
-                                                    href = p_type.get('href', '')
-                                                    if href:
-                                                        return_type = href.split('#')[-1]
-                                                    else:
-                                                        return_type = p_type.get('name', 'void')
-                                uml_class.methods.append(UMLMethod(
-                                    name=op_name,
-                                    return_type=return_type,
-                                    visibility=Visibility.PUBLIC
-                                ))
+                    for feat in child:
+                        feat_local = self._local_tag(feat)
+                        if feat_local == 'Attribute':
+                            attr_name = self._decode_name(feat.get('name', '')).strip()
+                            if not attr_name or attr_name.lower() in seen_attrs:
+                                continue
+                            attr_type = self._astah_attribute_type(feat)
+                            uml_class.attributes.append(UMLAttribute(
+                                name=attr_name,
+                                type=attr_type,
+                                visibility=Visibility.PRIVATE
+                            ))
+                            seen_attrs.add(attr_name.lower())
+                        elif feat_local == 'Operation':
+                            op_name = self._decode_name(feat.get('name', '')).strip()
+                            if not op_name or op_name.lower() in seen_methods:
+                                continue
+                            return_type = 'void'
+                            for param in feat:
+                                param_local = self._local_tag(param)
+                                if param_local.endswith('parameter'):
+                                    p_kind = param.get('kind', '')
+                                    if p_kind == 'return':
+                                        for p_type in param:
+                                            pt_local = self._local_tag(p_type)
+                                            if pt_local == 'type':
+                                                href = p_type.get('href', '')
+                                                if href:
+                                                    return_type = href.split('#')[-1]
+                                                else:
+                                                    type_ref = (
+                                                        self._xmi_attr(p_type, 'idref')
+                                                        or p_type.get('name', '')
+                                                    )
+                                                    return_type = self._resolve_type(type_ref) or 'void'
+                            uml_class.methods.append(UMLMethod(
+                                name=op_name,
+                                return_type=return_type,
+                                visibility=Visibility.PUBLIC
+                            ))
+                            seen_methods.add(op_name.lower())
 
-            diagram.classes.append(uml_class)
             if elem_id:
                 class_map[elem_id] = uml_class
-                self.id_to_name[elem_id] = name
+                self.id_to_name[elem_id] = uml_class.name
 
         diagram.relationships = self._extract_relationships_v11(root, class_map, [], [])
         diagram.packages = self._extract_packages_v11(root)
         return diagram
+
+    def _astah_attribute_type(self, attr_elem: ET.Element) -> str:
+        """Resuelve el tipo de un Attribute Astah (attr type= o StructuralFeature.type)."""
+        type_ref = attr_elem.get('type', '')
+        if type_ref:
+            return self._resolve_type(type_ref)
+
+        for child in attr_elem.iter():
+            cl = self._local_tag(child)
+            if cl == 'Classifier' or cl.endswith('Classifier'):
+                ref = self._xmi_attr(child, 'idref')
+                if ref:
+                    return self._resolve_type(ref)
+            if cl == 'DataType' or cl.endswith('DataType'):
+                ref = self._xmi_attr(child, 'idref') or child.get('name', '')
+                if ref:
+                    return self._resolve_type(ref) if self._xmi_attr(child, 'idref') else ref
+            if cl == 'type':
+                href = child.get('href', '')
+                if href:
+                    return href.split('#')[-1]
+                ref = self._xmi_attr(child, 'idref') or child.get('name', '')
+                if ref:
+                    return self._resolve_type(ref) if self._xmi_attr(child, 'idref') else ref
+        return ''
 
     def _extract_usecase_diagram(self, root: ET.Element) -> UMLDiagram:
         """Extrae el diagrama de casos de uso del XMI 1.1."""
@@ -1471,6 +1568,26 @@ class XMIParserV11:
         valid_names = actor_names | uc_names
 
         relationships = []
+        # Mapa Extend.id → UseCase.id dueño (quien declara UseCase.extend).
+        # En Astah el dueño es la extensión, aunque Extension.base/extension vengan cruzados.
+        extend_owner_by_id: Dict[str, str] = {}
+        for elem in root.iter():
+            if self._local_tag(elem) != 'UseCase':
+                continue
+            uc_id = self._xmi_attr(elem, 'id')
+            if not uc_id:
+                continue
+            for child in elem:
+                if not self._local_tag(child).endswith('extend'):
+                    continue
+                # UseCase.extend puede envolver Extend xmi.idref o contener el Extend.
+                for ref in child.iter():
+                    if self._local_tag(ref) != 'Extend':
+                        continue
+                    ext_id = self._xmi_attr(ref, 'idref') or self._xmi_attr(ref, 'id')
+                    if ext_id:
+                        extend_owner_by_id[ext_id] = uc_id
+
         for elem in root.iter():
             local = self._local_tag(elem)
 
@@ -1509,20 +1626,36 @@ class XMIParserV11:
                     ))
 
             elif local == 'Extend':
-                base_id = None
-                extension_id = None
+                tagged_base_id = None
+                tagged_ext_id = None
+                extend_id = self._xmi_attr(elem, 'id')
                 for child in elem:
                     cl = self._local_tag(child)
-                    if cl.endswith('base'):
+                    if cl.endswith('extension'):
                         for ref in child:
                             if self._local_tag(ref) == 'UseCase':
-                                base_id = self._xmi_attr(ref, 'idref')
-                    elif cl.endswith('extension'):
+                                tagged_ext_id = self._xmi_attr(ref, 'idref')
+                    elif cl.endswith('base'):
                         for ref in child:
                             if self._local_tag(ref) == 'UseCase':
-                                extension_id = self._xmi_attr(ref, 'idref')
-                base_name = self.id_to_name.get(base_id, '')
-                extension_name = self.id_to_name.get(extension_id, '')
+                                tagged_base_id = self._xmi_attr(ref, 'idref')
+
+                owner_id = extend_owner_by_id.get(extend_id, '') if extend_id else ''
+                # Dueño UseCase.extend = extensión; el otro extremo etiquetado = base.
+                if owner_id:
+                    extension_id = owner_id
+                    if tagged_base_id and tagged_base_id != owner_id:
+                        base_id = tagged_base_id
+                    elif tagged_ext_id and tagged_ext_id != owner_id:
+                        base_id = tagged_ext_id
+                    else:
+                        base_id = tagged_base_id
+                else:
+                    extension_id = tagged_ext_id
+                    base_id = tagged_base_id
+
+                base_name = self.id_to_name.get(base_id or '', '')
+                extension_name = self.id_to_name.get(extension_id or '', '')
                 if base_name in valid_names and extension_name in valid_names:
                     relationships.append(UMLRelationship(
                         source=extension_name,
@@ -1843,7 +1976,7 @@ class XMIParserV11:
 
                 if src_agg == 'composite' or tgt_agg == 'composite':
                     rel_type = RelationshipType.COMPOSITION
-                elif src_agg == 'shared' or tgt_agg == 'shared':
+                elif src_agg in ('shared', 'aggregate') or tgt_agg in ('shared', 'aggregate'):
                     rel_type = RelationshipType.AGGREGATION
                 else:
                     rel_type = RelationshipType.ASSOCIATION

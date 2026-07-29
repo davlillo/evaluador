@@ -1,3 +1,4 @@
+"""Descarga vectores FastText en español (cc.es.300). Ejecutar una sola vez."""
 import gzip
 import os
 import shutil
@@ -28,7 +29,7 @@ def download_model() -> None:
 
     os.remove(GZ_PATH)
     print(f"Modelo guardado en: {MODEL_PATH}")
-    print("La primera carga sera lenta (~3 min). Las siguientes seran rapidas.")
+    print("Siguiente paso: python app/scripts/preprocess_model.py")
 
 
 if __name__ == "__main__":
