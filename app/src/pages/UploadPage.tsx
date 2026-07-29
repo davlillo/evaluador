@@ -1,22 +1,17 @@
-﻿import { useState, useCallback, useEffect } from 'react';
+﻿import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileCode, CheckCircle, AlertCircle, ArrowRight, Settings, ChevronDown, ChevronUp, ChevronRight, FolderArchive } from 'lucide-react';
+import { Upload, FileCode, CheckCircle, AlertCircle, ArrowRight, Settings, ChevronDown, ChevronUp, FolderArchive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion';
+import { Card, CardContent } from '@/components/ui/card';
+import { Stepper } from '@/components/Stepper';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
-import { DownloadBatchReportsZipButton } from '@/components/report/DownloadBatchReportsZipButton';
 import type { ComparisonResult } from '@/types/comparison';
 import type { BatchCompareResponse } from '@/types/evaluation-session';
+import { DIAGRAM_TYPES, DEFAULT_WEIGHTS, type TypeWeights } from '@/lib/rubric';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -36,45 +31,6 @@ interface AutoCompareResponse {
   evaluator_version: string;
 }
 
-interface TypeWeights {
-  classes: number;
-  attributes: number;
-  methods: number;
-  relationships: number;
-  sync_messages?: number;
-  async_messages?: number;
-  creation_messages?: number;
-  fragment_usage?: number;
-  controller_methods?: number;
-  service_methods?: number;
-  include_relations?: number;
-  extend_relations?: number;
-}
-
-const DIAGRAM_TYPES = [
-  { key: 'class', label: 'Diagrama de Clases' },
-  { key: 'usecase', label: 'Casos de Uso' },
-  { key: 'sequence', label: 'Diagrama de Secuencia' },
-];
-
-const DEFAULT_WEIGHTS: Record<string, TypeWeights> = {
-  class: { classes: 35, attributes: 25, methods: 25, relationships: 15 },
-  
-  sequence: {
-    classes: 40, attributes: 0, methods: 0, relationships: 60,
-    sync_messages: 35, async_messages: 20, creation_messages: 15,
-    fragment_usage: 30, controller_methods: 0, service_methods: 0,
-  },
-  usecase: {
-    classes: 15,
-    attributes: 25,
-    methods: 25,
-    include_relations: 20,
-    extend_relations: 15,
-    relationships: 0,
-  },
-  
-};
 
 function WeightSlider({
   label,
@@ -212,9 +168,7 @@ function WeightsPanel({
     (weights.sync_messages ?? 35) +
     (weights.async_messages ?? 20) +
     (weights.creation_messages ?? 15) +
-    (weights.fragment_usage ?? 30) +
-    (weights.controller_methods ?? 0) +
-    (weights.service_methods ?? 0);
+    (weights.fragment_usage ?? 30);
   const isValid = Math.abs(total - 100) < 0.01;
   return (
     <div className="mt-3 p-3 border rounded-lg bg-muted/10">
@@ -243,18 +197,6 @@ function WeightsPanel({
           value={weights.fragment_usage ?? 30}
           onChange={(v) => onChange({ ...weights, fragment_usage: v })}
         />
-        <WeightSlider
-          label="Métodos controladora (futuro)"
-          color="text-slate-600"
-          value={weights.controller_methods ?? 0}
-          onChange={(v) => onChange({ ...weights, controller_methods: v })}
-        />
-        <WeightSlider
-          label="Métodos servicios (futuro)"
-          color="text-gray-600"
-          value={weights.service_methods ?? 0}
-          onChange={(v) => onChange({ ...weights, service_methods: v })}
-        />
       </div>
       <div className="mt-2 flex items-center gap-2">
         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
@@ -262,17 +204,12 @@ function WeightsPanel({
           <div className="h-full bg-purple-500 transition-all" style={{ width: total > 0 ? ((weights.async_messages ?? 20) / total) * 100 + '%' : '0%' }} />
           <div className="h-full bg-teal-500 transition-all" style={{ width: total > 0 ? ((weights.creation_messages ?? 15) / total) * 100 + '%' : '0%' }} />
           <div className="h-full bg-orange-500 transition-all" style={{ width: total > 0 ? ((weights.fragment_usage ?? 30) / total) * 100 + '%' : '0%' }} />
-          <div className="h-full bg-slate-500 transition-all" style={{ width: total > 0 ? ((weights.controller_methods ?? 0) / total) * 100 + '%' : '0%' }} />
-          <div className="h-full bg-gray-500 transition-all" style={{ width: total > 0 ? ((weights.service_methods ?? 0) / total) * 100 + '%' : '0%' }} />
         </div>
         <span className={'text-xs font-medium ' + (isValid ? 'text-green-600' : 'text-red-500')}>
           Total: {Math.round(total)}%
         </span>
       </div>
       {!isValid && <p className="text-xs text-red-500 mt-1">Debe sumar 100%.</p>}
-      <p className="text-xs text-muted-foreground mt-1">
-        Controladora/servicios quedan como criterio futuro; puedes dejar ambos en 0%.
-      </p>
     </div>
   );
 }
@@ -421,14 +358,9 @@ function FileUploadZone({
   );
 }
 
-function formatScore(value?: number | null): string {
-  if (value === null || value === undefined) return '-';
-  return Number(value).toFixed(2);
-}
-
 export default function UploadPage() {
   const { setResult } = useEvaluationResult();
-  const { batchResult, setBatchEvaluation, clearGlobalEvaluation } = useGlobalEvaluation();
+  const { setBatchEvaluation, clearGlobalEvaluation } = useGlobalEvaluation();
   const navigate = useNavigate();
 
   const [uploadMode, setUploadMode] = useState<'simple' | 'batch'>('simple');
@@ -450,12 +382,6 @@ export default function UploadPage() {
   const [globalWeights, setGlobalWeights] = useState<Record<string, number>>({
     class: 40, usecase: 35, sequence: 25,
   });
-
-  useEffect(() => {
-    if (batchResult) {
-      setUploadMode('batch');
-    }
-  }, [batchResult]);
 
   const updateGlobalWeight = (key: string, value: number) => {
     setGlobalWeights((prev) => ({ ...prev, [key]: value }));
@@ -515,8 +441,6 @@ export default function UploadPage() {
           formData.append('sequence_weight_async_messages', String(w.async_messages ?? 20));
           formData.append('sequence_weight_creation_messages', String(w.creation_messages ?? 15));
           formData.append('sequence_weight_fragment_usage', String(w.fragment_usage ?? 30));
-          formData.append('sequence_weight_controller_methods', String(w.controller_methods ?? 0));
-          formData.append('sequence_weight_service_methods', String(w.service_methods ?? 0));
         }
       }
       const response = await fetch(API_URL + '/api/compare-auto', {
@@ -528,7 +452,7 @@ export default function UploadPage() {
       }
       const data: AutoCompareResponse = await response.json();
       setResult(data, { studentFileName: studentFile.name });
-      navigate('/evaluar/resultados');
+      navigate('/resultados');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -562,7 +486,7 @@ export default function UploadPage() {
       }
       const data: BatchCompareResponse = await response.json();
       setBatchEvaluation(data);
-      setUploadMode('batch');
+      navigate('/lote');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -572,61 +496,67 @@ export default function UploadPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-center gap-2">
+      {/* Encabezado con estado del flujo (paso 1 de 3) */}
+      <div className="space-y-5">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Upload className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Nueva comparación</h2>
+            <p className="text-muted-foreground max-w-2xl">
+              Sube la solución oficial (docente) y la solución del estudiante para comenzar la evaluación.
+            </p>
+          </div>
+        </div>
+        <Stepper current={1} />
+      </div>
+
+      {/* Selector de modo */}
+      <div className="flex items-center gap-2">
         <Badge
           variant={uploadMode === 'simple' ? 'default' : 'outline'}
           className="cursor-pointer px-4 py-2 text-sm"
           onClick={() => { setUploadMode('simple'); setError(null); }}
         >
-          Evaluar un alumno
+          Un estudiante
         </Badge>
-        <span className="text-muted-foreground text-sm">|</span>
         <Badge
           variant={uploadMode === 'batch' ? 'default' : 'outline'}
           className="cursor-pointer px-4 py-2 text-sm"
           onClick={() => { setUploadMode('batch'); setError(null); }}
         >
-          Evaluar múltiples alumnos
+          Lote (ZIP de estudiantes)
         </Badge>
       </div>
 
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold">Compara Diagramas UML</h2>
-        <p className="text-muted-foreground max-w-xl mx-auto">
-          {uploadMode === 'simple'
-            ? 'Sube la solución del docente y el archivo del estudiante para compararlos.'
-            : 'Sube la solución (XMI) y un ZIP con los archivos de todos los estudiantes.'}
-        </p>
-      </div>
-
-      <div className="space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
+      {/* Dos zonas de subida */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <FileUploadZone
+          label="1. Solución oficial (Docente)"
+          description="Este archivo será la referencia para la evaluación."
+          file={expectedFile}
+          onFileSelect={setExpectedFile}
+          icon={<FileCode className="w-8 h-8" />}
+        />
+        {uploadMode === 'simple' ? (
           <FileUploadZone
-            label="Solución del Docente"
-            description="Archivo XMI de referencia"
-            file={expectedFile}
-            onFileSelect={setExpectedFile}
-            icon={<FileCode className="w-8 h-8" />}
+            label="2. Solución del estudiante"
+            description="Este archivo será comparado con la solución oficial."
+            file={studentFile}
+            onFileSelect={setStudentFile}
+            icon={<Upload className="w-8 h-8" />}
           />
-          {uploadMode === 'simple' ? (
-            <FileUploadZone
-              label="Archivo del Estudiante"
-              description="Archivo XMI del estudiante"
-              file={studentFile}
-              onFileSelect={setStudentFile}
-              icon={<Upload className="w-8 h-8" />}
-            />
-          ) : (
-            <FileUploadZone
-              label="ZIP de Estudiantes"
-              description="ZIP con los XMI de cada estudiante"
-              accept=".zip"
-              file={batchZipFile}
-              onFileSelect={setBatchZipFile}
-              icon={<FolderArchive className="w-8 h-8" />}
-            />
-          )}
-        </div>
+        ) : (
+          <FileUploadZone
+            label="2. ZIP de estudiantes"
+            description="Un .xmi por estudiante; el nombre del archivo se usa como carné."
+            accept=".zip"
+            file={batchZipFile}
+            onFileSelect={setBatchZipFile}
+            icon={<FolderArchive className="w-8 h-8" />}
+          />
+        )}
       </div>
 
       <Card className="border-dashed">
@@ -719,7 +649,17 @@ export default function UploadPage() {
         </Alert>
       )}
 
-      <div className="flex justify-center">
+      {/* Recomendaciones */}
+      <div className="rounded-xl border bg-accent/40 p-4 text-sm">
+        <p className="font-semibold text-primary mb-1.5">Recomendaciones</p>
+        <ul className="space-y-1 text-muted-foreground list-disc pl-5">
+          <li>Exporta los diagramas a XMI desde <strong>Astah Professional</strong> o Visual Paradigm.</li>
+          <li>Asegúrate de que los archivos correspondan al mismo tipo de diagrama.</li>
+          <li>En modo lote, nombra cada archivo con el carné del estudiante (ej. <code>AB12345.xmi</code>).</li>
+        </ul>
+      </div>
+
+      <div className="flex justify-end">
         <Button
           size="lg"
           onClick={uploadMode === 'simple' ? handleSingleCompare : handleBatchCompare}
@@ -730,79 +670,21 @@ export default function UploadPage() {
               : !expectedFile || !batchZipFile) ||
             selectedTypes.size === 0
           }
-          className="min-w-[250px]"
+          className="min-w-[220px]"
         >
           {loading ? (
             <>
               <span className="animate-spin mr-2">&#x27f3;</span>
-              {uploadMode === 'simple' ? 'Analizando diagramas...' : 'Evaluando estudiantes...'}
+              {uploadMode === 'simple' ? 'Analizando…' : 'Evaluando lote…'}
             </>
           ) : (
             <>
-              <ArrowRight className="w-5 h-5 mr-2" />
-              {uploadMode === 'simple' ? 'Comparar' : 'Evaluar lote'}
+              {uploadMode === 'simple' ? 'Comparar ahora' : 'Evaluar lote'}
+              <ArrowRight className="w-5 h-5 ml-2" />
             </>
           )}
         </Button>
       </div>
-
-      {batchResult && (
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Exportación masiva</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <DownloadBatchReportsZipButton />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <p className="text-sm text-muted-foreground mb-3">
-                Estudiantes: {batchResult.students_total} | Completos: {batchResult.students_complete} | Incompletos: {batchResult.students_incomplete}
-              </p>
-              <Accordion type="single" collapsible className="w-full">
-                {batchResult.results.map((row) => (
-                  <AccordionItem key={row.student_id} value={row.student_id}>
-                    <AccordionTrigger className="hover:bg-muted/40 px-3 rounded-lg">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <span className="font-medium truncate">{row.student_id}</span>
-                        <span className="text-sm font-semibold ml-auto">{formatScore(row.final_score)}%</span>
-                        {row.complete ? (
-                          <Badge className="shrink-0">Completo</Badge>
-                        ) : (
-                          <Badge variant="secondary" className="shrink-0">Incompleto</Badge>
-                        )}
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3 px-3 pb-3">
-                        <div className="grid grid-cols-3 gap-3 text-sm">
-                          {Object.entries(row.runs).map(([kind, run]) => (
-                            <div key={kind} className="p-3 border rounded-lg bg-muted/10">
-                              <p className="text-xs text-muted-foreground capitalize">{kind}</p>
-                              <p className="text-lg font-semibold">{formatScore(run.similarity)}%</p>
-                            </div>
-                          ))}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => navigate('/evaluar/global/desglose', { state: { studentId: row.student_id } })}
-                        >
-                          <ChevronRight className="w-4 h-4 mr-2" />
-                          Ver desglose detallado
-                        </Button>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
