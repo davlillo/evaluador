@@ -70,7 +70,7 @@ export function GlobalEvaluationProvider({ children }: { children: ReactNode }) 
   const [batchResult, setBatchResult] = useState<BatchCompareResponse | null>(null);
   const [globalResult, setGlobalResult] = useState<GlobalComparisonResponse | null>(null);
   const [expectedDiagrams, setExpectedDiagrams] = useState<Record<string, DiagramInfo> | null>(null);
-  const [returnPath, setReturnPath] = useState('/evaluar/subir');
+  const [returnPath, setReturnPath] = useState('/lote');
   const [reportReturn, setReportReturn] = useState<ReportReturnState | null>(null);
 
   const setBatchEvaluation = useCallback((data: BatchCompareResponse) => {
@@ -78,7 +78,7 @@ export function GlobalEvaluationProvider({ children }: { children: ReactNode }) 
     setBatchResult(data);
     setGlobalResult(null);
     setExpectedDiagrams(data.expected_diagrams ?? null);
-    setReturnPath('/evaluar/subir');
+    setReturnPath('/lote');
   }, []);
 
   const setGlobalEvaluation = useCallback((data: GlobalComparisonResponse) => {
@@ -86,7 +86,7 @@ export function GlobalEvaluationProvider({ children }: { children: ReactNode }) 
     setGlobalResult(data);
     setBatchResult(null);
     setExpectedDiagrams(data.expected_diagrams ?? null);
-    setReturnPath('/evaluar/global');
+    setReturnPath('/lote');
   }, []);
 
   const getStudentById = useCallback(
@@ -109,7 +109,7 @@ export function GlobalEvaluationProvider({ children }: { children: ReactNode }) 
     setBatchResult(null);
     setGlobalResult(null);
     setExpectedDiagrams(null);
-    setReturnPath('/evaluar/subir');
+    setReturnPath('/lote');
     setReportReturn(null);
   }, []);
 

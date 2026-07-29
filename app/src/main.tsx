@@ -4,8 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App.tsx';
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/context/AuthContext';
-import { EvaluationWizardProvider } from '@/context/EvaluationWizardContext';
 import { EvaluationResultProvider } from '@/context/EvaluationResultContext';
 import { GlobalEvaluationProvider } from '@/context/GlobalEvaluationContext';
 
@@ -13,15 +11,11 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
       <BrowserRouter>
-        <AuthProvider>
-          <EvaluationWizardProvider>
-            <EvaluationResultProvider>
-              <GlobalEvaluationProvider>
-                <App />
-              </GlobalEvaluationProvider>
-            </EvaluationResultProvider>
-          </EvaluationWizardProvider>
-        </AuthProvider>
+        <EvaluationResultProvider>
+          <GlobalEvaluationProvider>
+            <App />
+          </GlobalEvaluationProvider>
+        </EvaluationResultProvider>
       </BrowserRouter>
     </ThemeProvider>
   </StrictMode>,

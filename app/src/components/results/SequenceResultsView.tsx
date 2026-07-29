@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { percentTextClass } from '@/lib/status-colors';
 import type { ComparisonResult, SequenceBreakdown } from '@/types/comparison';
 
 interface SequenceResultsViewProps {
@@ -12,12 +13,7 @@ interface SequenceResultsViewProps {
   showNavActions?: boolean;
 }
 
-function percentColor(v: number): string {
-  if (v >= 80) return 'text-green-600';
-  if (v >= 60) return 'text-yellow-600';
-  if (v >= 40) return 'text-orange-600';
-  return 'text-red-600';
-}
+const percentColor = percentTextClass;
 
 function Slice({
   title,

@@ -1,7 +1,10 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Stepper } from '@/components/Stepper';
+import { ScoreGauge } from '@/components/results/ScoreGauge';
+import { EditableNota } from '@/components/results/EditableNota';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { ClassResultsView } from '@/components/results/ClassResultsView';
 import { UseCaseResultsView } from '@/components/results/UseCaseResultsView';
@@ -9,7 +12,6 @@ import { SequenceResultsView } from '@/components/results/SequenceResultsView';
 import {
   StudentDiagramSection,
   getDiagramLabel,
-  getSimilarityColor,
 } from '@/components/results/StudentDiagramSection';
 import type {
   ComparisonResult,
@@ -98,16 +100,16 @@ export default function ResultsPage() {
   const navigate = useNavigate();
 
   if (!result) {
-    return <Navigate to="/evaluar/subir" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const handleBack = () => {
     clearResult();
-    navigate('/evaluar/subir');
+    navigate('/');
   };
 
   const handleViewReport = () => {
-    navigate('/evaluar/reporte');
+    navigate('/reporte');
   };
 
   if (isMultiDiagram(result)) {
@@ -115,29 +117,40 @@ export default function ResultsPage() {
 
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={handleBack}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Nueva Comparación
-          </Button>
-          <Button onClick={handleViewReport}>
-            <FileText className="w-4 h-4 mr-2" />
-            Ver Reporte
-          </Button>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Resultados de la comparación</h2>
+            <p className="text-sm text-muted-foreground">Revisa el análisis detallado y la calificación obtenida.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleBack}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Nueva comparación
+            </Button>
+            <Button onClick={handleViewReport}>
+              <FileText className="w-4 h-4 mr-2" />
+              Ver reporte
+            </Button>
+          </div>
         </div>
 
-        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Nota Global</CardTitle>
-            <p className="text-muted-foreground">Promedio ponderado de todos los diagramas</p>
-          </CardHeader>
-          <CardContent className="text-center">
-            <div className={`text-6xl font-bold ${getSimilarityColor(multiResult.overall_similarity)}`}>
-              {multiResult.overall_similarity.toFixed(1)}%
+        <Stepper current={3} />
+
+        <Card>
+          <CardContent className="py-6 flex flex-col sm:flex-row items-center gap-8">
+            <ScoreGauge percent={multiResult.overall_similarity} />
+            <div className="flex-1 text-center sm:text-left space-y-3">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Resumen general</p>
+                <p className="text-lg font-semibold">
+                  {multiResult.overall_similarity.toFixed(1)}% de similitud
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Diagramas detectados: {multiResult.detected_diagrams.map(getDiagramLabel).join(', ')}
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Diagramas detectados: {multiResult.detected_diagrams.map(getDiagramLabel).join(', ')}
-            </p>
+            <EditableNota percent={multiResult.overall_similarity} />
           </CardContent>
         </Card>
 

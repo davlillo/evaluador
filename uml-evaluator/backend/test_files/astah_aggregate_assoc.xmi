@@ -1,0 +1,41 @@
+<?xml version = "1.0" encoding = "UTF-8" standalone = "yes"?>
+<XMI xmi.version="1.1" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/" xmlns:UML="org.omg.xmi.namespace.UML">
+  <XMI.content>
+    <UML:Model xmi.id="m0" name="agg_test" xmlns:UML="org.omg.xmi.namespace.UML">
+      <UML:Namespace.ownedElement>
+        <UML:Class xmi.id="c-todo" name="Clinica"/>
+        <UML:Class xmi.id="c-parte" name="Doctor"/>
+        <UML:Association xmi.id="assoc-agg">
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="e-todo" aggregation="aggregate" isNavigable="false">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="c-todo"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="e-parte" aggregation="none" isNavigable="true">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="c-parte"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+      </UML:Namespace.ownedElement>
+    </UML:Model>
+    <XMI.extension>
+      <JUDE:Diagram xmi.id="d0" name="Class Diagram0" typeInfo="Class Diagram" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/">
+        <JUDE:Diagram.presentations>
+          <JUDE:ClassPresentation xmi.id="p1">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="c-todo"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:ClassPresentation>
+          <JUDE:ClassPresentation xmi.id="p2">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="c-parte"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:ClassPresentation>
+        </JUDE:Diagram.presentations>
+      </JUDE:Diagram>
+    </XMI.extension>
+  </XMI.content>
+</XMI>

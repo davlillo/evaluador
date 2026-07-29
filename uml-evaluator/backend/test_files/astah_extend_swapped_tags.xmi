@@ -1,0 +1,113 @@
+<?xml version = "1.0" encoding = "UTF-8" standalone = "yes"?>
+<XMI xmi.version="1.1" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/" xmlns:UML="org.omg.xmi.namespace.UML">
+  <XMI.content>
+    <UML:Model xmi.id="g7-model" name="hospital_uc" xmlns:UML="org.omg.xmi.namespace.UML">
+      <UML:Namespace.ownedElement>
+        <UML:Actor xmi.id="doc-actor" name="doctor"/>
+        <UML:UseCase xmi.id="uc-citas" name="consultar+citas+programadas"/>
+        <UML:UseCase xmi.id="uc-registrar" name="registrar+atencion+/+diagnostico">
+          <UML:UseCase.include>
+            <UML:Include xmi.idref="inc-1"/>
+          </UML:UseCase.include>
+        </UML:UseCase>
+        <UML:UseCase xmi.id="uc-historial" name="consultar+historial+clinico+del+paciente"/>
+        <UML:UseCase xmi.id="uc-generar" name="generar+receta+meidca">
+          <UML:UseCase.extend>
+            <UML:Extend xmi.idref="ext-1"/>
+          </UML:UseCase.extend>
+        </UML:UseCase>
+        <UML:Association xmi.id="a1">
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="a1e1">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="uc-citas"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="a1e2">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="doc-actor"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:Association xmi.id="a2">
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="a2e1">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="uc-registrar"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="a2e2">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="doc-actor"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:Association xmi.id="a3">
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="a3e1">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="uc-generar"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="a3e2">
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="doc-actor"/>
+              </UML:AssociationEnd.participant>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:Include xmi.id="inc-1">
+          <UML:Include.base>
+            <UML:UseCase xmi.idref="uc-registrar"/>
+          </UML:Include.base>
+          <UML:Include.addition>
+            <UML:UseCase xmi.idref="uc-historial"/>
+          </UML:Include.addition>
+        </UML:Include>
+        <!-- Tags cruzados a propósito: extension apunta al base y base a la extensión.
+             El dueño UseCase.extend (uc-generar) manda. -->
+        <UML:Extend xmi.id="ext-1">
+          <UML:Extend.extension>
+            <UML:UseCase xmi.idref="uc-registrar"/>
+          </UML:Extend.extension>
+          <UML:Extend.base>
+            <UML:UseCase xmi.idref="uc-generar"/>
+          </UML:Extend.base>
+        </UML:Extend>
+      </UML:Namespace.ownedElement>
+    </UML:Model>
+    <XMI.extension>
+      <JUDE:Diagram xmi.id="pa-diag" name="uc si" typeInfo="UseCase Diagram" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/">
+        <JUDE:Diagram.presentations>
+          <JUDE:ClassifierPresentation xmi.id="p-doc">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Actor xmi.idref="doc-actor"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:ClassifierPresentation>
+          <JUDE:UseCasePresentation xmi.id="p-citas">
+            <JUDE:UPresentation.semanticModel>
+              <UML:UseCase xmi.idref="uc-citas"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:UseCasePresentation>
+          <JUDE:UseCasePresentation xmi.id="p-reg">
+            <JUDE:UPresentation.semanticModel>
+              <UML:UseCase xmi.idref="uc-registrar"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:UseCasePresentation>
+          <JUDE:UseCasePresentation xmi.id="p-hist">
+            <JUDE:UPresentation.semanticModel>
+              <UML:UseCase xmi.idref="uc-historial"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:UseCasePresentation>
+          <JUDE:UseCasePresentation xmi.id="p-gen">
+            <JUDE:UPresentation.semanticModel>
+              <UML:UseCase xmi.idref="uc-generar"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:UseCasePresentation>
+        </JUDE:Diagram.presentations>
+      </JUDE:Diagram>
+    </XMI.extension>
+  </XMI.content>
+</XMI>

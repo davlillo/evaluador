@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<XMI xmi.version="1.1" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/" xmlns:UML="org.omg.xmi.namespace.UML">
+  <XMI.header>
+    <XMI.documentation>
+      <XMI.exporter>Jomt XMI writer</XMI.exporter>
+      <XMI.exporterVersion>1.2.0.37</XMI.exporterVersion>
+    </XMI.documentation>
+    <XMI.metamodel xmi.name="UML" xmi.version="1.4"/>
+  </XMI.header>
+  <XMI.content>
+    <UML:Model xmi.id="m0" name="clinica" version="0" unSolvedFlag="false" isRoot="true" isLeaf="false" isAbstract="false" xmlns:UML="org.omg.xmi.namespace.UML">
+      <UML:Namespace.ownedElement>
+        <UML:Package xmi.id="p0" name="si" version="0" unSolvedFlag="false" isRoot="true" isLeaf="false" isAbstract="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="m0"/>
+          </UML:ModelElement.namespace>
+          <UML:Namespace.ownedElement>
+            <UML:Class xmi.id="cDoctor" name="Doctor" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="p0"/>
+              </UML:ModelElement.namespace>
+              <UML:Classifier.feature>
+                <UML:Attribute xmi.id="aEsp" name="especialidad" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+                  <UML:Feature.owner>
+                    <UML:Classifier xmi.idref="cDoctor"/>
+                  </UML:Feature.owner>
+                </UML:Attribute>
+                <UML:Operation xmi.id="oAtender" name="atenderCita" version="0" unSolvedFlag="false" ownerScope="instance" isQuery="true" concurrency="sequential" isRoot="false" isLeaf="false" isAbstract="false">
+                  <UML:Feature.owner>
+                    <UML:Classifier xmi.idref="cDoctor"/>
+                  </UML:Feature.owner>
+                </UML:Operation>
+              </UML:Classifier.feature>
+            </UML:Class>
+            <UML:Class xmi.id="cPaciente" name="Paciente" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="p0"/>
+              </UML:ModelElement.namespace>
+            </UML:Class>
+            <UML:Actor xmi.id="aDoctor" name="doctor" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="p0"/>
+              </UML:ModelElement.namespace>
+            </UML:Actor>
+            <UML:UseCase xmi.id="ucSolicitar" name="Solicitar+Cita+Medica" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="p0"/>
+              </UML:ModelElement.namespace>
+            </UML:UseCase>
+            <UML:Association xmi.id="assocUC" name="" version="0" unSolvedFlag="false">
+              <UML:Association.connection>
+                <UML:AssociationEnd xmi.id="ae1" name="" version="0" unSolvedFlag="false" isNavigable="false">
+                  <UML:AssociationEnd.participant>
+                    <UML:Classifier xmi.idref="aDoctor"/>
+                  </UML:AssociationEnd.participant>
+                  <UML:AssociationEnd.association>
+                    <UML:Association xmi.idref="assocUC"/>
+                  </UML:AssociationEnd.association>
+                </UML:AssociationEnd>
+                <UML:AssociationEnd xmi.id="ae2" name="" version="0" unSolvedFlag="false" isNavigable="false">
+                  <UML:AssociationEnd.participant>
+                    <UML:Classifier xmi.idref="ucSolicitar"/>
+                  </UML:AssociationEnd.participant>
+                  <UML:AssociationEnd.association>
+                    <UML:Association xmi.idref="assocUC"/>
+                  </UML:AssociationEnd.association>
+                </UML:AssociationEnd>
+              </UML:Association.connection>
+            </UML:Association>
+          </UML:Namespace.ownedElement>
+          <UML:Namespace.collaboration>
+            <UML:Collaboration xmi.id="collab0" name="" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false">
+              <UML:Namespace.ownedElement>
+                <UML:ClassifierRole xmi.id="roleDoctor" name="" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+                  <UML:ClassifierRole.base>
+                    <UML:Classifier xmi.idref="cDoctor"/>
+                  </UML:ClassifierRole.base>
+                </UML:ClassifierRole>
+                <UML:ClassifierRole xmi.id="rolePaciente" name="" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+                  <UML:ClassifierRole.base>
+                    <UML:Classifier xmi.idref="cPaciente"/>
+                  </UML:ClassifierRole.base>
+                </UML:ClassifierRole>
+              </UML:Namespace.ownedElement>
+              <UML:Collaboration.interaction>
+                <UML:Interaction xmi.id="inter0" name="" version="0" unSolvedFlag="false" argument="">
+                  <UML:Interaction.message>
+                    <UML:Message xmi.id="msg1" name="solicitar%28%29" version="0" unSolvedFlag="false">
+                      <UML:Message.sender>
+                        <UML:ClassifierRole xmi.idref="rolePaciente"/>
+                      </UML:Message.sender>
+                      <UML:Message.receiver>
+                        <UML:ClassifierRole xmi.idref="roleDoctor"/>
+                      </UML:Message.receiver>
+                      <UML:Message.action>
+                        <UML:Action xmi.id="act1" name="solicitar%28%29" version="0" unSolvedFlag="false" isAsynchronous="false" actionType="1"/>
+                      </UML:Message.action>
+                    </UML:Message>
+                  </UML:Interaction.message>
+                </UML:Interaction>
+              </UML:Collaboration.interaction>
+            </UML:Collaboration>
+          </UML:Namespace.collaboration>
+        </UML:Package>
+      </UML:Namespace.ownedElement>
+    </UML:Model>
+    <XMI.extension>
+      <JUDE:SequenceDiagram xmi.id="seq0" name="Sequence Diagram0" version="0" typeInfo="Sequence Diagram" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/">
+        <JUDE:InteractionDiagram.semanticModel>
+          <UML:Collaboration xmi.idref="collab0"/>
+        </JUDE:InteractionDiagram.semanticModel>
+      </JUDE:SequenceDiagram>
+      <JUDE:Diagram xmi.id="ucDiag" name="UseCase Diagram0" typeInfo="UseCase Diagram" version="0">
+        <JUDE:Diagram.presentations>
+          <JUDE:ClassifierPresentation xmi.id="ucPresActor" version="0" label="doctor">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Actor xmi.idref="aDoctor"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:ClassifierPresentation>
+          <JUDE:UseCasePresentation xmi.id="ucPresUC" version="0" label="Solicitar+Cita+Medica">
+            <JUDE:UPresentation.semanticModel>
+              <UML:UseCase xmi.idref="ucSolicitar"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:UseCasePresentation>
+        </JUDE:Diagram.presentations>
+      </JUDE:Diagram>
+      <JUDE:Diagram xmi.id="classDiag" name="Class Diagram0" typeInfo="Class Diagram" version="0">
+        <JUDE:Diagram.presentations>
+          <JUDE:ClassifierPresentation xmi.id="classPresDoctor" version="0" label="Doctor">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="cDoctor"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:ClassifierPresentation>
+          <JUDE:ClassifierPresentation xmi.id="classPresPaciente" version="0" label="Paciente">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="cPaciente"/>
+            </JUDE:UPresentation.semanticModel>
+          </JUDE:ClassifierPresentation>
+        </JUDE:Diagram.presentations>
+      </JUDE:Diagram>
+    </XMI.extension>
+  </XMI.content>
+</XMI>

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { percentTextClass } from '@/lib/status-colors';
 import type { Breakdown, ComparisonResult } from '@/types/comparison';
 
 interface ClassResultsViewProps {
@@ -13,12 +14,7 @@ interface ClassResultsViewProps {
 }
 
 function SimilarityGauge({ value, label, size = 'md' }: { value: number; label: string; size?: 'sm' | 'md' | 'lg' }) {
-  const getColor = (v: number) => {
-    if (v >= 80) return 'text-green-500';
-    if (v >= 60) return 'text-yellow-500';
-    if (v >= 40) return 'text-orange-500';
-    return 'text-red-500';
-  };
+  const getColor = percentTextClass;
   const sizeClasses = { sm: 'w-20 h-20', md: 'w-28 h-28', lg: 'w-36 h-36' };
   const textSizes = { sm: 'text-xl', md: 'text-2xl', lg: 'text-4xl' };
   return (
@@ -46,12 +42,7 @@ function ScoreCard({
   title: string; score: number; correct: number; total: number;
   missing?: string[]; extra?: string[]; icon: React.ReactNode; weight?: number;
 }) {
-  const getColor = (v: number) => {
-    if (v >= 80) return 'text-green-500';
-    if (v >= 60) return 'text-yellow-500';
-    if (v >= 40) return 'text-orange-500';
-    return 'text-red-500';
-  };
+  const getColor = percentTextClass;
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -70,7 +61,7 @@ function ScoreCard({
         </p>
         {missing && missing.length > 0 && (
           <div className="mt-2">
-            <span className="text-xs text-red-500 font-medium">Faltantes:</span>
+            <span className="text-xs text-mismatch font-medium">Faltantes:</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {missing.slice(0, 5).map((m, i) => (
                 <Badge key={i} variant="destructive" className="text-xs">{m}</Badge>
@@ -83,10 +74,10 @@ function ScoreCard({
         )}
         {extra && extra.length > 0 && (
           <div className="mt-2">
-            <span className="text-xs text-orange-500 font-medium">Extras:</span>
+            <span className="text-xs text-extra font-medium">Extras:</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {extra.slice(0, 5).map((e, i) => (
-                <Badge key={i} variant="secondary" className="text-xs bg-orange-100 text-orange-700">{e}</Badge>
+                <Badge key={i} variant="secondary" className="text-xs bg-extra/15 text-extra">{e}</Badge>
               ))}
               {extra.length > 5 && (
                 <Badge variant="outline" className="text-xs">+{extra.length - 5} más</Badge>

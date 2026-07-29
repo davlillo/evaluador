@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { percentTextClass } from '@/lib/status-colors';
 import type { ComparisonResult, UseCaseBreakdown, UseCaseSliceBreakdown } from '@/types/comparison';
 
 interface UseCaseResultsViewProps {
@@ -48,12 +49,7 @@ function normalizeUseCaseBreakdown(b: UseCaseBreakdown): Required<
 }
 
 function Gauge({ value, label }: { value: number; label: string }) {
-  const getColor = (v: number) => {
-    if (v >= 80) return 'text-green-500';
-    if (v >= 60) return 'text-yellow-500';
-    if (v >= 40) return 'text-orange-500';
-    return 'text-red-500';
-  };
+  const getColor = percentTextClass;
   return (
     <div className="flex flex-col gap-2">
       <div className={'text-3xl font-bold ' + getColor(value)}>{Math.round(value)}%</div>
@@ -88,7 +84,7 @@ function SliceCard({
         </p>
         {slice.missing && slice.missing.length > 0 && (
           <div>
-            <span className="text-xs text-red-600 font-medium">Faltantes</span>
+            <span className="text-xs text-mismatch font-medium">Faltantes</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {slice.missing.map((m, i) => (
                 <Badge key={i} variant="destructive" className="text-xs">
@@ -100,7 +96,7 @@ function SliceCard({
         )}
         {slice.extra && slice.extra.length > 0 && (
           <div>
-            <span className="text-xs text-orange-600 font-medium">Extra en el estudiante</span>
+            <span className="text-xs text-extra font-medium">Extra en el estudiante</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {slice.extra.map((m, i) => (
                 <Badge key={i} variant="secondary" className="text-xs">
@@ -154,25 +150,25 @@ export function UseCaseResultsView({ result, onBack, onViewReport, showNavAction
       )}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <SliceCard title="Actores" icon={<User className="w-4 h-4 text-blue-600" />} slice={b.actors} />
+        <SliceCard title="Actores" icon={<User className="w-4 h-4 text-primary" />} slice={b.actors} />
         <SliceCard
           title="Casos de uso"
-          icon={<CircleDot className="w-4 h-4 text-emerald-600" />}
+          icon={<CircleDot className="w-4 h-4 text-primary" />}
           slice={b.use_cases}
         />
         <SliceCard
           title="Relaciones actor–CU"
-          icon={<Link2 className="w-4 h-4 text-teal-600" />}
+          icon={<Link2 className="w-4 h-4 text-primary" />}
           slice={b.actor_associations}
         />
         <SliceCard
           title="Relaciones include"
-          icon={<GitBranch className="w-4 h-4 text-orange-600" />}
+          icon={<GitBranch className="w-4 h-4 text-primary" />}
           slice={b.include_relations}
         />
         <SliceCard
           title="Relaciones extend"
-          icon={<GitBranch className="w-4 h-4 text-amber-600" />}
+          icon={<GitBranch className="w-4 h-4 text-primary" />}
           slice={b.extend_relations}
         />
       </div>

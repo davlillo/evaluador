@@ -5,63 +5,90 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 240 10% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 240 10% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --popover-foreground: 240 10% 12%;
+
+    /* Rojo UES (carmesí institucional) */
+    --primary: 0 68% 34%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 30% 96%;
+    --secondary-foreground: 0 60% 28%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 42%;
+    --accent: 0 40% 95%;
+    --accent-foreground: 0 60% 28%;
+    --destructive: 0 72% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 0 68% 40%;
     --radius: 0.625rem;
+
+    /* Estados de comparación (semánticos) */
+    --match: 142 64% 38%;          /* coincide */
+    --match-foreground: 0 0% 100%;
+    --partial: 38 92% 46%;         /* parcial / diferencia menor */
+    --partial-foreground: 0 0% 100%;
+    --mismatch: 0 72% 50%;         /* no coincide / faltante */
+    --mismatch-foreground: 0 0% 100%;
+    --extra: 214 84% 52%;          /* extra (no en referencia) */
+    --extra-foreground: 0 0% 100%;
+
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 0 68% 34%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 40% 95%;
+    --sidebar-accent-foreground: 0 60% 28%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 0 68% 40%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --background: 240 10% 7%;
+    --foreground: 0 0% 96%;
+    --card: 240 8% 11%;
+    --card-foreground: 0 0% 96%;
+    --popover: 240 8% 11%;
+    --popover-foreground: 0 0% 96%;
+
+    /* Rojo UES un poco más luminoso sobre fondo oscuro */
+    --primary: 0 72% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 16%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 240 5% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 0 40% 20%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 62% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 0 72% 56%;
+
+    --match: 142 55% 45%;
+    --match-foreground: 0 0% 100%;
+    --partial: 38 88% 52%;
+    --partial-foreground: 240 10% 10%;
+    --mismatch: 0 68% 56%;
+    --mismatch-foreground: 0 0% 100%;
+    --extra: 214 84% 60%;
+    --extra-foreground: 0 0% 100%;
+
+    --sidebar-background: 240 8% 11%;
+    --sidebar-foreground: 240 5% 90%;
+    --sidebar-primary: 0 72% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 0 40% 20%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 240 5% 20%;
+    --sidebar-ring: 0 72% 56%;
   }
 }
 
@@ -71,5 +98,24 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Impresión / Exportar PDF: solo el acta, siempre en tema claro. */
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  html, body {
+    background: #ffffff !important;
+  }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  /* Evitar cortar diagramas, tablas o secciones a mitad de página. */
+  table, svg, section, figure, tr {
+    break-inside: avoid;
   }
 }

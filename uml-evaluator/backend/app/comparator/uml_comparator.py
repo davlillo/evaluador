@@ -3,7 +3,7 @@ Módulo de comparación de diagramas UML.
 Calcula similitud entre diagramas UML con diferentes niveles de granularidad.
 """
 
-from typing import List, Dict, Any, Tuple, Set, Optional
+from typing import List, Dict, Any, Tuple, Set, Optional, Callable
 from dataclasses import dataclass, field
 
 from app.models.uml_elements import (
@@ -165,8 +165,6 @@ class ComparisonResult:
                     "async_messages": self.sequence_criteria.get("async_messages", {}),
                     "creation_messages": self.sequence_criteria.get("creation_messages", {}),
                     "fragment_usage": self.sequence_criteria.get("fragment_usage", {}),
-                    "controller_methods": self.sequence_criteria.get("controller_methods", {}),
-                    "service_methods": self.sequence_criteria.get("service_methods", {}),
                     "order_score": round(self.message_order_score, 2),
                     # Se mantiene para vistas comparativas existentes.
                     "lifelines": {
@@ -594,7 +592,8 @@ class UMLComparator:
         Penaliza elementos extra o faltantes (evita 100% solo por recall).
         """
         if n_expected == 0 and n_student == 0:
-            return 0.0
+            # Nada que esperar y nada encontrado = coincidencia perfecta.
+            return 100.0
         if n_expected == 0:
             return 0.0 if n_student > 0 else 100.0
         if n_student == 0:
@@ -794,7 +793,7 @@ class UMLComparator:
             kind = 'use_case'
 
         exact_correct, semantic_map, missing_norm, extra_norm = self._semantic_match_dicts(
-            exp_map, stu_map, match_kind=kind,
+            exp_map, stu_map, match_kind=kind, original_name=lambda item: item.name,
         )
         correct_names = exact_correct | set(semantic_map.keys())
         missing = [exp_map[n].name for n in missing_norm]
@@ -905,16 +904,12 @@ class UMLComparator:
             creation_expected, creation_student, "creation_message", result
         )
         fragment_breakdown = self._compare_fragment_usage(expected.messages, student.messages, result)
-        controller_breakdown = self._future_sequence_slice("controller_methods")
-        service_breakdown = self._future_sequence_slice("service_methods")
 
         result.sequence_criteria = {
             "sync_messages": sync_breakdown,
             "async_messages": async_breakdown,
             "creation_messages": creation_breakdown,
             "fragment_usage": fragment_breakdown,
-            "controller_methods": controller_breakdown,
-            "service_methods": service_breakdown,
         }
 
         scores, weights = [], []
@@ -923,24 +918,49 @@ class UMLComparator:
             "async_messages": self.weights.get("async_messages", 0.0),
             "creation_messages": self.weights.get("creation_messages", 0.0),
             "fragment_usage": self.weights.get("fragment_usage", 0.0),
-            "controller_methods": self.weights.get("controller_methods", 0.0),
-            "service_methods": self.weights.get("service_methods", 0.0),
+            "message_order": self.weights.get("message_order", 0.0),
+            "lifelines": self.weights.get("classes", 0.0),
         }
 
         # Compatibilidad con esquema antiguo (classes/relationships) cuando no vengan pesos v2.
-        if sum(sequence_weight_map.values()) <= 0:
-            sequence_weight_map["sync_messages"] = self.weights.get("relationships", 0.60) * 0.45
-            sequence_weight_map["async_messages"] = self.weights.get("relationships", 0.60) * 0.25
-            sequence_weight_map["creation_messages"] = self.weights.get("relationships", 0.60) * 0.15
-            sequence_weight_map["fragment_usage"] = self.weights.get("relationships", 0.60) * 0.15
-            sequence_weight_map["controller_methods"] = 0.0
-            sequence_weight_map["service_methods"] = 0.0
+        msg_keys = ("sync_messages", "async_messages", "creation_messages", "fragment_usage", "message_order")
+        if sum(sequence_weight_map[k] for k in msg_keys) <= 0:
+            rel_w = self.weights.get("relationships", 0.60)
+            # Orden ~15% del bloque de mensajes; el resto se reparte como antes.
+            sequence_weight_map["message_order"] = rel_w * 0.15
+            sequence_weight_map["sync_messages"] = rel_w * 0.40
+            sequence_weight_map["async_messages"] = rel_w * 0.20
+            sequence_weight_map["creation_messages"] = rel_w * 0.125
+            sequence_weight_map["fragment_usage"] = rel_w * 0.125
+            if sequence_weight_map["lifelines"] <= 0:
+                sequence_weight_map["lifelines"] = self.weights.get("classes", 0.40)
+
+        # Lifelines (class_similarity)
+        ll_w = sequence_weight_map.get("lifelines", 0.0)
+        if ll_w > 0 and (
+            result.total_classes_expected > 0 or result.total_classes_found > 0
+        ):
+            scores.append(float(result.class_similarity))
+            weights.append(ll_w)
+
+        # Orden de mensajes coincidentes
+        order_w = sequence_weight_map.get("message_order", 0.0)
+        if order_w > 0 and (
+            result.total_relationships_expected > 0 or result.total_relationships_found > 0
+        ):
+            scores.append(float(result.message_order_score))
+            weights.append(order_w)
 
         for key, breakdown in result.sequence_criteria.items():
             w = sequence_weight_map.get(key, 0.0)
-            if w > 0:
-                scores.append(float(breakdown.get("similarity", 0.0)))
-                weights.append(w)
+            if w <= 0:
+                continue
+            # Descartar criterios sin elementos esperados ni encontrados
+            # (igual que clases y casos de uso): no deben inflar ni penalizar.
+            if breakdown.get("expected", 0) == 0 and breakdown.get("found", 0) == 0:
+                continue
+            scores.append(float(breakdown.get("similarity", 0.0)))
+            weights.append(w)
 
         if scores:
             total_w = sum(weights)
@@ -1069,21 +1089,6 @@ class UMLComparator:
             "extra": extra,
         }
 
-    def _future_sequence_slice(self, key: str) -> Dict[str, Any]:
-        return {
-            "similarity": 0.0,
-            "expected": 0,
-            "found": 0,
-            "correct": 0,
-            "missing": [],
-            "extra": [],
-            "future": True,
-            "note": (
-                "Criterio reservado para implementación futura: "
-                + ("métodos de capa controladora." if key == "controller_methods" else "métodos de capa servicios.")
-            ),
-        }
-
     def _compare_messages(
         self,
         expected: List[UMLMessage],
@@ -1183,6 +1188,7 @@ class UMLComparator:
         student_map: Dict[str, Any],
         *,
         match_kind: str = 'default',
+        original_name: Optional[Callable[[Any], str]] = None,
     ) -> Tuple[Set[str], Dict[str, str], Set[str], Set[str]]:
         """
         Dados dos dicts keyed por nombre normalizado, devuelve:
@@ -1190,7 +1196,16 @@ class UMLComparator:
         - semantic_map: expected_norm -> student_norm para matches semánticos
         - missing: expected sin match
         - extra: student sin match
+
+        `original_name` extrae el nombre SIN normalizar de cada valor del dict
+        (por defecto, el propio valor si es un string). El matcher semántico
+        necesita el nombre original —con mayúsculas— para poder separar
+        palabras compuestas tipo camelCase (p.ej. "fechaHora" -> "fecha hora");
+        una vez normalizado a minúsculas plano ese split ya no es posible.
         """
+        if original_name is None:
+            original_name = lambda v: v  # noqa: E731
+
         expected_names = set(expected_map.keys())
         student_names = set(student_map.keys())
 
@@ -1208,11 +1223,12 @@ class UMLComparator:
             elif match_kind == 'actor':
                 threshold = max(threshold, 0.72)
             for exp_name in sorted(remaining_exp):
-                candidates = [s for s in remaining_stu if s not in used_stu]
-                if not candidates:
+                candidates_norm = [s for s in remaining_stu if s not in used_stu]
+                if not candidates_norm:
                     break
+                candidates_original = [original_name(student_map[s]) for s in candidates_norm]
                 best, score = self._semantic_matcher.find_best_match(
-                    exp_name, candidates, threshold, kind=match_kind,
+                    original_name(expected_map[exp_name]), candidates_original, threshold, kind=match_kind,
                 )
                 if best is not None:
                     norm_best = self._normalize_name(best)
@@ -1240,13 +1256,16 @@ class UMLComparator:
         used: Set[str] = set()
         if self._use_semantic_matching and self._semantic_matcher is not None:
             for name_a in remaining_a:
-                candidates = [n for n in remaining_b if n not in used]
-                if not candidates:
+                candidates_norm = [n for n in remaining_b if n not in used]
+                if not candidates_norm:
                     break
-                best, score = self._semantic_matcher.find_best_match(name_a, candidates, 0.50)
+                candidates_original = [b_attrs[n].name for n in candidates_norm]
+                best, score = self._semantic_matcher.find_best_match(
+                    a_attrs[name_a].name, candidates_original, 0.50,
+                )
                 if best is not None:
                     sem_correct += 1
-                    nbest = best.lower().strip() if not self.case_sensitive else best.strip()
+                    nbest = self._normalize_name(best)
                     used.add(nbest)
         correct = len(exact) + sem_correct
         return self._f1_similarity_counts(correct, len(a_attrs), len(b_attrs))
@@ -1261,7 +1280,7 @@ class UMLComparator:
         student_map = {self._normalize_name(c.name): c for c in student_classes}
         
         exact_correct, semantic_map, missing_norm, extra_norm = self._semantic_match_dicts(
-            expected_map, student_map
+            expected_map, student_map, original_name=lambda cls: cls.name,
         )
 
         # Fase 3: matching por contenido (atributos)
@@ -1414,7 +1433,7 @@ class UMLComparator:
         student_attrs = {self._normalize_name(a.name): a for a in student_class.attributes}
         
         exact_correct, semantic_map, missing_norm, extra_norm = self._semantic_match_dicts(
-            expected_attrs, student_attrs
+            expected_attrs, student_attrs, original_name=lambda attr: attr.name,
         )
         correct_names = exact_correct | set(semantic_map.keys())
         result.attributes_correct = len(correct_names)
@@ -1468,7 +1487,7 @@ class UMLComparator:
         student_methods = {self._normalize_name(m.name): m for m in student_class.methods}
         
         exact_correct, semantic_map, missing_norm, extra_norm = self._semantic_match_dicts(
-            expected_methods, student_methods
+            expected_methods, student_methods, original_name=lambda m: m.name,
         )
         correct_names = exact_correct | set(semantic_map.keys())
         result.methods_correct = len(correct_names)

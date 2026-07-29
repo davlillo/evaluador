@@ -70,6 +70,10 @@ export interface BatchStudentResult {
   status: 'ok' | 'error';
   complete: boolean;
   final_score: number;
+  /** Nota 0-10 sugerida por el motor (backend). */
+  nota?: number;
+  aprobado?: boolean;
+  error?: string;
   runs: Record<string, BatchRunSummary>;
 }
 
