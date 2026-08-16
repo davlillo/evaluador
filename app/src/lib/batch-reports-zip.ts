@@ -1,12 +1,12 @@
 import JSZip from 'jszip';
 import {
-  buildBatchDiagramPdfFilename,
-  generateDetailedReportPdfArrayBuffer,
-  sanitizeZipFolderName,
+  generateConsolidatedReportPdfArrayBuffer,
+  buildConsolidatedPdfFilename,
+  type ConsolidatedDiagramEntry,
 } from '@/lib/report-pdf';
 import { buildStudentDiagramsFromRuns } from '@/context/GlobalEvaluationContext';
 import type { ComparisonResult, DiagramInfo } from '@/types/comparison';
-import type { GlobalRunSummary, GlobalStudentResult } from '@/types/evaluation-session';
+import type { GlobalDiagramWeights, GlobalRunSummary, GlobalStudentResult } from '@/types/evaluation-session';
 
 const DIAGRAM_KINDS = ['class', 'usecase', 'sequence'] as const;
 
@@ -43,6 +43,7 @@ export interface BatchReportsZipParams {
   students: GlobalStudentResult[];
   expectedDiagrams: Record<string, DiagramInfo>;
   detectedDiagrams: string[];
+  globalWeights: GlobalDiagramWeights;
 }
 
 export interface BatchReportsZipProgress {
@@ -54,11 +55,16 @@ export interface BatchReportsZipProgress {
   studentTotal: number;
 }
 
+/**
+ * Genera un PDF CONSOLIDADO por estudiante (no uno por diagrama): resumen
+ * ejecutivo global + desglose de cada tipo de diagrama evaluado, todo en un
+ * solo archivo. Ver report-pdf.ts (buildConsolidatedReportPdfDocument).
+ */
 export async function buildBatchReportsZip(
   params: BatchReportsZipParams,
   onProgress?: (progress: BatchReportsZipProgress) => void,
 ): Promise<{ blob: Blob; pdfCount: number; skipped: number }> {
-  const { students, expectedDiagrams, detectedDiagrams } = params;
+  const { students, expectedDiagrams, detectedDiagrams, globalWeights } = params;
   const kinds = detectedDiagrams.filter((k) =>
     DIAGRAM_KINDS.includes(k as (typeof DIAGRAM_KINDS)[number]),
   );
@@ -69,37 +75,38 @@ export async function buildBatchReportsZip(
 
   for (let si = 0; si < students.length; si++) {
     const student = students[si];
-    const folderName = sanitizeZipFolderName(student.student_id);
-    const folder = zip.folder(folderName);
-    if (!folder) continue;
-
-    const studentFileName = `${student.student_id}.xmi`;
     const stuDiagrams = buildStudentDiagramsFromRuns(student.runs);
 
-    for (const kind of kinds) {
-      const run = student.runs[kind as keyof typeof student.runs];
-      const comparison = buildComparisonForRun(run, kind, expectedDiagrams, stuDiagrams);
-      if (!comparison) {
-        skipped += 1;
-        continue;
-      }
+    onProgress?.({
+      phase: 'generating',
+      currentStudent: student.student_id,
+      pdfCount,
+      studentIndex: si + 1,
+      studentTotal: students.length,
+    });
 
-      onProgress?.({
-        phase: 'generating',
-        currentStudent: student.student_id,
-        currentDiagram: kind,
-        pdfCount,
-        studentIndex: si + 1,
-        studentTotal: students.length,
-      });
+    const diagrams: ConsolidatedDiagramEntry[] = kinds
+      .map((kind) => {
+        const run = student.runs[kind as keyof typeof student.runs];
+        const comparison = buildComparisonForRun(run, kind, expectedDiagrams, stuDiagrams);
+        if (!comparison) return null;
+        return { diagramType: kind as ConsolidatedDiagramEntry['diagramType'], result: comparison };
+      })
+      .filter((e): e is ConsolidatedDiagramEntry => e !== null);
 
-      const buffer = generateDetailedReportPdfArrayBuffer({
-        result: comparison,
-        studentFileName,
-      });
-      folder.file(buildBatchDiagramPdfFilename(kind), buffer);
-      pdfCount += 1;
+    if (diagrams.length === 0) {
+      skipped += 1;
+      continue;
     }
+
+    const buffer = generateConsolidatedReportPdfArrayBuffer({
+      studentId: student.student_id,
+      finalScore: student.final_score,
+      globalWeights,
+      diagrams,
+    });
+    zip.file(buildConsolidatedPdfFilename(student.student_id), buffer);
+    pdfCount += 1;
   }
 
   if (pdfCount === 0) {

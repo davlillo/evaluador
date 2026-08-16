@@ -1,23 +1,31 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Search, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
+import {
+  buildStudentDiagramsFromRuns,
+  useGlobalEvaluation,
+} from '@/context/GlobalEvaluationContext';
 import { DownloadBatchReportsZipButton } from '@/components/report/DownloadBatchReportsZipButton';
+import { ExportStudentPdfButton } from '@/components/report/ExportStudentPdfButton';
 import { percentToNota } from '@/lib/rubric';
-import { downloadBatchNotasCsv } from '@/lib/batch-csv';
+import { downloadBatchNotasXlsx } from '@/lib/batch-xlsx';
+import type { ConsolidatedDiagramEntry } from '@/lib/report-pdf';
 import type { BatchStudentResult } from '@/types/evaluation-session';
 
 type SortKey = 'student' | 'score';
+const DIAGRAM_KINDS = ['class', 'usecase', 'sequence'] as const;
 
 export default function BatchResultsPage() {
   const navigate = useNavigate();
-  const { batchResult, setReportReturn } = useGlobalEvaluation();
+  const { batchResult, expectedDiagrams, getStudentById, setReportReturn } = useGlobalEvaluation();
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('score');
   const [sortAsc, setSortAsc] = useState(false);
+  const [exportingXlsx, setExportingXlsx] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     const list = batchResult?.results ?? [];
@@ -49,6 +57,41 @@ export default function BatchResultsPage() {
     }
   };
 
+  const handleExportXlsx = async () => {
+    setExportingXlsx(true);
+    setExportError(null);
+    try {
+      await downloadBatchNotasXlsx(batchResult);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Error al exportar el Excel de notas.');
+    } finally {
+      setExportingXlsx(false);
+    }
+  };
+
+  const buildConsolidatedDiagrams = (studentId: string): ConsolidatedDiagramEntry[] => {
+    const student = getStudentById(studentId);
+    if (!student) return [];
+    const expDiagrams = expectedDiagrams ?? {};
+    const stuDiagrams = buildStudentDiagramsFromRuns(student.runs);
+
+    return DIAGRAM_KINDS
+      .map((kind): ConsolidatedDiagramEntry | null => {
+        const run = student.runs[kind];
+        if (run.status !== 'ok' || !run.comparison) return null;
+        return {
+          diagramType: kind,
+          result: {
+            ...run.comparison,
+            diagram_type: kind,
+            expected_diagram: expDiagrams[kind] ?? run.comparison.expected_diagram,
+            student_diagram: stuDiagrams[kind] ?? run.comparison.student_diagram,
+          },
+        };
+      })
+      .filter((e): e is ConsolidatedDiagramEntry => e !== null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -63,13 +106,21 @@ export default function BatchResultsPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => downloadBatchNotasCsv(batchResult)}>
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Exportar CSV de notas
+          <Button variant="outline" onClick={handleExportXlsx} disabled={exportingXlsx}>
+            {exportingXlsx ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+            )}
+            Exportar Excel de notas
           </Button>
           <DownloadBatchReportsZipButton />
         </div>
       </div>
+
+      {exportError && (
+        <p className="text-sm text-destructive">{exportError}</p>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
@@ -102,6 +153,7 @@ export default function BatchResultsPage() {
                   <th className="py-2 px-2">Nota</th>
                   <th className="py-2 px-2">Estado</th>
                   <th className="py-2 px-2"></th>
+                  <th className="py-2 px-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -125,6 +177,18 @@ export default function BatchResultsPage() {
                     </td>
                     <td className="py-2 px-2 text-right">
                       {r.status !== 'error' && (
+                        <ExportStudentPdfButton
+                          studentId={r.student_id}
+                          finalScore={r.final_score}
+                          globalWeights={batchResult.global_weights_used}
+                          diagrams={buildConsolidatedDiagrams(r.student_id)}
+                          size="sm"
+                          variant="outline"
+                        />
+                      )}
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      {r.status !== 'error' && (
                         <Button variant="ghost" size="sm" onClick={() => openStudent(r)}>
                           Ver desglose
                         </Button>
@@ -134,7 +198,7 @@ export default function BatchResultsPage() {
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-muted-foreground">
+                    <td colSpan={6} className="py-6 text-center text-muted-foreground">
                       Sin resultados.
                     </td>
                   </tr>

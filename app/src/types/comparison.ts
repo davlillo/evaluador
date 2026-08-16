@@ -226,6 +226,16 @@ export interface DiagramInfo {
   messages?: DiagramMessage[];
 }
 
+/** Desglose de penalización por criterio (ver score_criterion en el backend). */
+export interface PenaltyDetail {
+  score: number;
+  base_score: number;
+  penalty_applied: number;
+  explanation: string;
+  excess_units: number;
+  deficit_units: number;
+}
+
 export interface ComparisonResult {
   overall_similarity: number;
   /** Tipo detectado en el diagrama esperado: class | usecase | sequence */
@@ -236,6 +246,10 @@ export interface ComparisonResult {
   weights_used?: WeightsUsed;
   expected_diagram?: DiagramInfo;
   student_diagram?: DiagramInfo;
+  /** Modo de evaluación usado. 'similarity' (o ausente) = comportamiento por defecto. */
+  scoring_mode?: string;
+  /** Desglose de penalización por criterio, presente cuando scoring_mode !== 'similarity'. */
+  penalty_breakdown?: Record<string, PenaltyDetail>;
 }
 
 export interface ParsedDiagram {

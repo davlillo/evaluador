@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.1" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Model xmi:id="model1" name="StarUMLSequenceAltLoop">
+    <packagedElement xmi:type="uml:Interaction" xmi:id="interaction1" name="SequenceDiagram">
+      <lifeline xmi:id="ll_cliente" name="cliente" represents="Cliente"/>
+      <lifeline xmi:id="ll_sistema" name="sistema" represents="Sistema"/>
+      <lifeline xmi:id="ll_bd" name="baseDatos" represents="BaseDatos"/>
+
+      <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_send_login" covered="ll_cliente"/>
+      <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_recv_login" covered="ll_sistema"/>
+      <message xmi:id="msg_login" name="iniciarSesion" messageSort="synchCall"
+               sendEvent="occ_send_login" receiveEvent="occ_recv_login"/>
+
+      <fragment xmi:type="uml:CombinedFragment" xmi:id="cf_alt" interactionOperator="alt" covered="ll_cliente ll_sistema">
+        <operand xmi:id="cf_alt_operands">
+          <operand xmi:type="uml:InteractionOperand" xmi:id="op_alt_valido" name="valido">
+            <guard xmi:id="guard_valido">
+              <specification xmi:type="uml:OpaqueExpression" xmi:id="spec_valido" body="credenciales validas"/>
+            </guard>
+            <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_send_ok" covered="ll_sistema"/>
+            <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_recv_ok" covered="ll_cliente"/>
+          </operand>
+          <operand xmi:type="uml:InteractionOperand" xmi:id="op_alt_invalido" name="invalido">
+            <guard xmi:id="guard_invalido">
+              <specification xmi:type="uml:OpaqueExpression" xmi:id="spec_invalido" body="credenciales invalidas"/>
+            </guard>
+            <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_send_error" covered="ll_sistema"/>
+            <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_recv_error" covered="ll_cliente"/>
+          </operand>
+        </operand>
+      </fragment>
+
+      <message xmi:id="msg_ok" name="accesoConcedido" messageSort="reply"
+               sendEvent="occ_send_ok" receiveEvent="occ_recv_ok"/>
+      <message xmi:id="msg_error" name="accesoDenegado" messageSort="reply"
+               sendEvent="occ_send_error" receiveEvent="occ_recv_error"/>
+
+      <fragment xmi:type="uml:CombinedFragment" xmi:id="cf_loop" interactionOperator="loop" covered="ll_sistema ll_bd">
+        <operand xmi:id="cf_loop_operands">
+          <operand xmi:type="uml:InteractionOperand" xmi:id="op_loop_body" name="cadaRegistro">
+            <guard xmi:id="guard_loop">
+              <specification xmi:type="uml:OpaqueExpression" xmi:id="spec_loop" body="i less than n"/>
+            </guard>
+            <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_send_query" covered="ll_sistema"/>
+            <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_recv_query" covered="ll_bd"/>
+
+            <fragment xmi:type="uml:CombinedFragment" xmi:id="cf_alt_anidado" interactionOperator="alt" covered="ll_sistema ll_bd">
+              <operand xmi:id="cf_alt_anidado_operands">
+                <operand xmi:type="uml:InteractionOperand" xmi:id="op_alt_anidado_existe" name="existe">
+                  <guard xmi:id="guard_anidado">
+                    <specification xmi:type="uml:OpaqueExpression" xmi:id="spec_anidado" body="registro existe"/>
+                  </guard>
+                  <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_send_encontrado" covered="ll_bd"/>
+                  <fragment xmi:type="uml:MessageOccurrenceSpecification" xmi:id="occ_recv_encontrado" covered="ll_sistema"/>
+                </operand>
+              </operand>
+            </fragment>
+          </operand>
+        </operand>
+      </fragment>
+
+      <message xmi:id="msg_query" name="consultarRegistro" messageSort="synchCall"
+               sendEvent="occ_send_query" receiveEvent="occ_recv_query"/>
+      <message xmi:id="msg_encontrado" name="registroEncontrado" messageSort="reply"
+               sendEvent="occ_send_encontrado" receiveEvent="occ_recv_encontrado"/>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

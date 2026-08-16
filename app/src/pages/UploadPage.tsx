@@ -7,11 +7,21 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { Stepper } from '@/components/Stepper';
+import { ScoringModeSelector } from '@/components/ScoringModeSelector';
+import { ExpectedCountsPanel } from '@/components/ExpectedCountsPanel';
+import { RubricUploadPanel } from '@/components/RubricUploadPanel';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
 import type { ComparisonResult } from '@/types/comparison';
 import type { BatchCompareResponse } from '@/types/evaluation-session';
 import { DIAGRAM_TYPES, DEFAULT_WEIGHTS, type TypeWeights } from '@/lib/rubric';
+import {
+  DEFAULT_EVALUATION_PROFILE,
+  SCORING_MODES_USING_EXPECTED_COUNTS,
+  evaluationProfileToApiPayload,
+  type EvaluationProfile,
+  type ScoringMode,
+} from '@/lib/scoring-modes';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -377,6 +387,11 @@ export default function UploadPage() {
   const [showConfig, setShowConfig] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(['class', 'usecase', 'sequence']));
   const [weightsByType, setWeightsByType] = useState<Record<string, TypeWeights>>({ ...DEFAULT_WEIGHTS });
+  const [evaluationProfiles, setEvaluationProfiles] = useState<Record<string, EvaluationProfile>>({
+    class: { ...DEFAULT_EVALUATION_PROFILE },
+    usecase: { ...DEFAULT_EVALUATION_PROFILE },
+    sequence: { ...DEFAULT_EVALUATION_PROFILE },
+  });
   const [useSemanticMatching, setUseSemanticMatching] = useState(true);
   const [semanticThreshold, setSemanticThreshold] = useState(0.65);
   const [globalWeights, setGlobalWeights] = useState<Record<string, number>>({
@@ -399,6 +414,28 @@ export default function UploadPage() {
 
   const updateWeights = (typeKey: string, weights: TypeWeights) => {
     setWeightsByType((prev) => ({ ...prev, [typeKey]: weights }));
+  };
+
+  const updateEvaluationProfile = (typeKey: string, profile: EvaluationProfile) => {
+    setEvaluationProfiles((prev) => ({ ...prev, [typeKey]: profile }));
+  };
+
+  const applyRubricProfiles = (profiles: Record<string, EvaluationProfile>) => {
+    setEvaluationProfiles((prev) => ({ ...prev, ...profiles }));
+  };
+
+  /**
+   * El backend aplica un único perfil de evaluación por request (igual que
+   * los pesos globales), no uno distinto por tipo de diagrama. Se envía el
+   * perfil del primer tipo seleccionado; si es 'similarity' (por defecto)
+   * no se envía nada y el comportamiento es idéntico al actual.
+   */
+  const buildEvaluationProfileJson = (types: Set<string>): string | null => {
+    const firstType = DIAGRAM_TYPES.find(({ key }) => types.has(key))?.key;
+    if (!firstType) return null;
+    const profile = evaluationProfiles[firstType];
+    if (!profile || profile.mode === 'similarity') return null;
+    return JSON.stringify(evaluationProfileToApiPayload(profile));
   };
 
   const handleSingleCompare = async () => {
@@ -443,6 +480,8 @@ export default function UploadPage() {
           formData.append('sequence_weight_fragment_usage', String(w.fragment_usage ?? 30));
         }
       }
+      const evaluationProfileJson = buildEvaluationProfileJson(selectedTypes);
+      if (evaluationProfileJson) formData.append('evaluation_profile_json', evaluationProfileJson);
       const response = await fetch(API_URL + '/api/compare-auto', {
         method: 'POST', body: formData,
       });
@@ -477,6 +516,8 @@ export default function UploadPage() {
       formData.append('global_weight_class', String(globalWeights.class));
       formData.append('global_weight_usecase', String(globalWeights.usecase));
       formData.append('global_weight_sequence', String(globalWeights.sequence));
+      const evaluationProfileJson = buildEvaluationProfileJson(new Set(['class', 'usecase', 'sequence']));
+      if (evaluationProfileJson) formData.append('evaluation_profile_json', evaluationProfileJson);
       const response = await fetch(API_URL + '/api/compare-batch', {
         method: 'POST', body: formData,
       });
@@ -638,6 +679,36 @@ export default function UploadPage() {
               onChange={updateGlobalWeight}
               selectedTypes={selectedTypes}
             />
+
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                El modo de evaluación se configura una vez y aplica a todos los tipos de diagrama
+                seleccionados en esta comparación.
+              </p>
+              {(() => {
+                const firstType = DIAGRAM_TYPES.find(({ key }) => selectedTypes.has(key))?.key as
+                  | 'class' | 'usecase' | 'sequence' | undefined;
+                if (!firstType) return null;
+                const profile = evaluationProfiles[firstType] ?? DEFAULT_EVALUATION_PROFILE;
+                const mode: ScoringMode = profile.mode;
+                return (
+                  <>
+                    <ScoringModeSelector
+                      value={mode}
+                      onChange={(newMode) => updateEvaluationProfile(firstType, { ...profile, mode: newMode })}
+                    />
+                    {SCORING_MODES_USING_EXPECTED_COUNTS.includes(mode) && (
+                      <ExpectedCountsPanel
+                        diagramType={firstType}
+                        counts={profile.expectedCounts}
+                        onChange={(expectedCounts) => updateEvaluationProfile(firstType, { ...profile, expectedCounts })}
+                      />
+                    )}
+                    <RubricUploadPanel onApply={applyRubricProfiles} />
+                  </>
+                );
+              })()}
+            </div>
           </CardContent>
         )}
       </Card>

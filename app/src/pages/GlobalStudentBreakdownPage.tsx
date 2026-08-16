@@ -16,6 +16,7 @@ import {
   getSimilarityColor,
 } from '@/components/results/StudentDiagramSection';
 import { ExportDiagramPdfButton } from '@/components/report/ExportPdfButton';
+import { ExportStudentPdfButton } from '@/components/report/ExportStudentPdfButton';
 import type { ComparisonResult, DiagramInfo } from '@/types/comparison';
 import type { GlobalRunSummary } from '@/types/evaluation-session';
 
@@ -104,6 +105,15 @@ export default function GlobalStudentBreakdownPage() {
     })
     .filter(Boolean) as Array<{ kind: string; comparison: ComparisonResult }>;
 
+  const globalWeightsUsed = batchResult?.global_weights_used ?? globalResult?.global_weights_used
+    ?? { class: 40, usecase: 35, sequence: 25 };
+  const consolidatedDiagrams = pdfEntries
+    .filter(({ kind }) => kind === 'class' || kind === 'usecase' || kind === 'sequence')
+    .map(({ kind, comparison }) => ({
+      diagramType: kind as 'class' | 'usecase' | 'sequence',
+      result: comparison,
+    }));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -135,9 +145,18 @@ export default function GlobalStudentBreakdownPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Exportar reportes PDF</CardTitle>
-            <CardDescription>Descargá un PDF por cada tipo de diagrama evaluado.</CardDescription>
+            <CardDescription>
+              Descargá un PDF por cada tipo de diagrama evaluado, o un acta consolidada con los tres.
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
+            <ExportStudentPdfButton
+              studentId={student.student_id}
+              finalScore={student.final_score}
+              globalWeights={globalWeightsUsed}
+              diagrams={consolidatedDiagrams}
+              variant="default"
+            />
             {pdfEntries.map(({ kind, comparison }) => (
               <ExportDiagramPdfButton
                 key={kind}

@@ -3,20 +3,30 @@ API principal del Sistema de Evaluación de Diagramas UML.
 FastAPI con endpoints para subida de archivos y comparación.
 """
 
+import io
+import json
 import os
 import tempfile
 import shutil
 import zipfile
-from typing import Optional, List, Dict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional, List, Dict, Literal
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from pydantic import BaseModel, Field
 
 from app.parsers.xmi_parser import parse_xmi_file, parse_xmi_string, parse_xmi_file_multi
+from app.parsers.rubric_parser import parse_rubric_xlsx, RubricParseError
+from app.parsers.rubric_template_builder import generate_rubric_template
+from app.exporters.batch_xlsx import build_batch_xlsx
 from app.comparator.uml_comparator import compare_uml_diagrams
+from app.comparator.scoring_modes import (
+    EvaluationProfile, ScoringMode, ExpectedCount,
+)
 from app.grading import grade_summary
 
 
@@ -65,6 +75,57 @@ app.add_middleware(
 )
 
 
+# Modelos Pydantic — perfil de evaluación (modos de scoring configurables)
+class ExpectedCountModel(BaseModel):
+    element_type: str
+    expected_quantity: int = Field(..., ge=0)
+    label: Optional[str] = None
+
+
+class EvaluationProfileModel(BaseModel):
+    mode: Literal[
+        "similarity", "expected_no_penalty",
+        "expected_with_penalty", "similarity_with_penalty",
+    ] = "similarity"
+    expected_counts: List[ExpectedCountModel] = []
+
+
+def _build_evaluation_profile(evaluation_profile_json: Optional[str]) -> Optional[EvaluationProfile]:
+    """Parsea el JSON de perfil de evaluación recibido por request. None si
+    no se envía nada (comportamiento actual sin cambios)."""
+    if not evaluation_profile_json:
+        return None
+    try:
+        raw = json.loads(evaluation_profile_json)
+        parsed = EvaluationProfileModel.model_validate(raw)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"evaluation_profile_json inválido: {e}")
+
+    return EvaluationProfile(
+        mode=ScoringMode(parsed.mode),
+        expected_counts={
+            ec.element_type: ExpectedCount(
+                element_type=ec.element_type,
+                expected_quantity=ec.expected_quantity,
+                label=ec.label,
+            )
+            for ec in parsed.expected_counts
+        },
+    )
+
+
+def _evaluation_profile_to_dict(profile: EvaluationProfile) -> Dict:
+    """Serializa un EvaluationProfile de dominio a dict JSON-friendly, para
+    el preview que se muestra en el frontend tras subir una rúbrica."""
+    return {
+        "mode": profile.mode.value,
+        "expected_counts": [
+            {"element_type": ec.element_type, "expected_quantity": ec.expected_quantity, "label": ec.label}
+            for ec in profile.expected_counts.values()
+        ],
+    }
+
+
 # Modelos Pydantic para respuestas
 class ComparisonRequest(BaseModel):
     """Modelo para solicitud de comparación con contenido XML."""
@@ -74,6 +135,7 @@ class ComparisonRequest(BaseModel):
     strict_types: bool = True
     use_semantic_matching: bool = True
     semantic_threshold: float = 0.65
+    evaluation_profile_json: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
@@ -223,11 +285,19 @@ def _build_usecase_weights(
     return {k: v / total for k, v in raw.items()}
 
 
-def _enriched_comparison(comparison, expected_diagram, student_diagram) -> dict:
-    """Incluye diagramas parseados para comparación visual y exportación PDF."""
+def _enriched_comparison(comparison, expected_diagram, student_diagram, weights_used=None) -> dict:
+    """Incluye diagramas parseados para comparación visual y exportación PDF.
+
+    weights_used viaja también acá (no solo en /api/compare) porque los
+    reportes PDF y el export a Excel de un lote leen los pesos reales desde
+    cada 'comparison' — sin esto, criterionRows() caía a un reparto
+    equitativo falso (100/N) en vez de mostrar la ponderación configurada.
+    """
     payload = comparison.to_dict()
     payload['expected_diagram'] = expected_diagram.to_dict()
     payload['student_diagram'] = student_diagram.to_dict()
+    if weights_used:
+        payload['weights_used'] = {k: round(v * 100, 1) for k, v in weights_used.items()}
     return payload
 
 
@@ -268,6 +338,10 @@ async def compare_files(
     xmi_source: str = Form(
         'astah',
         description="Origen del XMI: astah o visual_paradigm.",
+    ),
+    evaluation_profile_json: Optional[str] = Form(
+        None,
+        description="JSON opcional de EvaluationProfileModel (modo de evaluación, descuentos, rúbrica de conteos).",
     ),
 ):
     """
@@ -378,6 +452,8 @@ async def compare_files(
         else:
             comparison_weights = normalized_weights
 
+        evaluation_profile = _build_evaluation_profile(evaluation_profile_json)
+
         result = compare_uml_diagrams(
             expected_diagram,
             student_diagram,
@@ -386,6 +462,7 @@ async def compare_files(
             weights=comparison_weights,
             use_semantic_matching=use_semantic_matching,
             semantic_threshold=semantic_threshold,
+            evaluation_profile=evaluation_profile,
         )
 
         response = result.to_dict()
@@ -442,6 +519,10 @@ async def compare_files_auto(
     global_weight_class: Optional[float] = Form(None),
     global_weight_usecase: Optional[float] = Form(None),
     global_weight_sequence: Optional[float] = Form(None),
+    evaluation_profile_json: Optional[str] = Form(
+        None,
+        description="JSON opcional de EvaluationProfileModel (modo de evaluación, descuentos, rúbrica de conteos).",
+    ),
 ):
     """
     Compara dos archivos XMI detectando automáticamente los tipos de diagramas contenidos.
@@ -578,6 +659,7 @@ async def compare_files_auto(
 
         results = []
         weighted_sum = 0.0
+        evaluation_profile = _build_evaluation_profile(evaluation_profile_json)
 
         for diagram_type in detected_types:
             expected_diag = expected_diagrams[diagram_type]
@@ -591,6 +673,7 @@ async def compare_files_auto(
                 weights=weights_by_kind.get(diagram_type, weights_by_kind_defaults['class']),
                 use_semantic_matching=use_semantic_matching,
                 semantic_threshold=semantic_threshold,
+                evaluation_profile=evaluation_profile,
             )
 
             sim = round(float(comparison.overall_similarity), 2)
@@ -648,10 +731,16 @@ async def compare_global_files(
     use_semantic_matching: bool = Form(True, description="Usar FastText para matching semántico de nombres"),
     semantic_threshold: float = Form(0.65, description="Umbral de similitud semántica (0.55 a 1.00)"),
     xmi_source: str = Form('astah', description="Origen del XMI: astah o visual_paradigm."),
+    evaluation_profile_json: Optional[str] = Form(
+        None,
+        description="JSON opcional de EvaluationProfileModel (modo de evaluación, descuentos, rúbrica de conteos).",
+    ),
 ):
     source = str(xmi_source).strip().lower() or 'astah'
     if source not in {'astah', 'visual_paradigm'}:
         raise HTTPException(status_code=400, detail="xmi_source debe ser astah o visual_paradigm.")
+
+    evaluation_profile = _build_evaluation_profile(evaluation_profile_json)
 
     expected_files = {
         'class': expected_class_file,
@@ -786,6 +875,7 @@ async def compare_global_files(
                         weights=weights_by_kind[kind],
                         use_semantic_matching=use_semantic_matching,
                         semantic_threshold=semantic_threshold,
+                        evaluation_profile=evaluation_profile,
                     )
                     sim = round(float(comparison.overall_similarity), 2)
                     weighted_sum += sim * normalized_global[kind]
@@ -798,6 +888,7 @@ async def compare_global_files(
                             comparison,
                             expected_diagrams[kind],
                             student_diagram,
+                            weights_used=weights_by_kind[kind],
                         ),
                     }
                 except Exception as e:
@@ -878,14 +969,15 @@ async def compare_xml_content(request: ComparisonRequest):
         
         # Comparar diagramas
         result = compare_uml_diagrams(
-            expected_diagram, 
+            expected_diagram,
             student_diagram,
             case_sensitive=request.case_sensitive,
             strict_types=request.strict_types,
             use_semantic_matching=request.use_semantic_matching,
             semantic_threshold=request.semantic_threshold,
+            evaluation_profile=_build_evaluation_profile(request.evaluation_profile_json),
         )
-        
+
         # Retornar resultado
         return result.to_dict()
         
@@ -968,6 +1060,79 @@ async def supported_formats():
     }
 
 
+@app.get("/api/rubric-template")
+async def download_rubric_template():
+    """Descarga la plantilla Excel de rúbrica de cantidades esperadas
+    (una hoja por tipo de diagrama + hoja de configuración del modo)."""
+    template_path = os.path.join(UPLOAD_DIR, "rubric_template.xlsx")
+    generate_rubric_template(Path(template_path))
+    return FileResponse(
+        template_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="plantilla_rubrica_uml_evaluator.xlsx",
+    )
+
+
+@app.post("/api/rubric/parse")
+async def parse_rubric(
+    rubric_file: UploadFile = File(..., description="Archivo .xlsx de rúbrica de cantidades esperadas"),
+):
+    """Sube y parsea una rúbrica Excel, devolviendo el EvaluationProfile
+    resuelto por tipo de diagrama detectado, para preview antes de aplicarlo
+    a una evaluación."""
+    ext = os.path.splitext((rubric_file.filename or '').lower())[1]
+    if ext != '.xlsx':
+        raise HTTPException(status_code=400, detail="La rúbrica debe ser un archivo .xlsx.")
+
+    rubric_path = os.path.join(UPLOAD_DIR, f"rubric_{rubric_file.filename}")
+    try:
+        with open(rubric_path, "wb") as f:
+            f.write(await rubric_file.read())
+
+        try:
+            profiles = parse_rubric_xlsx(rubric_path)
+        except RubricParseError as e:
+            raise HTTPException(status_code=422, detail={"errors": e.errors})
+
+        return {
+            diagram_type: _evaluation_profile_to_dict(profile)
+            for diagram_type, profile in profiles.items()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al parsear la rúbrica: {str(e)}")
+    finally:
+        if os.path.exists(rubric_path):
+            os.remove(rubric_path)
+
+
+class BatchXlsxExportRequest(BaseModel):
+    """Body de /api/export/batch-xlsx. El frontend reenvía el
+    BatchCompareResponse tal como lo tiene en pantalla (no se re-evalúa acá)
+    junto con las notas que el docente haya editado a mano, ya que esas
+    ediciones solo viven en el cliente."""
+    batch: Dict[str, Any]
+    nota_overrides: Dict[str, float] = {}
+
+
+@app.post("/api/export/batch-xlsx")
+async def export_batch_xlsx(request: BatchXlsxExportRequest):
+    """Genera el Excel de notas de un lote (hojas Notas/Detalle/Resumen),
+    reemplazando el CSV plano anterior."""
+    try:
+        content = build_batch_xlsx(request.batch, request.nota_overrides)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar el Excel: {str(e)}")
+
+    filename = f"notas_lote_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.post("/api/compare-batch")
 async def compare_batch(
     expected_file: UploadFile = File(..., description="Archivo XMI con la solución (puede contener múltiples diagramas)"),
@@ -978,12 +1143,18 @@ async def compare_batch(
     global_weight_class: float = Form(40, description="Peso global de clases (0-100)"),
     global_weight_usecase: float = Form(35, description="Peso global de casos de uso (0-100)"),
     global_weight_sequence: float = Form(25, description="Peso global de secuencia (0-100)"),
+    evaluation_profile_json: Optional[str] = Form(
+        None,
+        description="JSON opcional de EvaluationProfileModel (modo de evaluación, descuentos, rúbrica de conteos).",
+    ),
 ):
     ext = os.path.splitext(expected_file.filename.lower())[1]
     if ext not in VALID_UML_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Extensión '{ext}' no válida. Use: {VALID_UML_EXTENSIONS}")
     if os.path.splitext(students_zip.filename.lower())[1] != '.zip':
         raise HTTPException(status_code=400, detail="El archivo de estudiantes debe ser .zip.")
+
+    evaluation_profile = _build_evaluation_profile(evaluation_profile_json)
 
     expected_path = None
     zip_path = None
@@ -1073,11 +1244,13 @@ async def compare_batch(
                     continue
 
                 try:
+                    kind_weights = weights_by_kind.get(kind, weights_by_kind['class'])
                     comparison = compare_uml_diagrams(
                         exp_diag, stu_diag,
-                        weights=weights_by_kind.get(kind, weights_by_kind['class']),
+                        weights=kind_weights,
                         use_semantic_matching=use_semantic_matching,
                         semantic_threshold=semantic_threshold,
+                        evaluation_profile=evaluation_profile,
                     )
                     sim = round(float(comparison.overall_similarity), 2)
                     weighted_sum += sim * detected_weights.get(kind, 0)
@@ -1088,6 +1261,7 @@ async def compare_batch(
                             comparison,
                             exp_diag,
                             stu_diag,
+                            weights_used=kind_weights,
                         ),
                     }
                 except Exception as e:

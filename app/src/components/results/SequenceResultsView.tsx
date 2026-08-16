@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { percentTextClass } from '@/lib/status-colors';
-import type { ComparisonResult, SequenceBreakdown } from '@/types/comparison';
+import { PenaltyNote } from '@/components/results/PenaltyNote';
+import type { ComparisonResult, PenaltyDetail, SequenceBreakdown } from '@/types/comparison';
 
 interface SequenceResultsViewProps {
   result: Omit<ComparisonResult, 'breakdown'> & { breakdown: SequenceBreakdown };
@@ -23,6 +24,7 @@ function Slice({
   correct,
   missing,
   extra,
+  penalty,
 }: {
   title: string;
   value: number;
@@ -31,6 +33,7 @@ function Slice({
   correct: number;
   missing?: string[];
   extra?: string[];
+  penalty?: PenaltyDetail;
 }) {
   return (
     <Card>
@@ -61,6 +64,7 @@ function Slice({
             ))}
           </div>
         )}
+        <PenaltyNote detail={penalty} />
       </CardContent>
     </Card>
   );
@@ -109,6 +113,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.sync_messages.correct}
               missing={b.sync_messages.missing}
               extra={b.sync_messages.extra}
+              penalty={result.penalty_breakdown?.sync_messages}
             />
           )}
           {b.async_messages && (
@@ -120,6 +125,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.async_messages.correct}
               missing={b.async_messages.missing}
               extra={b.async_messages.extra}
+              penalty={result.penalty_breakdown?.async_messages}
             />
           )}
           {b.creation_messages && (
@@ -131,6 +137,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.creation_messages.correct}
               missing={b.creation_messages.missing}
               extra={b.creation_messages.extra}
+              penalty={result.penalty_breakdown?.creation_messages}
             />
           )}
           {b.fragment_usage && (
@@ -142,6 +149,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.fragment_usage.correct}
               missing={b.fragment_usage.missing}
               extra={b.fragment_usage.extra}
+              penalty={result.penalty_breakdown?.fragment_usage}
             />
           )}
         </div>
@@ -156,6 +164,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.lifelines.correct}
               missing={b.lifelines.missing}
               extra={b.lifelines.extra}
+              penalty={result.penalty_breakdown?.lifelines}
             />
           )}
           {b.messages && (

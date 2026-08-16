@@ -51,55 +51,39 @@ export function sanitizeZipFolderName(studentId: string): string {
   return sanitizeBasename(studentId) || 'estudiante';
 }
 
-export function buildDetailedReportPdfDocument(params: {
-  result: ComparisonResult;
-  studentFileName: string | null;
-}): jsPDF {
-  const { result, studentFileName } = params;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+export function buildConsolidatedPdfFilename(studentId: string): string {
+  return `${sanitizeBasename(studentId) || 'estudiante'}-consolidado.pdf`;
+}
+
+function lastAutoTableY(doc: jsPDF): number {
+  return (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable!.finalY;
+}
+
+/** Franja roja UES con título; retorna el Y donde continúa el contenido. */
+function drawHeader(doc: jsPDF, title: string): number {
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 14;
-  const textW = pageW - margin * 2;
-
-  const pct = result.overall_similarity;
-  const { nota, aprobado } = verdict(pct);
-  const carnet = extractCarnetFromStudentFile(studentFileName);
-  const diagramLabel = resolveDiagramTypeLabel(result.diagram_type);
-  const fecha = new Date().toLocaleDateString('es-SV', { day: '2-digit', month: 'long', year: 'numeric' });
-
-  // ── Encabezado institucional (franja roja UES) ──
   const headerH = 26;
   doc.setFillColor(...UES_RED);
   doc.rect(0, 0, pageW, headerH, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('Acta de Evaluación', margin, 12);
+  doc.text(title, margin, 12);
   doc.setFontSize(9.5);
   doc.setFont('helvetica', 'normal');
   doc.text('UML Evaluador · Universidad de El Salvador', margin, 19);
-
-  let y = headerH + 10;
   doc.setTextColor(0, 0, 0);
+  return headerH + 10;
+}
 
-  // ── Datos de la evaluación ──
-  autoTable(doc, {
-    startY: y,
-    theme: 'plain',
-    body: [
-      ['Estudiante / Carné', carnet, 'Fecha', fecha],
-      ['Tipo de diagrama', diagramLabel, 'Referencia', 'Solución del docente'],
-    ],
-    styles: { fontSize: 9.5, cellPadding: 1.5 },
-    columnStyles: {
-      0: { fontStyle: 'bold', textColor: [110, 110, 110] },
-      2: { fontStyle: 'bold', textColor: [110, 110, 110] },
-    },
-    margin: { left: margin, right: margin },
-  });
-  y = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable!.finalY + 8;
+/** Resumen ejecutivo (similitud + nota + chip aprobado/reprobado) + retroalimentación. */
+function drawExecutiveSummary(doc: jsPDF, y: number, pct: number): number {
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  const textW = pageW - margin * 2;
+  const { nota, aprobado } = verdict(pct);
 
-  // ── Resumen ejecutivo ──
   doc.setDrawColor(220, 226, 235);
   doc.setFillColor(248, 249, 251);
   doc.roundedRect(margin, y, textW, 30, 2, 2, 'FD');
@@ -114,7 +98,6 @@ export function buildDetailedReportPdfDocument(params: {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.text(`Nota final: ${nota.toFixed(1)} / 10`, margin + 4, y + 24);
-  // Veredicto (chip a la derecha)
   const chipLabel = aprobado ? 'APROBADO' : 'REPROBADO';
   const chipColor: [number, number, number] = aprobado ? [34, 160, 90] : [200, 45, 45];
   doc.setFillColor(...chipColor);
@@ -123,10 +106,17 @@ export function buildDetailedReportPdfDocument(params: {
   doc.setFontSize(10);
   doc.text(chipLabel, pageW - margin - 23, y + 22, { align: 'center' });
   doc.setTextColor(0, 0, 0);
-  y += 36;
+  return y + 36;
+}
 
-  // Retroalimentación
+/** Tabla "Criterio | Puntaje | Peso | Aporte" para un ComparisonResult. */
+function drawCriteriaTable(doc: jsPDF, y: number, result: ComparisonResult, heading = 'Desglose por criterio'): number {
+  const margin = 14;
+  const rows = criterionRows(result);
+
   const fb = autoFeedback(result);
+  const pageW = doc.internal.pageSize.getWidth();
+  const textW = pageW - margin * 2;
   doc.setFontSize(9.5);
   if (fb.strengths.length > 0) {
     doc.setFont('helvetica', 'bold');
@@ -146,12 +136,10 @@ export function buildDetailedReportPdfDocument(params: {
   }
   y += 4;
 
-  // ── Tabla de desglose por criterio ──
-  const rows = criterionRows(result);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(...UES_RED);
-  doc.text('Desglose por criterio', margin, y);
+  doc.text(heading, margin, y);
   doc.setTextColor(0, 0, 0);
   y += 3;
   autoTable(doc, {
@@ -167,8 +155,11 @@ export function buildDetailedReportPdfDocument(params: {
     },
     margin: { left: margin, right: margin },
   });
+  return lastAutoTableY(doc) + 8;
+}
 
-  // Pie
+function drawFooter(doc: jsPDF): void {
+  const margin = 14;
   doc.setFontSize(8);
   doc.setTextColor(120);
   doc.text(
@@ -176,6 +167,41 @@ export function buildDetailedReportPdfDocument(params: {
     margin,
     doc.internal.pageSize.getHeight() - 10,
   );
+}
+
+export function buildDetailedReportPdfDocument(params: {
+  result: ComparisonResult;
+  studentFileName: string | null;
+}): jsPDF {
+  const { result, studentFileName } = params;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const margin = 14;
+
+  const carnet = extractCarnetFromStudentFile(studentFileName);
+  const diagramLabel = resolveDiagramTypeLabel(result.diagram_type);
+  const fecha = new Date().toLocaleDateString('es-SV', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  let y = drawHeader(doc, 'Acta de Evaluación');
+
+  autoTable(doc, {
+    startY: y,
+    theme: 'plain',
+    body: [
+      ['Estudiante / Carné', carnet, 'Fecha', fecha],
+      ['Tipo de diagrama', diagramLabel, 'Referencia', 'Solución del docente'],
+    ],
+    styles: { fontSize: 9.5, cellPadding: 1.5 },
+    columnStyles: {
+      0: { fontStyle: 'bold', textColor: [110, 110, 110] },
+      2: { fontStyle: 'bold', textColor: [110, 110, 110] },
+    },
+    margin: { left: margin, right: margin },
+  });
+  y = lastAutoTableY(doc) + 8;
+
+  y = drawExecutiveSummary(doc, y, result.overall_similarity);
+  drawCriteriaTable(doc, y, result);
+  drawFooter(doc);
 
   return doc;
 }
@@ -193,4 +219,112 @@ export function downloadDetailedReportPdf(params: {
 }): void {
   const filename = buildPdfFilename(params.studentFileName);
   buildDetailedReportPdfDocument(params).save(filename);
+}
+
+const DIAGRAM_ORDER = ['class', 'usecase', 'sequence'] as const;
+
+export interface ConsolidatedDiagramEntry {
+  diagramType: (typeof DIAGRAM_ORDER)[number];
+  result: ComparisonResult;
+}
+
+/**
+ * Acta consolidada de un estudiante: un solo PDF con el resumen ejecutivo
+ * global (similitud + nota + veredicto, calculados sobre el final_score ya
+ * ponderado por el backend) y, a continuación, el desglose de cada uno de
+ * los diagramas evaluados. Complementa (no reemplaza) las actas
+ * por-diagrama que ya genera buildDetailedReportPdfDocument.
+ */
+export function buildConsolidatedReportPdfDocument(params: {
+  studentId: string;
+  finalScore: number;
+  globalWeights: { class: number; usecase: number; sequence: number };
+  diagrams: ConsolidatedDiagramEntry[];
+}): jsPDF {
+  const { studentId, finalScore, globalWeights } = params;
+  const diagrams = [...params.diagrams].sort(
+    (a, b) => DIAGRAM_ORDER.indexOf(a.diagramType) - DIAGRAM_ORDER.indexOf(b.diagramType),
+  );
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const margin = 14;
+  const pageH = doc.internal.pageSize.getHeight();
+  const fecha = new Date().toLocaleDateString('es-SV', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  let y = drawHeader(doc, 'Acta de Evaluación Consolidada');
+
+  autoTable(doc, {
+    startY: y,
+    theme: 'plain',
+    body: [
+      ['Estudiante / Carné', studentId, 'Fecha', fecha],
+      ['Diagramas evaluados', diagrams.map((d) => resolveDiagramTypeLabel(d.diagramType)).join(', '), 'Referencia', 'Solución del docente'],
+    ],
+    styles: { fontSize: 9.5, cellPadding: 1.5 },
+    columnStyles: {
+      0: { fontStyle: 'bold', textColor: [110, 110, 110] },
+      2: { fontStyle: 'bold', textColor: [110, 110, 110] },
+    },
+    margin: { left: margin, right: margin },
+  });
+  y = lastAutoTableY(doc) + 8;
+
+  y = drawExecutiveSummary(doc, y, finalScore);
+
+  // Tabla "Resumen por diagrama" con los pesos globales configurados.
+  const weightByType: Record<string, number> = {
+    class: globalWeights.class,
+    usecase: globalWeights.usecase,
+    sequence: globalWeights.sequence,
+  };
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(...UES_RED);
+  doc.text('Resumen por diagrama', margin, y);
+  doc.setTextColor(0, 0, 0);
+  y += 3;
+  autoTable(doc, {
+    startY: y,
+    head: [['Diagrama', 'Similitud', 'Peso global']],
+    body: diagrams.map((d) => [
+      resolveDiagramTypeLabel(d.diagramType),
+      `${d.result.overall_similarity.toFixed(1)}%`,
+      `${weightByType[d.diagramType] ?? 0}%`,
+    ]),
+    headStyles: { fillColor: UES_RED, textColor: [255, 255, 255], fontSize: 10 },
+    styles: { fontSize: 9.5, cellPadding: 2 },
+    columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
+    margin: { left: margin, right: margin },
+  });
+  y = lastAutoTableY(doc) + 10;
+
+  for (const { diagramType, result } of diagrams) {
+    // Si el desglose no entra en lo que queda de página, empezar una nueva.
+    if (y > pageH - 60) {
+      doc.addPage();
+      y = margin;
+    }
+    y = drawCriteriaTable(doc, y, result, `Desglose — ${resolveDiagramTypeLabel(diagramType)}`);
+  }
+
+  drawFooter(doc);
+  return doc;
+}
+
+export function downloadConsolidatedReportPdf(params: {
+  studentId: string;
+  finalScore: number;
+  globalWeights: { class: number; usecase: number; sequence: number };
+  diagrams: ConsolidatedDiagramEntry[];
+}): void {
+  const filename = buildConsolidatedPdfFilename(params.studentId);
+  buildConsolidatedReportPdfDocument(params).save(filename);
+}
+
+export function generateConsolidatedReportPdfArrayBuffer(params: {
+  studentId: string;
+  finalScore: number;
+  globalWeights: { class: number; usecase: number; sequence: number };
+  diagrams: ConsolidatedDiagramEntry[];
+}): ArrayBuffer {
+  return buildConsolidatedReportPdfDocument(params).output('arraybuffer') as ArrayBuffer;
 }

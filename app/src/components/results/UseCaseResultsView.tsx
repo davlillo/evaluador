@@ -6,7 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { percentTextClass } from '@/lib/status-colors';
-import type { ComparisonResult, UseCaseBreakdown, UseCaseSliceBreakdown } from '@/types/comparison';
+import { PenaltyNote } from '@/components/results/PenaltyNote';
+import type { ComparisonResult, PenaltyDetail, UseCaseBreakdown, UseCaseSliceBreakdown } from '@/types/comparison';
 
 interface UseCaseResultsViewProps {
   result: Omit<ComparisonResult, 'breakdown'> & { breakdown: UseCaseBreakdown };
@@ -63,10 +64,12 @@ function SliceCard({
   title,
   icon,
   slice,
+  penalty,
 }: {
   title: string;
   icon: ReactNode;
   slice: UseCaseSliceBreakdown;
+  penalty?: PenaltyDetail;
 }) {
   return (
     <Card>
@@ -106,6 +109,7 @@ function SliceCard({
             </div>
           </div>
         )}
+        <PenaltyNote detail={penalty} />
       </CardContent>
     </Card>
   );
@@ -150,26 +154,30 @@ export function UseCaseResultsView({ result, onBack, onViewReport, showNavAction
       )}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <SliceCard title="Actores" icon={<User className="w-4 h-4 text-primary" />} slice={b.actors} />
+        <SliceCard title="Actores" icon={<User className="w-4 h-4 text-primary" />} slice={b.actors} penalty={result.penalty_breakdown?.classes} />
         <SliceCard
           title="Casos de uso"
           icon={<CircleDot className="w-4 h-4 text-primary" />}
           slice={b.use_cases}
+          penalty={result.penalty_breakdown?.attributes}
         />
         <SliceCard
           title="Relaciones actor–CU"
           icon={<Link2 className="w-4 h-4 text-primary" />}
           slice={b.actor_associations}
+          penalty={result.penalty_breakdown?.methods}
         />
         <SliceCard
           title="Relaciones include"
           icon={<GitBranch className="w-4 h-4 text-primary" />}
           slice={b.include_relations}
+          penalty={result.penalty_breakdown?.include_relations}
         />
         <SliceCard
           title="Relaciones extend"
           icon={<GitBranch className="w-4 h-4 text-primary" />}
           slice={b.extend_relations}
+          penalty={result.penalty_breakdown?.extend_relations}
         />
       </div>
 
