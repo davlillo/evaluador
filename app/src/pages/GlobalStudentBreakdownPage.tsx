@@ -137,6 +137,11 @@ export default function GlobalStudentBreakdownPage() {
             <strong className={`text-foreground ${getSimilarityColor(student.final_score)}`}>
               {formatScore(student.final_score)}
             </strong>
+            {!student.complete && (
+              <span className="mt-1 block text-muted-foreground">
+                Nota parcial: solo puntúan los diagramas entregados; los faltantes no aportan.
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
       </Card>

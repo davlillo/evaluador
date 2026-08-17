@@ -901,7 +901,8 @@ async def compare_global_files(
                         'error': str(e),
                     }
 
-            final_score = round(weighted_sum, 2) if complete else 0.0
+            # Faltantes no aportan (peso × 0) pero no anulan lo ya evaluado.
+            final_score = round(weighted_sum, 2)
             if complete:
                 complete_count += 1
 
@@ -1268,7 +1269,8 @@ async def compare_batch(
                     all_ok = False
                     runs[kind] = {'status': 'error', 'similarity': None, 'error': str(e)}
 
-            final_score = round(weighted_sum, 2) if all_ok else 0.0
+            # Faltantes no aportan (peso × 0) pero no anulan lo ya evaluado.
+            final_score = round(weighted_sum, 2)
             if all_ok:
                 complete_count += 1
 
