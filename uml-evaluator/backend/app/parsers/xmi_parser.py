@@ -585,6 +585,16 @@ class XMIParser:
                         if ll_id:
                             lifeline_id_map[ll_id] = ll_name
 
+            # Mapeo xmi:id de OccurrenceSpecification → etiqueta de fragmento
+            # combinado (alt/loop/opt). En XMI 2.x estándar (StarUML, EA,
+            # Visual Paradigm modernos), un CombinedFragment es un
+            # InteractionFragment más, hijo directo de Interaction junto con
+            # los message; contiene operand(s), y cada operand contiene las
+            # OccurrenceSpecification que los mensajes referencian vía
+            # sendEvent/receiveEvent (a diferencia de Astah 1.1, donde el
+            # mensaje referencia el operand directamente).
+            occurrence_to_fragment: Dict[str, str] = self._map_occurrences_to_fragments(elem)
+
             for order, child in enumerate(elem):
                 child_tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
                 child_tag = child_tag.split(':')[-1]
@@ -600,6 +610,10 @@ class XMIParser:
                     target_ll = self._resolve_event_to_lifeline(
                         recv_event_id, lifeline_id_map
                     )
+                    fragment_label = (
+                        occurrence_to_fragment.get(send_event_id)
+                        or occurrence_to_fragment.get(recv_event_id)
+                    )
 
                     messages.append(UMLMessage(
                         name=msg_name,
@@ -607,6 +621,7 @@ class XMIParser:
                         target_lifeline=target_ll,
                         message_sort=msg_sort,
                         sequence_order=order,
+                        fragment=fragment_label,
                     ))
 
         # Fallback para XMI 1.x de Visual Paradigm:
@@ -703,6 +718,85 @@ class XMIParser:
                 ))
 
         return lifelines, messages
+
+    def _tag_local(self, elem: ET.Element) -> str:
+        """Tag local de un elemento, sin namespace ni prefijo (helper genérico)."""
+        tag = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
+        return tag.split(':')[-1]
+
+    def _elem_kind(self, elem: ET.Element) -> str:
+        """Tipo efectivo de un elemento: el xmi:type si está presente (ej.
+        <fragment xmi:type="uml:CombinedFragment">), si no el tag local.
+        Necesario porque en XMI 2.x muchos elementos comparten el tag
+        genérico 'fragment'/'operand' y solo xmi:type los distingue."""
+        elem_type = elem.get(f'{self.ns_xmi}type', '') or elem.get('type', '')
+        if elem_type:
+            return elem_type.split(':')[-1]
+        return self._tag_local(elem)
+
+    def _read_interaction_operator(self, elem: ET.Element) -> str:
+        """Lee interactionOperator como atributo o, si viene vacío (variantes
+        de EA/StarUML), como texto de un hijo <interactionOperator>."""
+        operator = elem.get('interactionOperator', '').strip()
+        if operator:
+            return operator
+        for child in elem:
+            if self._tag_local(child) == 'interactionOperator':
+                return (child.get('value', '') or (child.text or '')).strip()
+        return ''
+
+    def _map_occurrences_to_fragments(self, interaction_elem: ET.Element) -> Dict[str, str]:
+        """Construye el mapa id(OccurrenceSpecification) → etiqueta de
+        fragmento combinado ("alt", "loop [guardia]", ...) para un
+        Interaction de XMI 2.x estándar.
+
+        Estructura recorrida: Interaction > CombinedFragment[interactionOperator]
+        > operand > InteractionOperand > (guard > specification[@body],
+        fragment > MessageOccurrenceSpecification[xmi:id]).
+        Si un operand está anidado dentro de otro, cada ocurrencia solo se
+        asocia al fragmento más interno que la contiene directamente.
+        """
+        occurrence_to_fragment: Dict[str, str] = {}
+
+        # .iter() recorre a cualquier profundidad (fragmentos anidados
+        # incluidos); cada CombinedFragment solo registra sus propios
+        # `fragment` hijos directos, así que un fragmento interno nunca
+        # queda pisado por el externo que lo contiene.
+        for elem in interaction_elem.iter():
+            if self._elem_kind(elem) != 'CombinedFragment':
+                continue
+
+            operator = self._read_interaction_operator(elem)
+            if not operator:
+                continue
+
+            for cf_child in elem:
+                if self._tag_local(cf_child) != 'operand':
+                    continue
+                for operand_elem in cf_child:
+                    if self._elem_kind(operand_elem) != 'InteractionOperand':
+                        continue
+
+                    guard_text = ''
+                    fragment_children: List[ET.Element] = []
+                    for op_child in operand_elem:
+                        op_child_local = self._tag_local(op_child)
+                        if op_child_local == 'guard':
+                            for spec in op_child:
+                                if self._elem_kind(spec) == 'OpaqueExpression' or self._tag_local(spec) == 'specification':
+                                    guard_text = (spec.get('body', '') or '').strip()
+                        elif op_child_local == 'fragment':
+                            if self._elem_kind(op_child) == 'MessageOccurrenceSpecification':
+                                fragment_children.append(op_child)
+
+                    label = f'{operator} [{guard_text}]' if guard_text else operator
+
+                    for fchild in fragment_children:
+                        occ_id = fchild.get(f'{self.ns_xmi}id') or fchild.get('id', '')
+                        if occ_id:
+                            occurrence_to_fragment[occ_id] = label
+
+        return occurrence_to_fragment
 
     def _resolve_event_to_lifeline(
         self, event_id: str, lifeline_id_map: Dict[str, str]

@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { percentTextClass } from '@/lib/status-colors';
-import type { Breakdown, ComparisonResult } from '@/types/comparison';
+import { PenaltyNote } from '@/components/results/PenaltyNote';
+import type { Breakdown, ComparisonResult, PenaltyDetail } from '@/types/comparison';
 
 interface ClassResultsViewProps {
   result: Omit<ComparisonResult, 'breakdown'> & { breakdown: Breakdown };
@@ -37,10 +38,11 @@ function SimilarityGauge({ value, label, size = 'md' }: { value: number; label: 
 }
 
 function ScoreCard({
-  title, score, correct, total, missing, extra, icon, weight,
+  title, score, correct, total, missing, extra, icon, weight, penalty,
 }: {
   title: string; score: number; correct: number; total: number;
   missing?: string[]; extra?: string[]; icon: React.ReactNode; weight?: number;
+  penalty?: PenaltyDetail;
 }) {
   const getColor = percentTextClass;
   return (
@@ -85,6 +87,7 @@ function ScoreCard({
             </div>
           </div>
         )}
+        <PenaltyNote detail={penalty} />
       </CardContent>
     </Card>
   );
@@ -113,10 +116,10 @@ export function ClassResultsView({ result, onBack, onViewReport, showNavActions 
       </Card>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ScoreCard title="Clases" score={result.breakdown.classes.similarity} correct={result.breakdown.classes.correct} total={result.breakdown.classes.expected} missing={result.breakdown.classes.missing} extra={result.breakdown.classes.extra} icon={<Code className="w-4 h-4" />} weight={weights?.classes} />
-        <ScoreCard title="Atributos" score={result.breakdown.attributes.similarity} correct={result.breakdown.attributes.correct} total={result.breakdown.attributes.expected} icon={<Layers className="w-4 h-4" />} weight={weights?.attributes} />
-        <ScoreCard title="Métodos" score={result.breakdown.methods.similarity} correct={result.breakdown.methods.correct} total={result.breakdown.methods.expected} icon={<Code className="w-4 h-4" />} weight={weights?.methods} />
-        <ScoreCard title="Relaciones" score={result.breakdown.relationships.similarity} correct={result.breakdown.relationships.correct} total={result.breakdown.relationships.expected} missing={result.breakdown.relationships.missing} extra={result.breakdown.relationships.extra} icon={<ArrowRight className="w-4 h-4" />} weight={weights?.relationships} />
+        <ScoreCard title="Clases" score={result.breakdown.classes.similarity} correct={result.breakdown.classes.correct} total={result.breakdown.classes.expected} missing={result.breakdown.classes.missing} extra={result.breakdown.classes.extra} icon={<Code className="w-4 h-4" />} weight={weights?.classes} penalty={result.penalty_breakdown?.classes} />
+        <ScoreCard title="Atributos" score={result.breakdown.attributes.similarity} correct={result.breakdown.attributes.correct} total={result.breakdown.attributes.expected} icon={<Layers className="w-4 h-4" />} weight={weights?.attributes} penalty={result.penalty_breakdown?.attributes} />
+        <ScoreCard title="Métodos" score={result.breakdown.methods.similarity} correct={result.breakdown.methods.correct} total={result.breakdown.methods.expected} icon={<Code className="w-4 h-4" />} weight={weights?.methods} penalty={result.penalty_breakdown?.methods} />
+        <ScoreCard title="Relaciones" score={result.breakdown.relationships.similarity} correct={result.breakdown.relationships.correct} total={result.breakdown.relationships.expected} missing={result.breakdown.relationships.missing} extra={result.breakdown.relationships.extra} icon={<ArrowRight className="w-4 h-4" />} weight={weights?.relationships} penalty={result.penalty_breakdown?.relationships} />
       </div>
 
       {result.class_details && result.class_details.length > 0 && (

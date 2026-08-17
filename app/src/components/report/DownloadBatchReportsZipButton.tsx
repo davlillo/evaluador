@@ -38,6 +38,10 @@ export function DownloadBatchReportsZipButton() {
 
   const disabled = students.length === 0 || !expectedDiagrams;
 
+  const globalWeights = batchResult?.global_weights_used
+    ?? globalResult?.global_weights_used
+    ?? { class: 40, usecase: 35, sequence: 25 };
+
   const handleClick = async () => {
     if (!expectedDiagrams || students.length === 0) return;
 
@@ -51,6 +55,7 @@ export function DownloadBatchReportsZipButton() {
           students,
           expectedDiagrams,
           detectedDiagrams,
+          globalWeights,
         },
         (progress) => {
           if (progress.phase === 'generating' && progress.currentStudent) {
@@ -63,8 +68,8 @@ export function DownloadBatchReportsZipButton() {
         },
       );
 
-      const skipNote = skipped > 0 ? ` (${skipped} diagramas omitidos por falta de datos)` : '';
-      setStatus(`Listo: ${pdfCount} PDF en carpetas por alumno${skipNote}.`);
+      const skipNote = skipped > 0 ? ` (${skipped} estudiante(s) omitidos por falta de datos)` : '';
+      setStatus(`Listo: ${pdfCount} PDF consolidado(s), uno por estudiante${skipNote}.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo generar el ZIP.');
       setStatus(null);
@@ -87,7 +92,7 @@ export function DownloadBatchReportsZipButton() {
         onClick={handleClick}
       >
         <Archive className="w-4 h-4 mr-2" />
-        {busy ? 'Generando ZIP…' : 'Descargar todos los PDF (ZIP por alumno)'}
+        {busy ? 'Generando ZIP…' : 'Descargar todas las actas (ZIP, un PDF por alumno)'}
       </Button>
       {status && !error && (
         <p className="text-xs text-muted-foreground">{status}</p>

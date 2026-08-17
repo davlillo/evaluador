@@ -12,6 +12,9 @@ from app.models.uml_elements import (
     UMLActor, UMLUseCase, UMLLifeline, UMLMessage,
 )
 from app.comparator.semantic_matcher import SemanticMatcher
+from app.comparator.scoring_modes import (
+    EvaluationProfile, ScoringMode, ExpectedCount, score_criterion,
+)
 from app.parsers.xmi_parser import looks_like_use_case_name
 
 
@@ -95,12 +98,18 @@ class ComparisonResult:
     message_order_score: float = 0.0
     # Criterios de secuencia (v2)
     sequence_criteria: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    # Modo de evaluación usado y desglose de penalización por criterio
+    # (ver app.comparator.scoring_modes). Vacío/"similarity" cuando no aplica.
+    scoring_mode: str = "similarity"
+    penalty_breakdown: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convierte el resultado a diccionario con estructura adaptada al tipo de diagrama."""
         base = {
             "overall_similarity": round(self.overall_similarity, 2),
             "diagram_type": self.diagram_type,
+            "scoring_mode": self.scoring_mode,
+            "penalty_breakdown": self.penalty_breakdown,
             "details": [
                 {
                     "element_type": d.element_type,
@@ -269,6 +278,7 @@ class UMLComparator:
         weights: Optional[Dict[str, float]] = None,
         use_semantic_matching: bool = False,
         semantic_threshold: float = 0.65,
+        evaluation_profile: Optional[EvaluationProfile] = None,
     ):
         """
         Inicializa el comparador.
@@ -281,18 +291,63 @@ class UMLComparator:
                      Los valores se normalizan automáticamente.
             use_semantic_matching: Si se usa FastText para matching semántico
             semantic_threshold: Umbral de similitud semántica (0.0 a 1.0)
+            evaluation_profile: Perfil de modo de evaluación (ver
+                app.comparator.scoring_modes). None o modo "similarity" =
+                comportamiento actual sin cambios.
         """
         self.case_sensitive = case_sensitive
         self.strict_types = strict_types
         self._use_semantic_matching = use_semantic_matching
         self._semantic_threshold = semantic_threshold
         self._semantic_matcher = SemanticMatcher() if use_semantic_matching else None
+        self.evaluation_profile = evaluation_profile
 
         if weights:
             total = sum(weights.values())
             self.weights = {k: v / total for k, v in weights.items()} if total > 0 else self.DEFAULT_WEIGHTS
         else:
             self.weights = dict(self.DEFAULT_WEIGHTS)
+
+    def _resolve_criterion_score(
+        self,
+        key: str,
+        raw_score: float,
+        n_expected_ref: int,
+        n_found: int,
+        n_correct: Optional[int] = None,
+        result: Optional[ComparisonResult] = None,
+    ) -> float:
+        """Punto único de extensión de modos de evaluación. Sin perfil, el
+        score queda intacto (cero regresión). El desglose por criterio se
+        registra SIEMPRE que haya perfil —incluido el modo 'similarity'—
+        porque el export a Excel necesita las cantidades esperada/registrada
+        de cada criterio, cualquiera sea el modo."""
+        profile = self.evaluation_profile
+        if profile is None:
+            return raw_score
+
+        if n_correct is None:
+            # Aproximación conservadora si no se pasó correct explícito:
+            # asumir que "correct" escala con raw_score sobre lo encontrado.
+            n_correct = round(min(n_found, n_expected_ref) * (raw_score / 100.0))
+
+        rubric_count = profile.expected_counts.get(key)
+        n_expected_rubric = rubric_count.expected_quantity if rubric_count else None
+
+        outcome = score_criterion(
+            mode=profile.mode,
+            similarity_f1=raw_score,
+            n_expected_ref=n_expected_ref,
+            n_expected_rubric=n_expected_rubric,
+            n_found=n_found,
+            n_correct=n_correct,
+        )
+
+        if result is not None:
+            result.scoring_mode = profile.mode.value
+            result.penalty_breakdown[key] = outcome
+
+        return outcome["score"]
     
     def compare(self, expected: UMLDiagram, student: UMLDiagram) -> ComparisonResult:
         """
@@ -477,18 +532,19 @@ class UMLComparator:
 
         scores, weights = [], []
         criteria = (
-            ('classes', result.class_similarity, result.total_classes_expected, result.total_classes_found),
-            ('attributes', result.attribute_similarity, result.total_attributes_expected, result.total_attributes_found),
-            ('methods', result.method_similarity, result.total_methods_expected, result.total_methods_found),
-            ('include_relations', result.include_similarity, result.total_include_expected, result.total_include_found),
-            ('extend_relations', result.extend_similarity, result.total_extend_expected, result.total_extend_found),
+            ('classes', result.class_similarity, result.total_classes_expected, result.total_classes_found, result.correct_classes),
+            ('attributes', result.attribute_similarity, result.total_attributes_expected, result.total_attributes_found, result.correct_attributes),
+            ('methods', result.method_similarity, result.total_methods_expected, result.total_methods_found, result.correct_methods),
+            ('include_relations', result.include_similarity, result.total_include_expected, result.total_include_found, result.correct_include),
+            ('extend_relations', result.extend_similarity, result.total_extend_expected, result.total_extend_found, result.correct_extend),
         )
-        for key, score, n_exp, n_stu in criteria:
+        for key, score, n_exp, n_stu, n_correct in criteria:
             w = uc_weights.get(key, 0)
             if w <= 0:
                 continue
             if n_exp == 0 and n_stu == 0:
                 continue
+            score = self._resolve_criterion_score(key, score, n_exp, n_stu, n_correct, result)
             scores.append(score)
             weights.append(w)
 
@@ -940,10 +996,17 @@ class UMLComparator:
         if ll_w > 0 and (
             result.total_classes_expected > 0 or result.total_classes_found > 0
         ):
-            scores.append(float(result.class_similarity))
+            ll_score = self._resolve_criterion_score(
+                'lifelines', float(result.class_similarity),
+                result.total_classes_expected, result.total_classes_found,
+                result.correct_classes, result,
+            )
+            scores.append(ll_score)
             weights.append(ll_w)
 
-        # Orden de mensajes coincidentes
+        # Orden de mensajes coincidentes: no es un conteo de cantidad
+        # esperada/entregada (es un score de posición relativa), por lo que
+        # queda fuera del sistema de descuento por exceso en todos los modos.
         order_w = sequence_weight_map.get("message_order", 0.0)
         if order_w > 0 and (
             result.total_relationships_expected > 0 or result.total_relationships_found > 0
@@ -959,7 +1022,12 @@ class UMLComparator:
             # (igual que clases y casos de uso): no deben inflar ni penalizar.
             if breakdown.get("expected", 0) == 0 and breakdown.get("found", 0) == 0:
                 continue
-            scores.append(float(breakdown.get("similarity", 0.0)))
+            score = self._resolve_criterion_score(
+                key, float(breakdown.get("similarity", 0.0)),
+                breakdown.get("expected", 0), breakdown.get("found", 0),
+                breakdown.get("correct", 0), result,
+            )
+            scores.append(score)
             weights.append(w)
 
         if scores:
@@ -1319,35 +1387,37 @@ class UMLComparator:
             len(student_map),
         )
         
-        # Comparar atributos y métodos de cada clase correcta
-        total_attr_expected = 0
+        # Comparar atributos y métodos de cada clase correcta.
+        # Los ESPERADOS se acumulan sobre todas las clases de la referencia
+        # (no solo las acertadas): si el estudiante no reconoce una clase,
+        # sus atributos y métodos cuentan como perdidos, no desaparecen de
+        # la rúbrica. Los found/correct sí salen solo de clases acertadas.
+        total_attr_expected = sum(len(c.attributes) for c in expected_map.values())
         total_attr_found = 0
         total_attr_correct = 0
-        total_method_expected = 0
+        total_method_expected = sum(len(c.methods) for c in expected_map.values())
         total_method_found = 0
         total_method_correct = 0
-        
+
         # Construir lookup de student class por nombre semántico
         stu_lookup = dict(student_map)
         for exp_norm, stu_norm in semantic_map.items():
             stu_lookup[exp_norm] = student_map[stu_norm]
-        
+
         for class_name in correct_names:
             expected_class = expected_map[class_name]
             student_class = stu_lookup[class_name]
-            
+
             class_result = self._compare_class_details(expected_class, student_class)
             result.class_results.append(class_result)
-            
+
             # Acumular contadores
-            total_attr_expected += class_result.attributes_total
             total_attr_found += len(student_class.attributes)
             total_attr_correct += class_result.attributes_correct
-            
-            total_method_expected += class_result.methods_total
+
             total_method_found += len(student_class.methods)
             total_method_correct += class_result.methods_correct
-        
+
         # Agregar clases faltantes como detalles
         for missing_name in result.missing_classes:
             result.details.append(ComparisonDetail(
@@ -1652,44 +1722,47 @@ class UMLComparator:
         )
     
     def _calculate_overall_similarity(self, result: ComparisonResult) -> float:
-        """Calcula la similitud global ponderada."""
-        
+        """Calcula la similitud global ponderada.
+
+        Usa el mismo patrón defensivo que los comparadores de casos de uso y
+        secuencia: se salta criterios con peso 0 y solo descarta un criterio
+        cuando no hay nada esperado NI encontrado (si el estudiante entregó
+        elementos que no se pedían, el criterio sigue contando).
+        """
         scores = []
         weights = []
-        
-        # Similitud de clases
-        if result.total_classes_expected > 0:
-            scores.append(result.class_similarity)
-            weights.append(self.weights['classes'])
 
-        # Similitud de atributos
-        if result.total_attributes_expected > 0:
-            scores.append(result.attribute_similarity)
-            weights.append(self.weights['attributes'])
+        criteria = (
+            ('classes', result.class_similarity, result.total_classes_expected,
+             result.total_classes_found, result.correct_classes),
+            ('attributes', result.attribute_similarity, result.total_attributes_expected,
+             result.total_attributes_found, result.correct_attributes),
+            ('methods', result.method_similarity, result.total_methods_expected,
+             result.total_methods_found, result.correct_methods),
+            ('relationships', result.relationship_similarity, result.total_relationships_expected,
+             result.total_relationships_found, result.correct_relationships),
+        )
 
-        # Similitud de métodos
-        if result.total_methods_expected > 0:
-            scores.append(result.method_similarity)
-            weights.append(self.weights['methods'])
+        for key, score, n_exp, n_stu, n_correct in criteria:
+            w = self.weights.get(key, 0.0)
+            if w <= 0:
+                continue
+            if n_exp == 0 and n_stu == 0:
+                continue
+            resolved = self._resolve_criterion_score(
+                key, score, n_exp, n_stu, n_correct, result,
+            )
+            scores.append(resolved)
+            weights.append(w)
 
-        # Similitud de relaciones
-        if result.total_relationships_expected > 0:
-            scores.append(result.relationship_similarity)
-            weights.append(self.weights['relationships'])
-        
         if not scores:
             return 0.0
-        
-        # Normalizar pesos
+
         total_weight = sum(weights)
         if total_weight == 0:
             return 0.0
-        
-        normalized_weights = [w / total_weight for w in weights]
-        
-        # Calcular promedio ponderado
-        overall = sum(s * w for s, w in zip(scores, normalized_weights))
-        return overall
+
+        return sum(s * w / total_weight for s, w in zip(scores, weights))
 
 
 def compare_uml_diagrams(
@@ -1700,6 +1773,7 @@ def compare_uml_diagrams(
     weights: Optional[Dict[str, float]] = None,
     use_semantic_matching: bool = False,
     semantic_threshold: float = 0.65,
+    evaluation_profile: Optional[EvaluationProfile] = None,
 ) -> ComparisonResult:
     """
     Función de conveniencia para comparar dos diagramas UML.
@@ -1713,6 +1787,8 @@ def compare_uml_diagrams(
                  (classes, attributes, methods, relationships)
         use_semantic_matching: Si se usa FastText para matching semántico
         semantic_threshold: Umbral de similitud semántica (0.0 a 1.0)
+        evaluation_profile: Perfil de modo de evaluación opcional (ver
+            app.comparator.scoring_modes). None = comportamiento actual.
 
     Returns:
         ComparisonResult con el resultado de la comparación
@@ -1723,5 +1799,6 @@ def compare_uml_diagrams(
         weights=weights,
         use_semantic_matching=use_semantic_matching,
         semantic_threshold=semantic_threshold,
+        evaluation_profile=evaluation_profile,
     )
     return comparator.compare(expected, student)
