@@ -61,10 +61,10 @@ class TestFactorCurvaNormal:
 
 class TestExpectedWithPenalty:
     def test_usa_la_curva_contra_la_cantidad_de_rubrica(self):
-        # Se esperan 4, entrega 6 → factor 4/6 = 0.6667 → 66.67 pts
+        # Se esperan 4 y se modelan correctamente 6 → 4/6 = 0.6667.
         r = score_criterion(
             mode=ScoringMode.EXPECTED_WITH_PENALTY, similarity_f1=0.0,
-            n_expected_ref=4, n_expected_rubric=4, n_found=6, n_correct=4,
+            n_expected_ref=8, n_expected_rubric=4, n_found=8, n_correct=6,
         )
         assert r["score"] == pytest.approx(66.667, abs=0.01)
         assert r["factor"] == pytest.approx(2 / 3, abs=0.0001)
@@ -93,8 +93,16 @@ class TestExpectedWithPenalty:
             mode=ScoringMode.EXPECTED_WITH_PENALTY, similarity_f1=0.0,
             n_expected_ref=5, n_expected_rubric=None, n_found=10, n_correct=5,
         )
-        assert r["score"] == pytest.approx(50.0)
+        assert r["score"] == pytest.approx(100.0)
         assert r["expected_used"] == 5
+
+    def test_caso_excel_cinco_esperadas_seis_modeladas(self):
+        r = score_criterion(
+            mode=ScoringMode.EXPECTED_WITH_PENALTY, similarity_f1=0.0,
+            n_expected_ref=7, n_expected_rubric=5, n_found=8, n_correct=6,
+        )
+        assert r["score"] == pytest.approx(100 * 5 / 6)
+        assert r["delivered"] == 6
 
 
 class TestExpectedNoPenalty:
@@ -116,12 +124,13 @@ class TestExpectedNoPenalty:
 
 class TestSimilarityWithPenalty:
     def test_curva_contra_el_conteo_de_la_referencia(self):
-        # Referencia tiene 5, estudiante entrega 8 → 5/8 = 0.625 → 62.5
+        # Conserva la similitud y la multiplica por el factor 5/8.
         r = score_criterion(
             mode=ScoringMode.SIMILARITY_WITH_PENALTY, similarity_f1=76.923,
             n_expected_ref=5, n_expected_rubric=None, n_found=8, n_correct=5,
         )
-        assert r["score"] == pytest.approx(62.5)
+        assert r["score"] == pytest.approx(76.923 * 0.625)
+        assert r["base_score"] == pytest.approx(76.923)
         assert r["excess_units"] == 3
 
 

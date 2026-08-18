@@ -13,7 +13,8 @@ from app.models.uml_elements import (
 )
 from app.comparator.semantic_matcher import SemanticMatcher
 from app.comparator.scoring_modes import (
-    EvaluationProfile, ScoringMode, ExpectedCount, score_criterion,
+    ClassRubricRule, EvaluationProfile, ScoringMode, ExpectedCount,
+    normal_curve_factor, score_criterion,
 )
 from app.parsers.xmi_parser import looks_like_use_case_name
 
@@ -102,6 +103,7 @@ class ComparisonResult:
     # (ver app.comparator.scoring_modes). Vacío/"similarity" cuando no aplica.
     scoring_mode: str = "similarity"
     penalty_breakdown: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    class_rubric_breakdown: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convierte el resultado a diccionario con estructura adaptada al tipo de diagrama."""
@@ -110,6 +112,7 @@ class ComparisonResult:
             "diagram_type": self.diagram_type,
             "scoring_mode": self.scoring_mode,
             "penalty_breakdown": self.penalty_breakdown,
+            "class_rubric_breakdown": self.class_rubric_breakdown,
             "details": [
                 {
                     "element_type": d.element_type,
@@ -308,6 +311,48 @@ class UMLComparator:
         else:
             self.weights = dict(self.DEFAULT_WEIGHTS)
 
+    def _rubric_expected_quantity(
+        self,
+        key: str,
+        result: Optional[ComparisonResult],
+    ) -> Optional[int]:
+        """Resuelve las claves visibles de la rúbrica a los criterios internos."""
+        profile = self.evaluation_profile
+        if profile is None:
+            return None
+
+        direct = profile.expected_counts.get(key)
+        if direct is not None:
+            return direct.expected_quantity
+
+        diagram_type = result.diagram_type if result is not None else "class"
+        aliases = {
+            "usecase": {
+                "classes": ("actors",),
+                "attributes": ("use_cases",),
+                "methods": ("actor_associations",),
+            },
+            "sequence": {
+                "fragment_usage": ("alt_fragments", "loop_fragments"),
+            },
+            "class": {
+                "relationships": (
+                    "association",
+                    "aggregation",
+                    "composition",
+                    "inheritance",
+                    "implementation",
+                ),
+            },
+        }
+        alias_keys = aliases.get(diagram_type, {}).get(key, ())
+        configured = [
+            profile.expected_counts[alias_key].expected_quantity
+            for alias_key in alias_keys
+            if alias_key in profile.expected_counts
+        ]
+        return sum(configured) if configured else None
+
     def _resolve_criterion_score(
         self,
         key: str,
@@ -331,8 +376,7 @@ class UMLComparator:
             # asumir que "correct" escala con raw_score sobre lo encontrado.
             n_correct = round(min(n_found, n_expected_ref) * (raw_score / 100.0))
 
-        rubric_count = profile.expected_counts.get(key)
-        n_expected_rubric = rubric_count.expected_quantity if rubric_count else None
+        n_expected_rubric = self._rubric_expected_quantity(key, result)
 
         outcome = score_criterion(
             mode=profile.mode,
@@ -391,8 +435,326 @@ class UMLComparator:
 
         self._compare_classes(expected.classes, student.classes, result)
         self._compare_relationships(expected.relationships, student.relationships, result)
-        result.overall_similarity = self._calculate_overall_similarity(result)
+        if self.evaluation_profile and self.evaluation_profile.class_rules:
+            result.overall_similarity = self._calculate_class_rubric(
+                self.evaluation_profile.class_rules,
+                expected,
+                student,
+                result,
+            )
+        else:
+            result.overall_similarity = self._calculate_overall_similarity(result)
         return result
+
+    @staticmethod
+    def _normalize_multiplicity(value: Optional[str]) -> str:
+        normalized = (value or "").replace(" ", "").strip()
+        aliases = {
+            "1..1": "1",
+            "*": "0..*",
+        }
+        return aliases.get(normalized, normalized)
+
+    @staticmethod
+    def _relationship_type_label(value: str) -> str:
+        return {
+            "association": "asociación",
+            "aggregation": "agregación",
+            "composition": "composición",
+            "association_class": "clase de asociación",
+        }.get(value, value)
+
+    def _relationship_value_for_rule(
+        self,
+        rule: ClassRubricRule,
+        relationships: List[UMLRelationship],
+    ) -> tuple[Optional[UMLRelationship], Optional[str]]:
+        """Busca la relación de la regla y orienta la multiplicidad solicitada."""
+        association_family = {
+            RelationshipType.ASSOCIATION.value,
+            RelationshipType.AGGREGATION.value,
+            RelationshipType.COMPOSITION.value,
+        }
+        matches: List[tuple[UMLRelationship, Optional[str]]] = []
+        for relationship in relationships:
+            actual_type = relationship.relationship_type.value
+            type_matches = actual_type == rule.relationship_type
+            if rule.relationship_type == RelationshipType.ASSOCIATION.value:
+                type_matches = actual_type in association_family
+            if not type_matches:
+                continue
+            direct = (
+                self._rubric_name_matches(relationship.source, rule.source or "")
+                and self._rubric_name_matches(relationship.target, rule.target or "")
+            )
+            reverse = (
+                self._rubric_name_matches(relationship.source, rule.target or "")
+                and self._rubric_name_matches(relationship.target, rule.source or "")
+            )
+            if not direct and not reverse:
+                continue
+
+            if rule.multiplicity_end == "source":
+                value = (
+                    relationship.source_multiplicity
+                    if direct else relationship.target_multiplicity
+                )
+            elif rule.multiplicity_end == "target":
+                value = (
+                    relationship.target_multiplicity
+                    if direct else relationship.source_multiplicity
+                )
+            else:
+                value = None
+            matches.append((relationship, value))
+
+        if not matches:
+            return None, None
+        expected = self._normalize_multiplicity(rule.expected_multiplicity)
+        for relationship, value in matches:
+            if value and self._normalize_multiplicity(value) == expected:
+                return relationship, value
+        for relationship, value in matches:
+            if not value:
+                return relationship, value
+        return matches[0]
+
+    def _relationship_with_different_type(
+        self,
+        rule: ClassRubricRule,
+        relationships: List[UMLRelationship],
+    ) -> Optional[UMLRelationship]:
+        """Busca el mismo par cuando existe, pero con un tipo UML diferente."""
+        association_family = {
+            RelationshipType.ASSOCIATION.value,
+            RelationshipType.AGGREGATION.value,
+            RelationshipType.COMPOSITION.value,
+        }
+        for relationship in relationships:
+            actual_type = relationship.relationship_type.value
+            if actual_type not in association_family or actual_type == rule.relationship_type:
+                continue
+            direct = (
+                self._rubric_name_matches(relationship.source, rule.source or "")
+                and self._rubric_name_matches(relationship.target, rule.target or "")
+            )
+            reverse = (
+                self._rubric_name_matches(relationship.source, rule.target or "")
+                and self._rubric_name_matches(relationship.target, rule.source or "")
+            )
+            if direct or reverse:
+                return relationship
+        return None
+
+    def _rubric_name_matches(self, actual: str, configured: str) -> bool:
+        """Compara nombres ignorando mayúsculas, tildes y plural final simple."""
+        actual_norm = self._normalize_name(actual)
+        configured_norm = self._normalize_name(configured)
+        if actual_norm == configured_norm:
+            return True
+        singular = lambda value: value[:-1] if len(value) > 3 and value.endswith("s") else value
+        return singular(actual_norm) == singular(configured_norm)
+
+    def _has_association_class(
+        self,
+        rule: ClassRubricRule,
+        student: UMLDiagram,
+    ) -> tuple[bool, Optional[str]]:
+        """Acepta AssociationClass UML o la representación Astah con clase intermedia."""
+        direct, _ = self._relationship_value_for_rule(rule, student.relationships)
+        if direct is not None:
+            return True, direct.name
+
+        intermediate_association_class_links = {
+            RelationshipType.AGGREGATION,
+            RelationshipType.COMPOSITION,
+        }
+        for candidate in student.classes:
+            if self._names_match(candidate.name, rule.source or "") or self._names_match(
+                candidate.name, rule.target or "",
+            ):
+                continue
+            connected_source = False
+            connected_target = False
+            for relationship in student.relationships:
+                if relationship.relationship_type not in intermediate_association_class_links:
+                    continue
+                other: Optional[str] = None
+                if self._names_match(relationship.source, candidate.name):
+                    other = relationship.target
+                elif self._names_match(relationship.target, candidate.name):
+                    other = relationship.source
+                if other is None:
+                    continue
+                connected_source = connected_source or self._rubric_name_matches(
+                    other, rule.source or "",
+                )
+                connected_target = connected_target or self._rubric_name_matches(
+                    other, rule.target or "",
+                )
+            if connected_source and connected_target:
+                return True, candidate.name
+        return False, None
+
+    def _calculate_class_rubric(
+        self,
+        rules: List[ClassRubricRule],
+        expected_diagram: UMLDiagram,
+        student: UMLDiagram,
+        result: ComparisonResult,
+    ) -> float:
+        """Evalúa clases y relaciones nombradas como criterios independientes."""
+        rows: List[Dict[str, Any]] = []
+        weighted_sum = 0.0
+        total_weight = 0.0
+
+        for rule in rules:
+            score = 0.0
+            expected: Any = None
+            modeled: Any = None
+            message = ""
+            modeled_relationship_type: Optional[str] = None
+
+            if rule.criterion_type == "classes":
+                expected = (
+                    rule.expected_quantity
+                    if rule.expected_quantity is not None
+                    else result.total_classes_expected
+                )
+                modeled = result.correct_classes
+                score = normal_curve_factor(expected, modeled) * 100.0
+                message = (
+                    f"Se esperaban {expected} clases y se reconocieron "
+                    f"correctamente {modeled}."
+                )
+            elif rule.criterion_type == "relationship":
+                relationship, value = self._relationship_value_for_rule(
+                    rule, student.relationships,
+                )
+                if relationship is not None:
+                    modeled_relationship_type = relationship.relationship_type.value
+                expected = f"{rule.source}–{rule.target} ({rule.relationship_type})"
+                modeled = (
+                    f"{relationship.source}–{relationship.target} "
+                    f"({relationship.relationship_type.value})"
+                    if relationship is not None
+                    else "No encontrada"
+                )
+                score = 100.0 if relationship is not None else 0.0
+                message = (
+                    f"Relación {rule.relationship_type} encontrada entre "
+                    f"{rule.source} y {rule.target}."
+                    if relationship is not None
+                    else (
+                        f"No se encontró una relación {rule.relationship_type} "
+                        f"entre {rule.source} y {rule.target}."
+                    )
+                )
+            elif rule.criterion_type == "multiplicity":
+                relationship, value = self._relationship_value_for_rule(
+                    rule, student.relationships,
+                )
+                different_type = None
+                if relationship is None:
+                    different_type = self._relationship_with_different_type(
+                        rule, student.relationships,
+                    )
+                if relationship is not None:
+                    modeled_relationship_type = relationship.relationship_type.value
+                elif different_type is not None:
+                    modeled_relationship_type = different_type.relationship_type.value
+                expected = rule.expected_multiplicity or ""
+                modeled = value or ""
+                score = 100.0 if (
+                    relationship is not None
+                    and bool(value)
+                    and self._normalize_multiplicity(modeled)
+                    == self._normalize_multiplicity(expected)
+                ) else 0.0
+                if different_type is not None:
+                    modeled = "No evaluada por tipo incorrecto"
+                    message = (
+                        f"Se encontró {self._relationship_type_label(different_type.relationship_type.value)} entre "
+                        f"{rule.source} y {rule.target}, pero la rúbrica exige "
+                        f"{self._relationship_type_label(rule.relationship_type)}; "
+                        "no se otorgaron puntos."
+                    )
+                elif relationship is not None and not value:
+                    modeled = "No exportada"
+                    message = (
+                        "La relación existe, pero el XMI no contiene esta "
+                        "multiplicidad; no se otorgaron puntos."
+                    )
+                else:
+                    message = (
+                        f"Multiplicidad esperada {expected or 'vacía'}; "
+                        f"modelada {modeled or 'no encontrada'}."
+                    )
+            elif rule.criterion_type == "association_class":
+                expected_found, expected_association_class = self._has_association_class(
+                    rule, expected_diagram,
+                )
+                found, association_class_name = self._has_association_class(rule, student)
+                if not expected_found:
+                    found = False
+                    association_class_name = None
+                elif expected_association_class:
+                    found = (
+                        found
+                        and association_class_name is not None
+                        and self._normalize_name(association_class_name)
+                        == self._normalize_name(expected_association_class)
+                    )
+                expected = f"{rule.source}–{rule.target}"
+                modeled = association_class_name or (expected if found else "No encontrada")
+                score = 100.0 if found else 0.0
+                if not expected_found:
+                    message = (
+                        "La solución docente no contiene una clase de asociación "
+                        "válida entre ambos extremos; no se otorgaron puntos."
+                    )
+                elif expected_association_class and association_class_name and not found:
+                    message = (
+                        f"Se encontró la clase intermedia {association_class_name}, "
+                        f"pero la solución exige {expected_association_class}."
+                    )
+                else:
+                    message = (
+                        f"Clase de asociación encontrada: {modeled}."
+                        if found
+                        else (
+                            "No se encontró una AssociationClass ni una clase "
+                            "intermedia conectada a ambos extremos."
+                        )
+                    )
+
+            weight = max(0.0, float(rule.weight))
+            contribution = score * weight / 100.0
+            weighted_sum += contribution
+            total_weight += weight
+            rows.append({
+                "rule_id": rule.rule_id,
+                "criterion_type": rule.criterion_type,
+                "label": rule.label,
+                "source": rule.source,
+                "target": rule.target,
+                "relationship_type": rule.relationship_type,
+                "modeled_relationship_type": modeled_relationship_type,
+                "multiplicity_end": rule.multiplicity_end,
+                "score": round(score, 2),
+                "weight": round(weight, 2),
+                "contribution": round(contribution, 2),
+                "expected": expected,
+                "modeled": modeled,
+                "correct": score >= 99.999,
+                "message": message,
+            })
+
+        result.class_rubric_breakdown = rows
+        result.scoring_mode = self.evaluation_profile.mode.value
+        if total_weight <= 0:
+            return 0.0
+        return weighted_sum * 100.0 / total_weight
     
     # ------------------------------------------------------------------
     # Comparador de casos de uso

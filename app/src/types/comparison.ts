@@ -132,6 +132,10 @@ export interface WeightsUsed {
   relationships?: number;
   include_relations?: number;
   extend_relations?: number;
+  sync_messages?: number;
+  async_messages?: number;
+  creation_messages?: number;
+  fragment_usage?: number;
 }
 
 export interface Weights {
@@ -236,6 +240,24 @@ export interface PenaltyDetail {
   deficit_units: number;
 }
 
+export interface ClassRubricResult {
+  rule_id: string;
+  criterion_type: 'classes' | 'relationship' | 'multiplicity' | 'association_class';
+  label: string;
+  source?: string | null;
+  target?: string | null;
+  relationship_type?: string | null;
+  modeled_relationship_type?: string | null;
+  multiplicity_end?: 'source' | 'target' | null;
+  score: number;
+  weight: number;
+  contribution: number;
+  expected: string | number | null;
+  modeled: string | number | null;
+  correct: boolean;
+  message: string;
+}
+
 export interface ComparisonResult {
   overall_similarity: number;
   /** Tipo detectado en el diagrama esperado: class | usecase | sequence */
@@ -250,6 +272,7 @@ export interface ComparisonResult {
   scoring_mode?: string;
   /** Desglose de penalización por criterio, presente cuando scoring_mode !== 'similarity'. */
   penalty_breakdown?: Record<string, PenaltyDetail>;
+  class_rubric_breakdown?: ClassRubricResult[];
 }
 
 export interface ParsedDiagram {
