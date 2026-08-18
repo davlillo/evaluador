@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { percentTextClass } from '@/lib/status-colors';
 import { PenaltyNote } from '@/components/results/PenaltyNote';
+import { CriterionWeightBadge } from '@/components/results/CriterionWeightBadge';
 import type { ComparisonResult, PenaltyDetail, UseCaseBreakdown, UseCaseSliceBreakdown } from '@/types/comparison';
 
 interface UseCaseResultsViewProps {
@@ -64,23 +65,34 @@ function SliceCard({
   title,
   icon,
   slice,
+  weight,
   penalty,
 }: {
   title: string;
   icon: ReactNode;
   slice: UseCaseSliceBreakdown;
+  weight?: number;
   penalty?: PenaltyDetail;
 }) {
+  const displayedScore = penalty?.score ?? slice.similarity;
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          {icon}
-          {title}
+        <CardTitle className="text-sm font-medium flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            {icon}
+            {title}
+          </span>
+          <CriterionWeightBadge weight={weight} />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Gauge value={slice.similarity} label="Similitud en este criterio" />
+        <Gauge value={displayedScore} label="Puntaje usado en este criterio" />
+        {penalty && Math.abs(displayedScore - slice.similarity) >= 0.05 && (
+          <p className="text-xs text-muted-foreground">
+            Similitud estructural: {Math.round(slice.similarity)}%
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           Coinciden {slice.correct} de {slice.expected} esperados (encontrados en el estudiante:{' '}
           {slice.found})
@@ -154,29 +166,33 @@ export function UseCaseResultsView({ result, onBack, onViewReport, showNavAction
       )}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <SliceCard title="Actores" icon={<User className="w-4 h-4 text-primary" />} slice={b.actors} penalty={result.penalty_breakdown?.classes} />
+        <SliceCard title="Actores" icon={<User className="w-4 h-4 text-primary" />} slice={b.actors} weight={w?.classes} penalty={result.penalty_breakdown?.classes} />
         <SliceCard
           title="Casos de uso"
           icon={<CircleDot className="w-4 h-4 text-primary" />}
           slice={b.use_cases}
+          weight={w?.attributes}
           penalty={result.penalty_breakdown?.attributes}
         />
         <SliceCard
           title="Relaciones actor–CU"
           icon={<Link2 className="w-4 h-4 text-primary" />}
           slice={b.actor_associations}
+          weight={w?.methods}
           penalty={result.penalty_breakdown?.methods}
         />
         <SliceCard
           title="Relaciones include"
           icon={<GitBranch className="w-4 h-4 text-primary" />}
           slice={b.include_relations}
+          weight={w?.include_relations}
           penalty={result.penalty_breakdown?.include_relations}
         />
         <SliceCard
           title="Relaciones extend"
           icon={<GitBranch className="w-4 h-4 text-primary" />}
           slice={b.extend_relations}
+          weight={w?.extend_relations}
           penalty={result.penalty_breakdown?.extend_relations}
         />
       </div>

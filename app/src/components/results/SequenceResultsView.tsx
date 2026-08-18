@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { percentTextClass } from '@/lib/status-colors';
 import { PenaltyNote } from '@/components/results/PenaltyNote';
+import { CriterionWeightBadge } from '@/components/results/CriterionWeightBadge';
 import type { ComparisonResult, PenaltyDetail, SequenceBreakdown } from '@/types/comparison';
 
 interface SequenceResultsViewProps {
@@ -24,6 +25,7 @@ function Slice({
   correct,
   missing,
   extra,
+  weight,
   penalty,
 }: {
   title: string;
@@ -33,16 +35,26 @@ function Slice({
   correct: number;
   missing?: string[];
   extra?: string[];
+  weight?: number;
   penalty?: PenaltyDetail;
 }) {
+  const displayedScore = penalty?.score ?? value;
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">{title}</CardTitle>
+        <CardTitle className="text-sm flex items-center justify-between gap-2">
+          <span>{title}</span>
+          <CriterionWeightBadge weight={weight} />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className={'text-2xl font-bold ' + percentColor(value)}>{Math.round(value)}%</div>
-        <Progress value={Math.max(0, Math.min(100, value))} className="h-2" />
+        <div className={'text-2xl font-bold ' + percentColor(displayedScore)}>{Math.round(displayedScore)}%</div>
+        <Progress value={Math.max(0, Math.min(100, displayedScore))} className="h-2" />
+        {penalty && Math.abs(displayedScore - value) >= 0.05 && (
+          <p className="text-xs text-muted-foreground">
+            Similitud estructural: {Math.round(value)}%
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           Coinciden {correct} de {expected} esperados (encontrados: {found})
         </p>
@@ -113,6 +125,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.sync_messages.correct}
               missing={b.sync_messages.missing}
               extra={b.sync_messages.extra}
+              weight={w?.sync_messages}
               penalty={result.penalty_breakdown?.sync_messages}
             />
           )}
@@ -125,6 +138,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.async_messages.correct}
               missing={b.async_messages.missing}
               extra={b.async_messages.extra}
+              weight={w?.async_messages}
               penalty={result.penalty_breakdown?.async_messages}
             />
           )}
@@ -137,6 +151,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.creation_messages.correct}
               missing={b.creation_messages.missing}
               extra={b.creation_messages.extra}
+              weight={w?.creation_messages}
               penalty={result.penalty_breakdown?.creation_messages}
             />
           )}
@@ -149,6 +164,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.fragment_usage.correct}
               missing={b.fragment_usage.missing}
               extra={b.fragment_usage.extra}
+              weight={w?.fragment_usage}
               penalty={result.penalty_breakdown?.fragment_usage}
             />
           )}
@@ -164,6 +180,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.lifelines.correct}
               missing={b.lifelines.missing}
               extra={b.lifelines.extra}
+              weight={w?.classes}
               penalty={result.penalty_breakdown?.lifelines}
             />
           )}
@@ -176,6 +193,7 @@ export function SequenceResultsView({ result, onBack, onViewReport, showNavActio
               correct={b.messages.correct}
               missing={b.messages.missing}
               extra={b.messages.extra}
+              weight={w?.relationships}
             />
           )}
         </div>

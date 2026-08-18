@@ -224,17 +224,25 @@ export default function ReportPage() {
                         <th className="py-2 px-4 font-medium text-right">Puntaje</th>
                         <th className="py-2 px-4 font-medium text-right">Peso</th>
                         <th className="py-2 pl-4 font-medium text-right">Aporte</th>
+                        <th className="py-2 pl-4 font-medium">Esperado / modelado</th>
+                        <th className="py-2 pl-4 font-medium">Detalle docente</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((r) => (
-                        <tr key={r.label} className="border-b last:border-0">
+                      {rows.map((r, index) => (
+                        <tr key={`${r.label}-${index}`} className="border-b last:border-0 align-top">
                           <td className="py-2 pr-4">{r.label}</td>
                           <td className={`py-2 px-4 text-right font-medium ${percentTextClass(r.similarity)}`}>
                             {r.similarity.toFixed(0)}%
                           </td>
                           <td className="py-2 px-4 text-right text-muted-foreground">{r.weight}%</td>
                           <td className="py-2 pl-4 text-right">{r.contribution.toFixed(1)}%</td>
+                          <td className="py-2 pl-4 text-xs">
+                            {r.expected !== undefined
+                              ? `${r.expected} / ${r.modeled ?? '—'}`
+                              : '—'}
+                          </td>
+                          <td className="py-2 pl-4 text-xs text-muted-foreground">{r.detail || '—'}</td>
                         </tr>
                       ))}
                     </tbody>

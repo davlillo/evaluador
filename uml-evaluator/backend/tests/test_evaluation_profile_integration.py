@@ -48,7 +48,7 @@ class TestSinPerfilEsIdenticoAlActual:
 
 
 class TestModoExpectedConPenalizacion:
-    def test_clases_extra_penalizan_overall(self, class_diagram):
+    def test_clase_incorrecta_no_cuenta_como_modelada(self, class_diagram):
         student = copy.deepcopy(class_diagram)
         student.classes.append(UMLClass(name="ClaseExtraNoEsperada"))
 
@@ -63,11 +63,10 @@ class TestModoExpectedConPenalizacion:
 
         assert result.scoring_mode == "expected_with_penalty"
         assert 'classes' in result.penalty_breakdown
-        assert result.penalty_breakdown['classes']['excess_units'] == 1
-        # Curva normal: esperaban 3, entregó 4 → factor 3/4 = 0.75 → 25 pts perdidos.
-        assert result.penalty_breakdown['classes']['factor'] == pytest.approx(0.75)
-        assert result.penalty_breakdown['classes']['penalty_applied'] == pytest.approx(25.0)
-        assert result.overall_similarity < 100.0
+        assert result.penalty_breakdown['classes']['delivered'] == 3
+        assert result.penalty_breakdown['classes']['excess_units'] == 0
+        assert result.penalty_breakdown['classes']['factor'] == pytest.approx(1.0)
+        assert result.penalty_breakdown['classes']['penalty_applied'] == pytest.approx(0.0)
 
     def test_modo_no_penalty_ignora_clase_extra(self, class_diagram):
         student = copy.deepcopy(class_diagram)

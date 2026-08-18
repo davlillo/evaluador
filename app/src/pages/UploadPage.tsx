@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Stepper } from '@/components/Stepper';
 import { ScoringModeSelector } from '@/components/ScoringModeSelector';
 import { ExpectedCountsPanel } from '@/components/ExpectedCountsPanel';
+import { ClassRubricPanel } from '@/components/ClassRubricPanel';
 import { RubricUploadPanel } from '@/components/RubricUploadPanel';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
@@ -39,6 +40,37 @@ interface AutoCompareResponse {
   student_diagrams: Record<string, unknown>;
   xmi_source_used: string;
   evaluator_version: string;
+}
+
+
+function isTotalOneHundred(total: number): boolean {
+  return Math.abs(total - 100) < 0.01;
+}
+
+function fileExtension(file: File): string {
+  const dot = file.name.lastIndexOf('.');
+  return dot >= 0 ? file.name.slice(dot).toLowerCase() : '';
+}
+
+function isUmlFile(file: File): boolean {
+  return ['.xml', '.xmi', '.uml'].includes(fileExtension(file));
+}
+
+function criterionWeightsTotal(typeKey: string, weights: TypeWeights): number {
+  if (typeKey === 'usecase') {
+    return weights.classes
+      + weights.attributes
+      + weights.methods
+      + (weights.include_relations ?? 20)
+      + (weights.extend_relations ?? 15);
+  }
+  if (typeKey === 'sequence') {
+    return (weights.sync_messages ?? 35)
+      + (weights.async_messages ?? 20)
+      + (weights.creation_messages ?? 15)
+      + (weights.fragment_usage ?? 30);
+  }
+  return weights.classes + weights.attributes + weights.methods + weights.relationships;
 }
 
 
@@ -388,7 +420,17 @@ export default function UploadPage() {
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(['class', 'usecase', 'sequence']));
   const [weightsByType, setWeightsByType] = useState<Record<string, TypeWeights>>({ ...DEFAULT_WEIGHTS });
   const [evaluationProfiles, setEvaluationProfiles] = useState<Record<string, EvaluationProfile>>({
-    class: { ...DEFAULT_EVALUATION_PROFILE },
+    class: {
+      ...DEFAULT_EVALUATION_PROFILE,
+      mode: 'expected_with_penalty',
+      classRules: [{
+        ruleId: 'classes-default',
+        criterionType: 'classes',
+        label: 'Clases',
+        weight: 20,
+        expectedQuantity: 0,
+      }],
+    },
     usecase: { ...DEFAULT_EVALUATION_PROFILE },
     sequence: { ...DEFAULT_EVALUATION_PROFILE },
   });
@@ -397,6 +439,31 @@ export default function UploadPage() {
   const [globalWeights, setGlobalWeights] = useState<Record<string, number>>({
     class: 40, usecase: 35, sequence: 25,
   });
+  const selectedGlobalWeightTotal = DIAGRAM_TYPES
+    .filter(({ key }) => selectedTypes.has(key))
+    .reduce((total, { key }) => total + (globalWeights[key] || 0), 0);
+  const selectedGlobalWeightsValid = isTotalOneHundred(selectedGlobalWeightTotal);
+  const selectedCriterionWeightsValid = Array.from(selectedTypes).every((typeKey) =>
+    isTotalOneHundred(criterionWeightsTotal(typeKey, weightsByType[typeKey])),
+  );
+  const classRubricValid = !selectedTypes.has('class') || (
+    evaluationProfiles.class.classRules.length > 0
+    && isTotalOneHundred(
+      evaluationProfiles.class.classRules.reduce((total, rule) => total + rule.weight, 0),
+    )
+    && evaluationProfiles.class.classRules.every((rule) => {
+      if (!rule.label.trim()) return false;
+      if (rule.criterionType === 'classes') {
+        return rule.expectedQuantity !== undefined && rule.expectedQuantity >= 0;
+      }
+      if (!rule.source?.trim() || !rule.target?.trim()) return false;
+      if (rule.criterionType === 'multiplicity') {
+        return !!rule.multiplicityEnd && !!rule.expectedMultiplicity?.trim();
+      }
+      return true;
+    })
+  );
+  const batchGlobalWeightsValid = selectedGlobalWeightsValid;
 
   const updateGlobalWeight = (key: string, value: number) => {
     setGlobalWeights((prev) => ({ ...prev, [key]: value }));
@@ -434,7 +501,8 @@ export default function UploadPage() {
     const firstType = DIAGRAM_TYPES.find(({ key }) => types.has(key))?.key;
     if (!firstType) return null;
     const profile = evaluationProfiles[firstType];
-    if (!profile || profile.mode === 'similarity') return null;
+    if (!profile) return null;
+    if (profile.mode === 'similarity' && profile.classRules.length === 0) return null;
     return JSON.stringify(evaluationProfileToApiPayload(profile));
   };
 
@@ -445,6 +513,18 @@ export default function UploadPage() {
     }
     if (selectedTypes.size === 0) {
       setError('Seleccioná al menos un tipo de diagrama.');
+      return;
+    }
+    if (!selectedCriterionWeightsValid) {
+      setError('Los pesos de cada tipo de diagrama seleccionado deben sumar 100%.');
+      return;
+    }
+    if (!classRubricValid) {
+      setError('Los pesos de la rúbrica del diagrama de clases deben sumar 100%.');
+      return;
+    }
+    if (!selectedGlobalWeightsValid) {
+      setError(`Los pesos globales de los diagramas seleccionados deben sumar 100%. Actualmente suman ${Math.round(selectedGlobalWeightTotal)}%.`);
       return;
     }
     setLoading(true);
@@ -502,6 +582,18 @@ export default function UploadPage() {
   const handleBatchCompare = async () => {
     if (!expectedFile || !batchZipFile) {
       setError('Por favor selecciona la solución XMI y el ZIP de estudiantes.');
+      return;
+    }
+    if (!selectedCriterionWeightsValid) {
+      setError('Los pesos de cada tipo de diagrama seleccionado deben sumar 100%.');
+      return;
+    }
+    if (!classRubricValid) {
+      setError('Los pesos de la rúbrica del diagrama de clases deben sumar 100%.');
+      return;
+    }
+    if (!batchGlobalWeightsValid) {
+      setError('Los pesos globales de la evaluación por lote deben sumar 100%.');
       return;
     }
     setLoading(true);
@@ -577,7 +669,14 @@ export default function UploadPage() {
           label="1. Solución oficial (Docente)"
           description="Este archivo será la referencia para la evaluación."
           file={expectedFile}
-          onFileSelect={setExpectedFile}
+          onFileSelect={(file) => {
+            if (!isUmlFile(file)) {
+              setError('La solución oficial debe ser un archivo .xmi, .xml o .uml.');
+              return;
+            }
+            setExpectedFile(file);
+            setError(null);
+          }}
           icon={<FileCode className="w-8 h-8" />}
         />
         {uploadMode === 'simple' ? (
@@ -585,7 +684,21 @@ export default function UploadPage() {
             label="2. Solución del estudiante"
             description="Este archivo será comparado con la solución oficial."
             file={studentFile}
-            onFileSelect={setStudentFile}
+            onFileSelect={(file) => {
+              if (fileExtension(file) === '.zip') {
+                setBatchZipFile(file);
+                setStudentFile(null);
+                setUploadMode('batch');
+                setError(null);
+                return;
+              }
+              if (!isUmlFile(file)) {
+                setError('La solución del estudiante debe ser un archivo .xmi, .xml o .uml.');
+                return;
+              }
+              setStudentFile(file);
+              setError(null);
+            }}
             icon={<Upload className="w-8 h-8" />}
           />
         ) : (
@@ -594,7 +707,14 @@ export default function UploadPage() {
             description="Un .xmi por estudiante; el nombre del archivo se usa como carné."
             accept=".zip"
             file={batchZipFile}
-            onFileSelect={setBatchZipFile}
+            onFileSelect={(file) => {
+              if (fileExtension(file) !== '.zip') {
+                setError('El archivo del lote debe ser un ZIP que contenga los XMI.');
+                return;
+              }
+              setBatchZipFile(file);
+              setError(null);
+            }}
             icon={<FolderArchive className="w-8 h-8" />}
           />
         )}
@@ -637,11 +757,17 @@ export default function UploadPage() {
               {DIAGRAM_TYPES.filter(({ key }) => selectedTypes.has(key)).map(({ key, label }) => (
                 <div key={key} className="p-3 border rounded-lg">
                   <h4 className="text-sm font-semibold">{label}</h4>
-                  <WeightsPanel
-                    typeKey={key}
-                    weights={weightsByType[key] || DEFAULT_WEIGHTS[key]}
-                    onChange={(w) => updateWeights(key, w)}
-                  />
+                  {key === 'class' ? (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Los pesos se definen por criterio en la rúbrica de clases.
+                    </p>
+                  ) : (
+                    <WeightsPanel
+                      typeKey={key}
+                      weights={weightsByType[key] || DEFAULT_WEIGHTS[key]}
+                      onChange={(w) => updateWeights(key, w)}
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -693,11 +819,22 @@ export default function UploadPage() {
                 const mode: ScoringMode = profile.mode;
                 return (
                   <>
-                    <ScoringModeSelector
-                      value={mode}
-                      onChange={(newMode) => updateEvaluationProfile(firstType, { ...profile, mode: newMode })}
-                    />
-                    {SCORING_MODES_USING_EXPECTED_COUNTS.includes(mode) && (
+                    {firstType === 'class' ? (
+                      <ClassRubricPanel
+                        rules={profile.classRules}
+                        onChange={(classRules) => updateEvaluationProfile(firstType, {
+                          ...profile,
+                          mode: 'expected_with_penalty',
+                          classRules,
+                        })}
+                      />
+                    ) : (
+                      <ScoringModeSelector
+                        value={mode}
+                        onChange={(newMode) => updateEvaluationProfile(firstType, { ...profile, mode: newMode })}
+                      />
+                    )}
+                    {firstType !== 'class' && SCORING_MODES_USING_EXPECTED_COUNTS.includes(mode) && (
                       <ExpectedCountsPanel
                         diagramType={firstType}
                         counts={profile.expectedCounts}
@@ -739,7 +876,12 @@ export default function UploadPage() {
             (uploadMode === 'simple'
               ? !expectedFile || !studentFile
               : !expectedFile || !batchZipFile) ||
-            selectedTypes.size === 0
+            selectedTypes.size === 0 ||
+            (uploadMode === 'simple'
+              ? !selectedCriterionWeightsValid || !selectedGlobalWeightsValid
+                || !classRubricValid
+              : !selectedCriterionWeightsValid || !batchGlobalWeightsValid
+                || !classRubricValid)
           }
           className="min-w-[220px]"
         >

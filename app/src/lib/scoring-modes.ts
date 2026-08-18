@@ -20,14 +20,35 @@ export interface ExpectedCount {
   label?: string;
 }
 
+export type ClassRubricCriterionType =
+  | 'classes'
+  | 'relationship'
+  | 'multiplicity'
+  | 'association_class';
+
+export interface ClassRubricRule {
+  ruleId: string;
+  criterionType: ClassRubricCriterionType;
+  label: string;
+  weight: number;
+  expectedQuantity?: number;
+  source?: string;
+  target?: string;
+  relationshipType?: string;
+  multiplicityEnd?: 'source' | 'target';
+  expectedMultiplicity?: string;
+}
+
 export interface EvaluationProfile {
   mode: ScoringMode;
   expectedCounts: ExpectedCount[];
+  classRules: ClassRubricRule[];
 }
 
 export const DEFAULT_EVALUATION_PROFILE: EvaluationProfile = {
   mode: 'similarity',
   expectedCounts: [],
+  classRules: [],
 };
 
 export const SCORING_MODE_LABELS: Record<ScoringMode, string> = {
@@ -61,6 +82,18 @@ export function evaluationProfileToApiPayload(profile: EvaluationProfile) {
       expected_quantity: ec.expectedQuantity,
       label: ec.label,
     })),
+    class_rules: profile.classRules.map((rule) => ({
+      rule_id: rule.ruleId,
+      criterion_type: rule.criterionType,
+      label: rule.label,
+      weight: rule.weight,
+      expected_quantity: rule.expectedQuantity,
+      source: rule.source,
+      target: rule.target,
+      relationship_type: rule.relationshipType ?? 'association',
+      multiplicity_end: rule.multiplicityEnd,
+      expected_multiplicity: rule.expectedMultiplicity,
+    })),
   };
 }
 
@@ -68,6 +101,18 @@ export function evaluationProfileToApiPayload(profile: EvaluationProfile) {
 export function apiProfileToEvaluationProfile(raw: {
   mode: string;
   expected_counts: { element_type: string; expected_quantity: number; label?: string | null }[];
+  class_rules?: Array<{
+    rule_id: string;
+    criterion_type: ClassRubricCriterionType;
+    label: string;
+    weight: number;
+    expected_quantity?: number | null;
+    source?: string | null;
+    target?: string | null;
+    relationship_type?: string;
+    multiplicity_end?: 'source' | 'target' | null;
+    expected_multiplicity?: string | null;
+  }>;
 }): EvaluationProfile {
   return {
     mode: raw.mode as ScoringMode,
@@ -75,6 +120,18 @@ export function apiProfileToEvaluationProfile(raw: {
       elementType: ec.element_type,
       expectedQuantity: ec.expected_quantity,
       label: ec.label ?? undefined,
+    })),
+    classRules: (raw.class_rules ?? []).map((rule) => ({
+      ruleId: rule.rule_id,
+      criterionType: rule.criterion_type,
+      label: rule.label,
+      weight: rule.weight,
+      expectedQuantity: rule.expected_quantity ?? undefined,
+      source: rule.source ?? undefined,
+      target: rule.target ?? undefined,
+      relationshipType: rule.relationship_type,
+      multiplicityEnd: rule.multiplicity_end ?? undefined,
+      expectedMultiplicity: rule.expected_multiplicity ?? undefined,
     })),
   };
 }
