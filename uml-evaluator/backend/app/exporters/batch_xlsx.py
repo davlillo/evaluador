@@ -26,6 +26,18 @@ HEADER_FONT = Font(color="FFFFFF", bold=True)
 TITLE_FONT = Font(bold=True, size=13)
 
 DIAGRAM_LABELS = {"class": "Clases", "usecase": "Casos de uso", "sequence": "Secuencia"}
+CRITERION_LABELS = {
+    "classes": "Cantidad de clases",
+    "relationship": "Relación",
+    "multiplicity": "Multiplicidad",
+    "association_class": "Clase de asociación",
+}
+RELATIONSHIP_LABELS = {
+    "association": "Asociación",
+    "aggregation": "Agregación",
+    "composition": "Composición",
+    "association_class": "Clase de asociación",
+}
 
 
 def _write_header(ws, headers: list[str]) -> None:
@@ -84,6 +96,29 @@ def _iter_criteria(comparison: Dict[str, Any]):
     combinando breakdown (expected/found/correct/similarity) con
     penalty_breakdown (factor/expected_used/delivered/penalty_applied)
     cuando exista."""
+    class_rubric = comparison.get("class_rubric_breakdown") or []
+    if class_rubric:
+        for row in class_rubric:
+            expected = row.get("expected", "")
+            modeled = row.get("modeled", "")
+            yield (
+                row.get("label", row.get("rule_id", "criterio")),
+                expected,
+                modeled,
+                None,
+                row.get("score", 0.0),
+                row.get("criterion_type", ""),
+                row.get("relationship_type", ""),
+                row.get("modeled_relationship_type", ""),
+                row.get("source", ""),
+                row.get("target", ""),
+                row.get("multiplicity_end", ""),
+                row.get("weight", 0.0),
+                row.get("contribution", 0.0),
+                row.get("message", ""),
+            )
+        return
+
     breakdown = comparison.get("breakdown") or {}
     penalty_breakdown = comparison.get("penalty_breakdown") or {}
 
@@ -95,7 +130,7 @@ def _iter_criteria(comparison: Dict[str, Any]):
         delivered = penalty.get("delivered", slice_data.get("found", 0))
         factor = penalty.get("factor")
         score = penalty.get("score", slice_data.get("similarity", 0.0))
-        yield key, expected, delivered, factor, score
+        yield key, expected, delivered, factor, score, "", "", "", "", "", "", "", "", ""
 
 
 def _write_detalle_sheet(wb: Workbook, batch: Dict[str, Any]) -> None:
@@ -103,6 +138,8 @@ def _write_detalle_sheet(wb: Workbook, batch: Dict[str, Any]) -> None:
     headers = [
         "Carné", "Diagrama", "Criterio", "Cantidad esperada", "Cantidad ingresada",
         "Diferencia", "Factor de penalización aplicado", "Puntaje obtenido",
+        "Tipo de criterio", "Tipo configurado", "Tipo detectado", "Clase origen", "Clase destino",
+        "Extremo evaluado", "Peso (%)", "Aporte ponderado (%)", "Explicación",
     ]
     _write_header(ws, headers)
 
@@ -114,8 +151,17 @@ def _write_detalle_sheet(wb: Workbook, batch: Dict[str, Any]) -> None:
             if run.get("status") != "ok":
                 continue
             comparison = run.get("comparison") or {}
-            for key, expected, delivered, factor, score in _iter_criteria(comparison):
-                diferencia = int(delivered) - int(expected)
+            for (
+                key, expected, delivered, factor, score, criterion_type,
+                relationship_type, modeled_relationship_type, source, target,
+                end, weight, contribution, message,
+            ) in _iter_criteria(comparison):
+                diferencia = (
+                    delivered - expected
+                    if isinstance(delivered, (int, float))
+                    and isinstance(expected, (int, float))
+                    else "—"
+                )
                 ws.append([
                     student_id,
                     DIAGRAM_LABELS.get(diagram_type, diagram_type),
@@ -125,9 +171,21 @@ def _write_detalle_sheet(wb: Workbook, batch: Dict[str, Any]) -> None:
                     diferencia,
                     round(factor, 4) if factor is not None else "—",
                     round(score, 2) if score is not None else None,
+                    CRITERION_LABELS.get(criterion_type, criterion_type or "—"),
+                    RELATIONSHIP_LABELS.get(relationship_type, relationship_type or "—"),
+                    RELATIONSHIP_LABELS.get(
+                        modeled_relationship_type,
+                        modeled_relationship_type or "—",
+                    ),
+                    source or "—",
+                    target or "—",
+                    {"source": "Origen", "target": "Destino"}.get(end, end or "—"),
+                    round(weight, 2) if isinstance(weight, (int, float)) else weight,
+                    round(contribution, 2) if isinstance(contribution, (int, float)) else contribution,
+                    message or "—",
                 ])
 
-    widths = [16, 14, 24, 16, 16, 12, 14, 14]
+    widths = [16, 14, 28, 18, 22, 12, 18, 16, 18, 18, 18, 22, 22, 18, 12, 18, 52]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 

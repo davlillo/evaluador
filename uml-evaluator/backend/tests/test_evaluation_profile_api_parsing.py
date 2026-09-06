@@ -35,6 +35,27 @@ class TestBuildEvaluationProfile:
         assert profile.expected_counts["classes"].expected_quantity == 4
         assert profile.expected_counts["classes"].label == "Clases"
 
+    def test_regla_granular_de_clases_se_traduce(self):
+        payload = {
+            "mode": "expected_with_penalty",
+            "class_rules": [{
+                "rule_id": "mult-afiliado",
+                "criterion_type": "multiplicity",
+                "label": "Multiplicidad en Afiliado",
+                "weight": 10,
+                "source": "Afiliado",
+                "target": "Ganado",
+                "relationship_type": "association",
+                "multiplicity_end": "source",
+                "expected_multiplicity": "1",
+            }],
+        }
+        profile = _build_evaluation_profile(json.dumps(payload))
+
+        assert len(profile.class_rules) == 1
+        assert profile.class_rules[0].source == "Afiliado"
+        assert profile.class_rules[0].expected_multiplicity == "1"
+
     def test_json_invalido_lanza_422(self):
         with pytest.raises(HTTPException) as exc_info:
             _build_evaluation_profile("{not valid json")

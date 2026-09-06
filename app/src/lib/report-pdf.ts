@@ -109,7 +109,7 @@ function drawExecutiveSummary(doc: jsPDF, y: number, pct: number): number {
   return y + 36;
 }
 
-/** Tabla "Criterio | Puntaje | Peso | Aporte" para un ComparisonResult. */
+/** Tabla docente detallada para un ComparisonResult. */
 function drawCriteriaTable(doc: jsPDF, y: number, result: ComparisonResult, heading = 'Desglose por criterio'): number {
   const margin = 14;
   const rows = criterionRows(result);
@@ -144,14 +144,25 @@ function drawCriteriaTable(doc: jsPDF, y: number, result: ComparisonResult, head
   y += 3;
   autoTable(doc, {
     startY: y,
-    head: [['Criterio', 'Puntaje', 'Peso', 'Aporte']],
-    body: rows.map((r) => [r.label, `${r.similarity.toFixed(0)}%`, `${r.weight}%`, `${r.contribution.toFixed(1)}%`]),
-    headStyles: { fillColor: UES_RED, textColor: [255, 255, 255], fontSize: 10 },
-    styles: { fontSize: 9.5, cellPadding: 2 },
+    head: [['Criterio', 'Esperado', 'Modelado', 'Puntaje', 'Peso', 'Aporte', 'Detalle']],
+    body: rows.map((r) => [
+      r.label,
+      r.expected ?? '—',
+      r.modeled ?? '—',
+      `${r.similarity.toFixed(0)}%`,
+      `${r.weight}%`,
+      `${r.contribution.toFixed(1)}%`,
+      r.detail ?? '—',
+    ]),
+    headStyles: { fillColor: UES_RED, textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7.5, cellPadding: 1.5, overflow: 'linebreak' },
     columnStyles: {
-      1: { halign: 'right' },
-      2: { halign: 'right' },
-      3: { halign: 'right' },
+      0: { cellWidth: 30 },
+      1: { cellWidth: 18 },
+      2: { cellWidth: 28 },
+      3: { halign: 'right', cellWidth: 14 },
+      4: { halign: 'right', cellWidth: 12 },
+      5: { halign: 'right', cellWidth: 14 },
     },
     margin: { left: margin, right: margin },
   });

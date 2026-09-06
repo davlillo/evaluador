@@ -11,8 +11,9 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from app.parsers.rubric_schema import (
-    COLUMNS, SHEET_ALIASES, SHEET_CLASS, SHEET_USECASE, SHEET_SEQUENCE,
-    SHEET_CONFIG, CONFIG_ROWS, VALID_MODE_LABELS,
+    CLASS_RUBRIC_COLUMNS, COLUMNS, SHEET_ALIASES, SHEET_CLASS,
+    SHEET_CLASS_RUBRIC, SHEET_USECASE, SHEET_SEQUENCE, SHEET_CONFIG,
+    CONFIG_ROWS, VALID_MODE_LABELS,
 )
 
 SHEET_MODE_OPTIONS = "_ModosDisponibles"
@@ -71,6 +72,57 @@ def _write_sheet(wb: Workbook, sheet_name: str) -> None:
     note.alignment = Alignment(wrap_text=True)
     ws.row_dimensions[len(aliases) + 3].height = 28
     ws.merge_cells(start_row=len(aliases) + 3, start_column=1, end_row=len(aliases) + 3, end_column=3)
+
+
+def _write_class_rubric_sheet(wb: Workbook) -> None:
+    ws = wb.create_sheet(SHEET_CLASS_RUBRIC)
+    ws.append(CLASS_RUBRIC_COLUMNS)
+    for cell in ws[1]:
+        cell.fill = HEADER_FILL
+        cell.font = HEADER_FONT
+        cell.alignment = Alignment(horizontal="center")
+
+    rows = [
+        ["Clases", "Clases", 20, "", "", "", "", "", 5],
+        ["Multiplicidad", "Multiplicidad 1 en Afiliado", 10, "Afiliado", "Ganado", "Asociación", "Origen", "1", ""],
+        ["Multiplicidad", "Multiplicidad 1..* en Ganado", 10, "Afiliado", "Ganado", "Asociación", "Destino", "1..*", ""],
+        ["Multiplicidad", "Multiplicidad 1 en Ganado", 10, "Ganado", "Producción", "Asociación", "Origen", "1", ""],
+        ["Multiplicidad", "Multiplicidad 1..* en Producción", 10, "Ganado", "Producción", "Asociación", "Destino", "1..*", ""],
+        ["Clase de asociación", "Clase de asociación Enfermedad-Ganado", 20, "Enfermedad", "Ganado", "Clase de asociación", "", "", ""],
+        ["Multiplicidad", "Multiplicidad 0..* en Tratamiento", 10, "Tratamiento", "Medicamento", "Agregación", "Origen", "0..*", ""],
+        ["Multiplicidad", "Multiplicidad 1..* en Medicamento", 10, "Tratamiento", "Medicamento", "Agregación", "Destino", "1..*", ""],
+    ]
+    for row in rows:
+        ws.append(row)
+
+    widths = [20, 44, 12, 20, 20, 20, 12, 20, 20]
+    for index, width in enumerate(widths, start=1):
+        ws.column_dimensions[chr(64 + index)].width = width
+    ws.freeze_panes = "A2"
+    validations = [
+        (DataValidation(type="list", formula1='"Clases,Multiplicidad,Clase de asociación"'), "A2:A200"),
+        (DataValidation(type="list", formula1='"Asociación,Agregación,Composición,Clase de asociación"'), "F2:F200"),
+        (DataValidation(type="list", formula1='"Origen,Destino"'), "G2:G200"),
+        (DataValidation(type="list", formula1='"0,1,0..1,1..1,*,0..*,1..*"'), "H2:H200"),
+    ]
+    for validation, cell_range in validations:
+        validation.allow_blank = True
+        ws.add_data_validation(validation)
+        validation.add(cell_range)
+
+    note_row = len(rows) + 3
+    ws.cell(
+        row=note_row,
+        column=1,
+        value=(
+            "Los pesos deben sumar 100%. Cada fila de multiplicidad se califica "
+            "independientemente. Usá las listas desplegables para seleccionar "
+            "asociación, agregación o composición y el extremo correspondiente."
+        ),
+    )
+    ws.cell(row=note_row, column=1).font = NOTE_FONT
+    ws.cell(row=note_row, column=1).alignment = Alignment(wrap_text=True)
+    ws.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
 
 
 def _write_mode_options_sheet(wb: Workbook) -> str:
@@ -144,15 +196,20 @@ def generate_rubric_template(output_path: Path) -> Path:
     intro["A1"] = "Plantilla de rúbrica de evaluación — UML Evaluator"
     intro["A1"].font = TITLE_FONT
     intro["A3"] = (
-        "Complete las hojas Clases, CasosDeUso y Secuencia con las cantidades que "
-        "espera para cada tipo de diagrama, y ajuste el modo de evaluación en la "
-        "hoja Config. Use la lista desplegable de la columna 'Elemento' para evitar errores."
+        "Para diagramas de clases, complete RubricaClases con cada multiplicidad "
+        "y clase de asociación que desea evaluar; sus pesos deben sumar 100%. "
+        "CasosDeUso y Secuencia mantienen sus hojas de cantidades esperadas."
     )
     intro["A3"].alignment = Alignment(wrap_text=True)
     intro.column_dimensions["A"].width = 100
     intro.row_dimensions[3].height = 60
 
     _write_sheet(wb, SHEET_CLASS)
+    _write_class_rubric_sheet(wb)
+    # La hoja antigua se conserva oculta para compatibilidad con rúbricas ya
+    # distribuidas; la nueva evaluación de clases no usa atributos ni métodos.
+    wb[SHEET_CLASS].sheet_state = "hidden"
+    wb.active = wb.sheetnames.index(SHEET_CLASS_RUBRIC)
     _write_sheet(wb, SHEET_USECASE)
     _write_sheet(wb, SHEET_SEQUENCE)
     mode_options_range = _write_mode_options_sheet(wb)

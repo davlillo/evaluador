@@ -10,8 +10,13 @@ SHEET_CLASS = "Clases"
 SHEET_USECASE = "CasosDeUso"
 SHEET_SEQUENCE = "Secuencia"
 SHEET_CONFIG = "Config"
+SHEET_CLASS_RUBRIC = "RubricaClases"
 
 COLUMNS = ["Elemento", "Cantidad esperada", "Notas"]
+CLASS_RUBRIC_COLUMNS = [
+    "Tipo criterio", "Nombre", "Peso %", "Clase origen", "Clase destino",
+    "Tipo relación", "Extremo", "Valor esperado", "Cantidad esperada",
+]
 
 # (alias visible en Excel) -> element_type interno. El orden define el
 # orden de filas en la plantilla generada.

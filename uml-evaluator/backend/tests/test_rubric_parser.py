@@ -29,6 +29,13 @@ class TestPlantillaGenerada:
         assert class_profile.expected_counts["classes"].expected_quantity == 4
         assert class_profile.expected_counts["aggregation"].expected_quantity == 2
         assert class_profile.expected_counts["inheritance"].expected_quantity == 1
+        assert len(class_profile.class_rules) == 8
+        assert sum(rule.weight for rule in class_profile.class_rules) == 100
+        assert any(
+            rule.criterion_type == "multiplicity"
+            and rule.relationship_type == "aggregation"
+            for rule in class_profile.class_rules
+        )
         assert class_profile.mode == ScoringMode.EXPECTED_WITH_PENALTY
 
     def test_valores_de_secuencia_cuentan_por_fragmento(self, template_path):

@@ -39,12 +39,28 @@ class ExpectedCount:
 
 
 @dataclass
+class ClassRubricRule:
+    """Criterio granular para la rúbrica de diagramas de clases."""
+    rule_id: str
+    criterion_type: str
+    label: str
+    weight: float
+    expected_quantity: Optional[int] = None
+    source: Optional[str] = None
+    target: Optional[str] = None
+    relationship_type: str = "association"
+    multiplicity_end: Optional[str] = None
+    expected_multiplicity: Optional[str] = None
+
+
+@dataclass
 class EvaluationProfile:
     """Perfil de evaluación resuelto para una comparación de un tipo de
     diagrama. Se pasa opcionalmente a UMLComparator; si es None, el
     comportamiento es idéntico al actual (modo similarity implícito)."""
     mode: ScoringMode = ScoringMode.SIMILARITY
     expected_counts: Dict[str, ExpectedCount] = field(default_factory=dict)
+    class_rules: list[ClassRubricRule] = field(default_factory=list)
 
 
 def normal_curve_factor(expected: int, delivered: int) -> float:
@@ -117,18 +133,20 @@ def score_criterion(
         )
 
     if mode == ScoringMode.SIMILARITY_WITH_PENALTY:
-        # La curva se aplica contra el conteo del modelo de referencia.
+        # Conserva la similitud estructural y además aplica la curva contra
+        # el conteo del modelo de referencia.
         factor = normal_curve_factor(n_expected_ref, n_found)
-        score = factor * 100.0
+        score = similarity_f1 * factor
         return _outcome(
             score=score,
-            base_score=100.0,
+            base_score=similarity_f1,
             factor=factor,
             expected_used=n_expected_ref,
             delivered=n_found,
             explanation=(
-                f"Se esperaban {n_expected_ref} y se registraron {n_found}: "
-                f"factor {factor:.4f} ({score:.1f} pts)."
+                f"Similitud {similarity_f1:.1f}%; se esperaban {n_expected_ref} "
+                f"y se registraron {n_found}: factor {factor:.4f} "
+                f"({score:.1f} pts)."
             ),
         )
 
@@ -145,24 +163,25 @@ def score_criterion(
             base_score=score,
             factor=None,
             expected_used=expected,
-            delivered=n_found,
+            delivered=n_correct,
             explanation=(
                 f"{n_correct} de {expected} esperados cumplidos; "
                 f"el exceso no descuenta."
             ),
         )
 
-    # EXPECTED_WITH_PENALTY: curva normal contra la cantidad de la rúbrica.
-    factor = normal_curve_factor(expected, n_found)
+    # EXPECTED_WITH_PENALTY: el Excel llama "Modelados" a los elementos que
+    # cumplen el criterio, no a todo lo que aparece en el archivo.
+    factor = normal_curve_factor(expected, n_correct)
     score = factor * 100.0
     return _outcome(
         score=score,
         base_score=100.0,
         factor=factor,
         expected_used=expected,
-        delivered=n_found,
+        delivered=n_correct,
         explanation=(
-            f"Se esperaban {expected} y se registraron {n_found}: "
+            f"Se esperaban {expected} y se modelaron correctamente {n_correct}: "
             f"factor {factor:.4f} ({score:.1f} pts)."
         ),
     )

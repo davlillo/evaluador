@@ -91,9 +91,13 @@ class TestHojaDetalle:
         wb = load_workbook(io.BytesIO(content), data_only=True)
         ws = wb["Detalle"]
         header = [c.value for c in ws[1]]
-        assert header == [
+        assert header[:8] == [
             "Carné", "Diagrama", "Criterio", "Cantidad esperada", "Cantidad ingresada",
             "Diferencia", "Factor de penalización aplicado", "Puntaje obtenido",
+        ]
+        assert header[8:] == [
+            "Tipo de criterio", "Tipo configurado", "Tipo detectado", "Clase origen", "Clase destino",
+            "Extremo evaluado", "Peso (%)", "Aporte ponderado (%)", "Explicación",
         ]
 
     def test_fila_de_criterio_con_exceso(self):

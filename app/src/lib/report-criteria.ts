@@ -8,7 +8,17 @@ export interface CriterionRow {
   similarity: number;
   weight: number;      // 0-100
   contribution: number; // similarity * weight / 100
+  expected?: string;
+  modeled?: string;
+  detail?: string;
 }
+
+const RELATIONSHIP_LABELS: Record<string, string> = {
+  association: 'Asociación',
+  aggregation: 'Agregación',
+  composition: 'Composición',
+  association_class: 'Clase de asociación',
+};
 
 const CLASS_LABELS: Record<string, string> = {
   classes: 'Clases',
@@ -43,6 +53,34 @@ function sim(v: unknown): number {
  * Los pesos salen de `weights_used` cuando existen; si no, se reparten equitativamente.
  */
 export function criterionRows(result: ComparisonResult): CriterionRow[] {
+  if (result.class_rubric_breakdown && result.class_rubric_breakdown.length > 0) {
+    return result.class_rubric_breakdown.map((row) => {
+      const relationType = row.relationship_type
+        ? RELATIONSHIP_LABELS[row.relationship_type] ?? row.relationship_type
+        : '';
+      const modeledRelationType = row.modeled_relationship_type
+        ? `detectada: ${RELATIONSHIP_LABELS[row.modeled_relationship_type] ?? row.modeled_relationship_type}`
+        : '';
+      const endpoints = row.source && row.target ? `${row.source} – ${row.target}` : '';
+      const end = row.multiplicity_end === 'source'
+        ? 'extremo origen'
+        : row.multiplicity_end === 'target'
+          ? 'extremo destino'
+          : '';
+      return {
+        label: row.label,
+        similarity: row.score,
+        weight: row.weight,
+        contribution: row.contribution,
+        expected: row.expected === null ? '—' : String(row.expected),
+        modeled: row.modeled === null ? '—' : String(row.modeled),
+        detail: [relationType, modeledRelationType, endpoints, end, row.message]
+          .filter(Boolean)
+          .join(' · '),
+      };
+    });
+  }
+
   const b = result.breakdown;
   const weights = (result.weights_used || {}) as Record<string, number>;
 
@@ -80,13 +118,14 @@ export function criterionRows(result: ComparisonResult): CriterionRow[] {
   const total = entries.reduce((s, [, wk]) => s + (weights[wk] || 0), 0);
   const equal = entries.length > 0 ? 100 / entries.length : 0;
 
-  return entries.map(([, wk, similarity, label]) => {
+  return entries.map(([, wk, structuralSimilarity, label]) => {
     const weight = total > 0 ? Math.round(((weights[wk] || 0) / total) * 100) : Math.round(equal);
+    const score = result.penalty_breakdown?.[wk]?.score ?? structuralSimilarity;
     return {
       label,
-      similarity: Math.round(similarity * 10) / 10,
+      similarity: Math.round(score * 10) / 10,
       weight,
-      contribution: Math.round((similarity * weight) / 100 * 10) / 10,
+      contribution: Math.round((score * weight) / 100 * 10) / 10,
     };
   });
 }

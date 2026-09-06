@@ -11,6 +11,18 @@ interface RubricParseResponse {
   [diagramType: string]: {
     mode: string;
     expected_counts: { element_type: string; expected_quantity: number; label?: string | null }[];
+    class_rules?: Array<{
+      rule_id: string;
+      criterion_type: 'classes' | 'relationship' | 'multiplicity' | 'association_class';
+      label: string;
+      weight: number;
+      expected_quantity?: number | null;
+      source?: string | null;
+      target?: string | null;
+      relationship_type?: string;
+      multiplicity_end?: 'source' | 'target' | null;
+      expected_multiplicity?: string | null;
+    }>;
   };
 }
 
@@ -117,7 +129,9 @@ export function RubricUploadPanel({
               <div key={diagramType} className="border rounded-md p-2">
                 <p className="font-semibold capitalize">{diagramType}</p>
                 <p className="text-muted-foreground">{SCORING_MODE_LABELS[profile.mode as keyof typeof SCORING_MODE_LABELS] ?? profile.mode}</p>
-                <p className="text-muted-foreground">{profile.expected_counts.length} elemento(s) configurado(s)</p>
+                <p className="text-muted-foreground">
+                  {(profile.class_rules?.length ?? profile.expected_counts.length)} criterio(s) configurado(s)
+                </p>
               </div>
             ))}
           </div>

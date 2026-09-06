@@ -25,7 +25,7 @@ from app.parsers.rubric_template_builder import generate_rubric_template
 from app.exporters.batch_xlsx import build_batch_xlsx
 from app.comparator.uml_comparator import compare_uml_diagrams
 from app.comparator.scoring_modes import (
-    EvaluationProfile, ScoringMode, ExpectedCount,
+    ClassRubricRule, EvaluationProfile, ScoringMode, ExpectedCount,
 )
 from app.grading import grade_summary
 
@@ -82,12 +82,26 @@ class ExpectedCountModel(BaseModel):
     label: Optional[str] = None
 
 
+class ClassRubricRuleModel(BaseModel):
+    rule_id: str
+    criterion_type: Literal["classes", "relationship", "multiplicity", "association_class"]
+    label: str
+    weight: float = Field(..., ge=0, le=100)
+    expected_quantity: Optional[int] = Field(None, ge=0)
+    source: Optional[str] = None
+    target: Optional[str] = None
+    relationship_type: str = "association"
+    multiplicity_end: Optional[Literal["source", "target"]] = None
+    expected_multiplicity: Optional[str] = None
+
+
 class EvaluationProfileModel(BaseModel):
     mode: Literal[
         "similarity", "expected_no_penalty",
         "expected_with_penalty", "similarity_with_penalty",
     ] = "similarity"
     expected_counts: List[ExpectedCountModel] = []
+    class_rules: List[ClassRubricRuleModel] = []
 
 
 def _build_evaluation_profile(evaluation_profile_json: Optional[str]) -> Optional[EvaluationProfile]:
@@ -111,6 +125,10 @@ def _build_evaluation_profile(evaluation_profile_json: Optional[str]) -> Optiona
             )
             for ec in parsed.expected_counts
         },
+        class_rules=[
+            ClassRubricRule(**rule.model_dump())
+            for rule in parsed.class_rules
+        ],
     )
 
 
@@ -122,6 +140,21 @@ def _evaluation_profile_to_dict(profile: EvaluationProfile) -> Dict:
         "expected_counts": [
             {"element_type": ec.element_type, "expected_quantity": ec.expected_quantity, "label": ec.label}
             for ec in profile.expected_counts.values()
+        ],
+        "class_rules": [
+            {
+                "rule_id": rule.rule_id,
+                "criterion_type": rule.criterion_type,
+                "label": rule.label,
+                "weight": rule.weight,
+                "expected_quantity": rule.expected_quantity,
+                "source": rule.source,
+                "target": rule.target,
+                "relationship_type": rule.relationship_type,
+                "multiplicity_end": rule.multiplicity_end,
+                "expected_multiplicity": rule.expected_multiplicity,
+            }
+            for rule in profile.class_rules
         ],
     }
 
@@ -250,6 +283,12 @@ def _normalize_global_weights(class_w: float, usecase_w: float, sequence_w: floa
     return {k: v / total for k, v in raw.items()}
 
 
+def _percent_or_default(value: Optional[float], default: float) -> float:
+    """Convierte un porcentaje a fracción, conservando explícitamente el valor cero."""
+    resolved = default if value is None else value
+    return max(0.0, float(resolved)) / 100.0
+
+
 def _build_usecase_weights(
     classes: Optional[float] = None,
     attributes: Optional[float] = None,
@@ -281,7 +320,7 @@ def _build_usecase_weights(
     }
     total = sum(raw.values())
     if total <= 0:
-        return {'classes': 0.15, 'attributes': 0.25, 'methods': 0.25, 'include_relations': 0.20, 'extend_relations': 0.15}
+        return {k: 0.0 for k in raw}
     return {k: v / total for k, v in raw.items()}
 
 
@@ -599,10 +638,10 @@ async def compare_files_auto(
         for kind in detected_types:
             if kind == 'class':
                 default = {
-                    'classes': (class_weight_classes or 35) / 100.0,
-                    'attributes': (class_weight_attributes or 25) / 100.0,
-                    'methods': (class_weight_methods or 25) / 100.0,
-                    'relationships': (class_weight_relationships or 15) / 100.0,
+                    'classes': _percent_or_default(class_weight_classes, 35),
+                    'attributes': _percent_or_default(class_weight_attributes, 25),
+                    'methods': _percent_or_default(class_weight_methods, 25),
+                    'relationships': _percent_or_default(class_weight_relationships, 15),
                 }
                 total = sum(default.values())
                 if total > 0:
@@ -625,16 +664,16 @@ async def compare_files_auto(
                 default = {}
                 if any(v is not None for v in (sync_w, async_w, creation_w, fragment_w)):
                     default = {
-                        'sync_messages': max(0.0, float(sync_w or 35)) / 100.0,
-                        'async_messages': max(0.0, float(async_w or 20)) / 100.0,
-                        'creation_messages': max(0.0, float(creation_w or 15)) / 100.0,
-                        'fragment_usage': max(0.0, float(fragment_w or 30)) / 100.0,
+                        'sync_messages': _percent_or_default(sync_w, 35),
+                        'async_messages': _percent_or_default(async_w, 20),
+                        'creation_messages': _percent_or_default(creation_w, 15),
+                        'fragment_usage': _percent_or_default(fragment_w, 30),
                     }
                 else:
-                    default['classes'] = max(0.0, float(sequence_weight_classes or 40)) / 100.0
+                    default['classes'] = _percent_or_default(sequence_weight_classes, 40)
                     default['attributes'] = 0.0
                     default['methods'] = 0.0
-                    default['relationships'] = max(0.0, float(sequence_weight_relationships or 60)) / 100.0
+                    default['relationships'] = _percent_or_default(sequence_weight_relationships, 60)
                 
                 total = sum(default.values())
                 if total > 0:
@@ -645,9 +684,9 @@ async def compare_files_auto(
             weights_by_kind[kind] = default
 
         global_weights = {
-            'class': (global_weight_class or 40) / 100.0,
-            'usecase': (global_weight_usecase or 35) / 100.0,
-            'sequence': (global_weight_sequence or 25) / 100.0,
+            'class': _percent_or_default(global_weight_class, 40),
+            'usecase': _percent_or_default(global_weight_usecase, 35),
+            'sequence': _percent_or_default(global_weight_sequence, 25),
         }
 
         # Renormalizar pesos solo sobre los tipos realmente detectados
@@ -679,10 +718,15 @@ async def compare_files_auto(
             sim = round(float(comparison.overall_similarity), 2)
             weighted_sum += sim * detected_global_weights.get(diagram_type, 1.0 / len(detected_types))
 
+            comparison_payload = comparison.to_dict()
+            comparison_payload['weights_used'] = {
+                key: round(value * 100, 1)
+                for key, value in weights_by_kind[diagram_type].items()
+            }
             results.append({
                 'diagram_type': diagram_type,
                 'similarity': sim,
-                'comparison': comparison.to_dict(),
+                'comparison': comparison_payload,
             })
 
         overall_similarity = round(weighted_sum, 2)

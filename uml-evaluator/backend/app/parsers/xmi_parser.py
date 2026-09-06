@@ -942,7 +942,14 @@ class XMIParser:
                 )
 
             if rel:
-                rel_key = f"{rel.source}_{rel.target}_{rel.relationship_type.value}"
+                rel_key = (
+                    rel.source,
+                    rel.target,
+                    rel.relationship_type.value,
+                    rel.source_multiplicity or "",
+                    rel.target_multiplicity or "",
+                    rel.name or "",
+                )
                 if rel_key not in found_rels:
                     relationships.append(rel)
                     found_rels.add(rel_key)
