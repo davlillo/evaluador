@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { Badge } from '@/components/ui/badge';
 
 interface CriterionWeightBadgeProps {

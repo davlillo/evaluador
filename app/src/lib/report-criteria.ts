@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import type { Breakdown, ComparisonResult } from '@/types/comparison';
 import { isUseCaseBreakdown, isSequenceBreakdown } from '@/types/comparison';
 import { percentToNota } from '@/lib/rubric';
+import { rubricFeedback } from '@/lib/grading-sheet';
 
 /** Una fila de la tabla de desglose por criterio del acta. */
 export interface CriterionRow {
@@ -55,7 +59,9 @@ function sim(v: unknown): number {
 export function criterionRows(result: ComparisonResult): CriterionRow[] {
   if (result.class_rubric_breakdown && result.class_rubric_breakdown.length > 0) {
     return result.class_rubric_breakdown.map((row) => {
-      const relationType = row.relationship_type
+      // "Clases" no es una relación: el backend le deja el tipo por defecto
+      // ("association") y el acta decía "Asociación · Se esperaban 6 clases"
+      const relationType = row.relationship_type && row.criterion_type !== 'classes'
         ? RELATIONSHIP_LABELS[row.relationship_type] ?? row.relationship_type
         : '';
       const modeledRelationType = row.modeled_relationship_type
@@ -132,6 +138,10 @@ export function criterionRows(result: ComparisonResult): CriterionRow[] {
 
 /** Retroalimentación automática (fortalezas / faltantes) desde el breakdown. */
 export function autoFeedback(result: ComparisonResult): { strengths: string[]; gaps: string[] } {
+  if (result.class_rubric_breakdown && result.class_rubric_breakdown.length > 0) {
+    const { met, missing } = rubricFeedback(result.class_rubric_breakdown);
+    return { strengths: met, gaps: missing };
+  }
   const rows = criterionRows(result);
   const strengths = rows.filter((r) => r.similarity >= 80).map((r) => r.label);
   const gaps = rows.filter((r) => r.similarity < 60).map((r) => r.label);

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Descarga vectores FastText en español (cc.es.300). Ejecutar una sola vez."""
 import gzip
 import os

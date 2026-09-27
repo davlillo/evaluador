@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Indexación de carnés y extracción segura de ZIP (sin parsear UML).
 """
@@ -75,3 +78,13 @@ class TestExtraccionSegura:
         abs_target = os.path.abspath(str(target))
         for path in indexed.values():
             assert os.path.abspath(path).startswith(abs_target)
+
+
+def test_saca_el_carne_de_un_nombre_con_basura():
+    """En la Clave Par del 2EP vino "proyect.xmiRM25034.xmi"."""
+    from app.api.main import _student_id_from_filename
+
+    assert _student_id_from_filename("proyect.xmiRM25034.xmi") == "RM25034"
+    assert _student_id_from_filename("ab12345.xmi") == "AB12345"
+    # sin carné reconocible queda el nombre tal cual
+    assert _student_id_from_filename("estudiante_incompleto.xmi") == "estudiante_incompleto"

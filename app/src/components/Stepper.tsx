@@ -1,12 +1,15 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { Check } from 'lucide-react';
 
 const STEPS = [
-  { n: 1, label: 'Subir archivos' },
-  { n: 2, label: 'Procesar' },
+  { n: 1, label: 'Rúbrica' },
+  { n: 2, label: 'Solución y entregas' },
   { n: 3, label: 'Resultados' },
 ] as const;
 
-/** Indicador de progreso del flujo Subir → Procesar → Resultados. */
+/** Indicador de progreso del flujo Rúbrica → Solución y entregas → Resultados. */
 export function Stepper({ current }: { current: 1 | 2 | 3 }) {
   return (
     <div className="flex items-center gap-2 sm:gap-4">

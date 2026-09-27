@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { TrendingDown } from 'lucide-react';
 import type { PenaltyDetail } from '@/types/comparison';
 

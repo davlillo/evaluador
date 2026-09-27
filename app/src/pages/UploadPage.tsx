@@ -1,51 +1,49 @@
-﻿import { useState, useCallback } from 'react';
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
+/**
+ * La pantalla de entrada, en el orden en que trabaja el docente:
+ *
+ *   1. Rúbrica  — sube su Excel, se ve igual que en su hoja y la ajusta.
+ *   2. Archivos — su solución y las entregas (un XMI o un ZIP del grupo).
+ *   3. Resultados — la tabla del lote y la hoja editable de cada estudiante.
+ *
+ * Un solo estudiante va por el mismo camino que el lote (se empaqueta en un
+ * ZIP de un archivo), así los resultados, la hoja y el Excel son los mismos.
+ */
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileCode, CheckCircle, AlertCircle, ArrowRight, Settings, ChevronDown, ChevronUp, FolderArchive } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
-import { Stepper } from '@/components/Stepper';
-import { ScoringModeSelector } from '@/components/ScoringModeSelector';
-import { ExpectedCountsPanel } from '@/components/ExpectedCountsPanel';
-import { ClassRubricPanel } from '@/components/ClassRubricPanel';
-import { RubricUploadPanel } from '@/components/RubricUploadPanel';
-import { useEvaluationResult } from '@/context/EvaluationResultContext';
-import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
-import type { ComparisonResult } from '@/types/comparison';
-import type { BatchCompareResponse } from '@/types/evaluation-session';
-import { DIAGRAM_TYPES, DEFAULT_WEIGHTS, type TypeWeights } from '@/lib/rubric';
+import JSZip from 'jszip';
 import {
-  DEFAULT_EVALUATION_PROFILE,
-  SCORING_MODES_USING_EXPECTED_COUNTS,
-  evaluationProfileToApiPayload,
-  type EvaluationProfile,
-  type ScoringMode,
-} from '@/lib/scoring-modes';
+  AlertCircle, ArrowLeft, ArrowRight, CheckCircle, FileCode, FileSpreadsheet,
+  FolderArchive, Loader2, PencilLine, TriangleAlert, Upload,
+} from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { RubricEditorTable } from '@/components/RubricTable';
+import { Stepper } from '@/components/Stepper';
+import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
+import { useGradingSheet } from '@/context/GradingSheetContext';
+import { readPersisted, writePersisted, clearPersisted } from '@/lib/persisted-state';
+import {
+  checkRubricAgainstSolution,
+  deriveRubricFromSolution,
+  evaluationProfileJson,
+  importRubricFromExcel,
+  rubricIsValid,
+  rubricTotal,
+  type RubricCheckResult,
+  type TeacherRubric,
+} from '@/lib/teacher-rubric';
+import type { ClassRubricRule } from '@/lib/scoring-modes';
+import type { BatchCompareResponse } from '@/types/evaluation-session';
+import { API_URL } from '@/lib/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-interface AutoDetectedResult {
-  diagram_type: string;
-  similarity: number;
-  comparison: ComparisonResult;
-}
-
-interface AutoCompareResponse {
-  detected_diagrams: string[];
-  results: AutoDetectedResult[];
-  overall_similarity: number;
-  expected_diagrams: Record<string, unknown>;
-  student_diagrams: Record<string, unknown>;
-  xmi_source_used: string;
-  evaluator_version: string;
-}
-
-
-function isTotalOneHundred(total: number): boolean {
-  return Math.abs(total - 100) < 0.01;
-}
+/** La rúbrica ajustada sobrevive a un F5: rearmarla a mano es lo que más cuesta. */
+const RUBRIC_KEY = 'rubric';
+const RUBRIC_CONFIRMED_KEY = 'rubric:confirmed';
 
 function fileExtension(file: File): string {
   const dot = file.name.lastIndexOf('.');
@@ -56,342 +54,101 @@ function isUmlFile(file: File): boolean {
   return ['.xml', '.xmi', '.uml'].includes(fileExtension(file));
 }
 
-function criterionWeightsTotal(typeKey: string, weights: TypeWeights): number {
-  if (typeKey === 'usecase') {
-    return weights.classes
-      + weights.attributes
-      + weights.methods
-      + (weights.include_relations ?? 20)
-      + (weights.extend_relations ?? 15);
-  }
-  if (typeKey === 'sequence') {
-    return (weights.sync_messages ?? 35)
-      + (weights.async_messages ?? 20)
-      + (weights.creation_messages ?? 15)
-      + (weights.fragment_usage ?? 30);
-  }
-  return weights.classes + weights.attributes + weights.methods + weights.relationships;
+function studentIdFrom(file: File): string {
+  return file.name.replace(/\.(xmi|xml|uml)$/i, '');
 }
 
-
-function WeightSlider({
-  label,
-  value,
-  onChange,
-  color,
-  disabled,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  color: string;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className={`text-xs font-semibold ${color}`}>{label}</label>
-      <div className="relative">
-        <input
-          type="number"
-          min={0}
-          max={100}
-          step={1}
-          value={value}
-          disabled={disabled}
-          onChange={(e) => onChange(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
-          className="w-full border rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background disabled:bg-muted disabled:cursor-not-allowed"
-        />
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-      </div>
-    </div>
-  );
+/** Un XMI suelto viaja como un lote de uno: mismo endpoint, mismos resultados. */
+async function asStudentsZip(file: File): Promise<File> {
+  if (fileExtension(file) === '.zip') return file;
+  const zip = new JSZip();
+  zip.file(file.name, file);
+  const blob = await zip.generateAsync({ type: 'blob' });
+  return new File([blob], 'entrega.zip', { type: 'application/zip' });
 }
 
-function WeightsPanel({
-  typeKey,
-  weights,
-  onChange,
-}: {
-  typeKey: string;
-  weights: TypeWeights;
-  onChange: (w: TypeWeights) => void;
-}) {
-  if (typeKey === 'class') {
-    const total = weights.classes + weights.attributes + weights.methods + weights.relationships;
-    const isValid = Math.abs(total - 100) < 0.01;
-    const fields = [
-      { key: 'classes' as const, label: 'Clases', color: 'text-blue-600' },
-      { key: 'attributes' as const, label: 'Atributos', color: 'text-purple-600' },
-      { key: 'methods' as const, label: 'Métodos', color: 'text-teal-600' },
-      { key: 'relationships' as const, label: 'Relaciones', color: 'text-orange-600' },
-    ];
-    return (
-      <div className="mt-3 p-3 border rounded-lg bg-muted/10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {fields.map(({ key, label, color }) => (
-            <WeightSlider
-              key={key}
-              label={label}
-              color={color}
-              value={weights[key]}
-              onChange={(v) => onChange({ ...weights, [key]: v })}
-            />
-          ))}
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
-            {fields.map(({ key, color }) => (
-              <div
-                key={key}
-                className={'h-full transition-all ' + color.replace('text-', 'bg-')}
-                style={{ width: total > 0 ? (weights[key] / total) * 100 + '%' : '25%' }}
-              />
-            ))}
-          </div>
-          <span className={'text-xs font-medium ' + (isValid ? 'text-green-600' : 'text-red-500')}>
-            Total: {Math.round(total)}%
-          </span>
-        </div>
-        {!isValid && <p className="text-xs text-red-500 mt-1">Debe sumar 100%.</p>}
-      </div>
-    );
-  }
-
-  if (typeKey === 'usecase') {
-    const includeW = weights.include_relations ?? 20;
-    const extendW = weights.extend_relations ?? 15;
-    const total = weights.classes + weights.attributes + weights.methods + includeW + extendW;
-    const isValid = Math.abs(total - 100) < 0.01;
-    const fields = [
-      { key: 'classes' as const, label: 'Actores', color: 'text-blue-600' },
-      { key: 'attributes' as const, label: 'Casos de uso', color: 'text-purple-600' },
-      { key: 'methods' as const, label: 'Relaciones actor–CU', color: 'text-teal-600' },
-      { key: 'include_relations' as const, label: 'Relaciones include', color: 'text-orange-600' },
-      { key: 'extend_relations' as const, label: 'Relaciones extend', color: 'text-amber-600' },
-    ];
-    const valueFor = (key: typeof fields[number]['key']) => {
-      if (key === 'include_relations') return includeW;
-      if (key === 'extend_relations') return extendW;
-      return weights[key];
-    };
-    return (
-      <div className="mt-3 p-3 border rounded-lg bg-muted/10">
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          {fields.map(({ key, label, color }) => (
-            <WeightSlider
-              key={key}
-              label={label}
-              color={color}
-              value={valueFor(key)}
-              onChange={(v) => onChange({ ...weights, [key]: v, relationships: 0 })}
-            />
-          ))}
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
-            {fields.map(({ key, color }) => (
-              <div
-                key={key}
-                className={'h-full transition-all ' + color.replace('text-', 'bg-')}
-                style={{ width: total > 0 ? (valueFor(key) / total) * 100 + '%' : '20%' }}
-              />
-            ))}
-          </div>
-          <span className={'text-xs font-medium ' + (isValid ? 'text-green-600' : 'text-red-500')}>
-            Total: {Math.round(total)}%
-          </span>
-        </div>
-        {!isValid && <p className="text-xs text-red-500 mt-1">Debe sumar 100%.</p>}
-      </div>
-    );
-  }
-
-  const total =
-    (weights.sync_messages ?? 35) +
-    (weights.async_messages ?? 20) +
-    (weights.creation_messages ?? 15) +
-    (weights.fragment_usage ?? 30);
-  const isValid = Math.abs(total - 100) < 0.01;
-  return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/10">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <WeightSlider
-          label="Mensajes síncronos"
-          color="text-blue-600"
-          value={weights.sync_messages ?? 35}
-          onChange={(v) => onChange({ ...weights, sync_messages: v })}
-        />
-        <WeightSlider
-          label="Mensajes asíncronos"
-          color="text-purple-600"
-          value={weights.async_messages ?? 20}
-          onChange={(v) => onChange({ ...weights, async_messages: v })}
-        />
-        <WeightSlider
-          label="Mensajes de creación"
-          color="text-teal-600"
-          value={weights.creation_messages ?? 15}
-          onChange={(v) => onChange({ ...weights, creation_messages: v })}
-        />
-        <WeightSlider
-          label="Uso de fragmentos"
-          color="text-orange-600"
-          value={weights.fragment_usage ?? 30}
-          onChange={(v) => onChange({ ...weights, fragment_usage: v })}
-        />
-      </div>
-      <div className="mt-2 flex items-center gap-2">
-        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
-          <div className="h-full bg-blue-500 transition-all" style={{ width: total > 0 ? ((weights.sync_messages ?? 35) / total) * 100 + '%' : '0%' }} />
-          <div className="h-full bg-purple-500 transition-all" style={{ width: total > 0 ? ((weights.async_messages ?? 20) / total) * 100 + '%' : '0%' }} />
-          <div className="h-full bg-teal-500 transition-all" style={{ width: total > 0 ? ((weights.creation_messages ?? 15) / total) * 100 + '%' : '0%' }} />
-          <div className="h-full bg-orange-500 transition-all" style={{ width: total > 0 ? ((weights.fragment_usage ?? 30) / total) * 100 + '%' : '0%' }} />
-        </div>
-        <span className={'text-xs font-medium ' + (isValid ? 'text-green-600' : 'text-red-500')}>
-          Total: {Math.round(total)}%
-        </span>
-      </div>
-      {!isValid && <p className="text-xs text-red-500 mt-1">Debe sumar 100%.</p>}
-    </div>
-  );
-}
-
-function GlobalWeightsPanel({
-  weights,
-  onChange,
-  selectedTypes,
-}: {
-  weights: Record<string, number>;
-  onChange: (key: string, v: number) => void;
-  selectedTypes: Set<string>;
-}) {
-  const total = DIAGRAM_TYPES
-    .filter(({ key }) => selectedTypes.has(key))
-    .reduce((s, { key }) => s + (weights[key] || 0), 0);
-  const isValid = Math.abs(total - 100) < 0.01;
-  const fields = [
-    { key: 'class', label: 'Clases', color: 'text-blue-600' },
-    { key: 'usecase', label: 'Casos de Uso', color: 'text-purple-600' },
-    { key: 'sequence', label: 'Secuencia', color: 'text-teal-600' },
-  ];
-  return (
-    <div className="mt-4 p-3 border rounded-lg bg-muted/10">
-      <h4 className="text-sm font-semibold mb-3">Peso global por tipo de diagrama</h4>
-      <div className="grid grid-cols-3 gap-3">
-        {fields.map(({ key, label, color }) => (
-          <WeightSlider
-            key={key}
-            label={label}
-            color={color}
-            value={selectedTypes.has(key) ? weights[key] : 0}
-            disabled={!selectedTypes.has(key)}
-            onChange={(v) => onChange(key, v)}
-          />
-        ))}
-      </div>
-      <div className="mt-2 flex items-center gap-2">
-        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden flex">
-          {fields.map(({ key, color }) => {
-            if (!selectedTypes.has(key)) return null;
-            const pct = total > 0 ? (weights[key] / total) * 100 + '%' : '0%';
-            return (
-              <div
-                key={key}
-                className={'h-full transition-all ' + color.replace('text-', 'bg-')}
-                style={{ width: pct }}
-              />
-            );
-          })}
-        </div>
-        <span className={'text-xs font-medium ' + (isValid ? 'text-green-600' : 'text-red-500')}>
-          Total: {Math.round(total)}%
-        </span>
-      </div>
-      {!isValid && <p className="text-xs text-red-500 mt-1">Debe sumar 100%.</p>}
-    </div>
-  );
-}
-
-function FileUploadZone({
-  label,
+function DropZone({
+  id,
+  title,
   description,
-  file,
-  onFileSelect,
-  icon,
   accept,
+  file,
+  icon,
+  onFile,
+  compact = false,
 }: {
-  label: string;
+  id: string;
+  title: string;
   description: string;
+  accept: string;
   file: File | null;
-  onFileSelect: (file: File) => void;
   icon: React.ReactNode;
-  accept?: string;
+  onFile: (file: File) => void;
+  compact?: boolean;
 }) {
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(false);
-      const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile) onFileSelect(droppedFile);
-    },
-    [onFileSelect],
-  );
-
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const selectedFile = e.target.files?.[0];
-      if (selectedFile) onFileSelect(selectedFile);
-    },
-    [onFileSelect],
-  );
+  const onDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    setDragging(false);
+    const dropped = event.dataTransfer.files[0];
+    if (dropped) onFile(dropped);
+  }, [onFile]);
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={() => input.current?.click()}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          input.current?.click();
+        }
+      }}
+      onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+      onDragLeave={(event) => { event.preventDefault(); setDragging(false); }}
+      onDrop={onDrop}
       className={
-        'relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer' +
-        (isDragOver ? ' border-primary bg-primary/5 scale-[1.02]' : ' border-border hover:border-primary/50 hover:bg-muted/30') +
-        (file ? ' bg-primary/5 border-primary' : '')
+        'relative cursor-pointer rounded-xl border-2 border-dashed text-center transition-colors ' +
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
+        (compact ? 'p-6 ' : 'p-10 ') +
+        (dragging
+          ? 'border-primary bg-primary/5'
+          : file
+            ? 'border-primary bg-primary/5'
+            : 'border-border hover:border-primary/50 hover:bg-muted/30')
       }
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={() => document.getElementById('file-input-' + label)?.click()}
     >
       <input
-        id={'file-input-' + label}
+        ref={input}
+        id={id}
         type="file"
-        accept={accept || '.xmi,.xml,.uml'}
+        accept={accept}
         className="hidden"
-        onChange={handleFileInput}
+        onChange={(event) => {
+          const chosen = event.target.files?.[0];
+          if (chosen) onFile(chosen);
+          event.target.value = '';
+        }}
       />
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-3">
         <div
           className={
-            'w-16 h-16 rounded-full flex items-center justify-center transition-colors' +
-            (file ? ' bg-primary text-primary-foreground' : ' bg-muted text-muted-foreground')
+            'flex h-14 w-14 items-center justify-center rounded-full ' +
+            (file ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')
           }
         >
           {icon}
         </div>
         <div>
-          <h3 className="font-semibold text-lg">{label}</h3>
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <h3 className="text-base font-semibold">{title}</h3>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
         </div>
         {file && (
-          <Badge variant="secondary" className="mt-2">
-            <CheckCircle className="w-3 h-3 mr-1" />
+          <Badge variant="secondary">
+            <CheckCircle className="mr-1 h-3 w-3" />
             {file.name}
           </Badge>
         )}
@@ -400,504 +157,428 @@ function FileUploadZone({
   );
 }
 
+/**
+ * La solución del docente evaluada con su propia rúbrica. Si no saca 10, o la
+ * rúbrica es de otro turno o un criterio no coincide con lo que dibujó: lo que
+ * no cumple la solución tampoco lo va a cumplir un alumno que la hizo igual.
+ */
+function RubricCheckPanel({
+  checking,
+  check,
+  error,
+  onAdjust,
+}: {
+  checking: boolean;
+  check: RubricCheckResult | null;
+  error: string | null;
+  onAdjust: () => void;
+}) {
+  if (checking) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Revisando tu solución con la rúbrica…
+      </p>
+    );
+  }
+  if (error) {
+    return <p className="text-sm text-muted-foreground">{error}</p>;
+  }
+  if (!check) return null;
+  if (check.issues.length === 0) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+        <CheckCircle className="h-4 w-4" />
+        Tu solución saca 10 con esta rúbrica: se corresponden.
+      </p>
+    );
+  }
+  const otroTurno = check.nota < 6;
+  return (
+    <Alert className="border-amber-500/40 bg-amber-500/10">
+      <TriangleAlert className="h-4 w-4 text-amber-600" />
+      <AlertDescription className="space-y-3">
+        <p className="font-medium text-foreground">
+          {otroTurno
+            ? `¿Es la rúbrica de esta solución? Con ella, tu propia solución saca ${check.nota.toFixed(2)}.`
+            : `Tu propia solución saca ${check.nota.toFixed(2)} con esta rúbrica.`}
+        </p>
+        <p>
+          Estos criterios no los cumple ni tu solución, así que tampoco los va a cumplir
+          un estudiante que la haya hecho igual:
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          {check.issues.map((issue) => (
+            <li key={issue.rule_id}>
+              <span className="font-medium text-foreground">{issue.label}</span> — {issue.message}
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onAdjust}>
+            <PencilLine className="mr-2 h-4 w-4" />
+            Ajustar rúbrica
+          </Button>
+          <span className="text-xs">Si es a propósito, podés evaluar igual.</span>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 export default function UploadPage() {
-  const { setResult } = useEvaluationResult();
-  const { setBatchEvaluation, clearGlobalEvaluation } = useGlobalEvaluation();
   const navigate = useNavigate();
+  const { setBatchEvaluation, clearGlobalEvaluation } = useGlobalEvaluation();
+  const { clearAll: clearSheetEdits, hasAnyEdits } = useGradingSheet();
 
-  const [uploadMode, setUploadMode] = useState<'simple' | 'batch'>('simple');
+  const [rubric, setRubric] = useState<TeacherRubric | null>(
+    () => readPersisted<TeacherRubric | null>(RUBRIC_KEY, null),
+  );
+  const [confirmed, setConfirmed] = useState<boolean>(
+    () => readPersisted<boolean>(RUBRIC_CONFIRMED_KEY, false),
+  );
+  const [loadingRubric, setLoadingRubric] = useState(false);
+  const [rubricError, setRubricError] = useState<string | null>(null);
 
-  // Simple mode files
-  const [expectedFile, setExpectedFile] = useState<File | null>(null);
-  const [studentFile, setStudentFile] = useState<File | null>(null);
-
-  const [batchZipFile, setBatchZipFile] = useState<File | null>(null);
-
-  // Shared state
-  const [loading, setLoading] = useState(false);
+  const [solutionFile, setSolutionFile] = useState<File | null>(null);
+  const [deliveriesFile, setDeliveriesFile] = useState<File | null>(null);
+  const [evaluating, setEvaluating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showConfig, setShowConfig] = useState(false);
-  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(['class', 'usecase', 'sequence']));
-  const [weightsByType, setWeightsByType] = useState<Record<string, TypeWeights>>({ ...DEFAULT_WEIGHTS });
-  const [evaluationProfiles, setEvaluationProfiles] = useState<Record<string, EvaluationProfile>>({
-    class: {
-      ...DEFAULT_EVALUATION_PROFILE,
-      mode: 'expected_with_penalty',
-      classRules: [{
-        ruleId: 'classes-default',
-        criterionType: 'classes',
-        label: 'Clases',
-        weight: 20,
-        expectedQuantity: 0,
-      }],
-    },
-    usecase: { ...DEFAULT_EVALUATION_PROFILE },
-    sequence: { ...DEFAULT_EVALUATION_PROFILE },
-  });
-  const [useSemanticMatching, setUseSemanticMatching] = useState(true);
-  const [semanticThreshold, setSemanticThreshold] = useState(0.65);
-  const [globalWeights, setGlobalWeights] = useState<Record<string, number>>({
-    class: 40, usecase: 35, sequence: 25,
-  });
-  const selectedGlobalWeightTotal = DIAGRAM_TYPES
-    .filter(({ key }) => selectedTypes.has(key))
-    .reduce((total, { key }) => total + (globalWeights[key] || 0), 0);
-  const selectedGlobalWeightsValid = isTotalOneHundred(selectedGlobalWeightTotal);
-  const selectedCriterionWeightsValid = Array.from(selectedTypes).every((typeKey) =>
-    isTotalOneHundred(criterionWeightsTotal(typeKey, weightsByType[typeKey])),
-  );
-  const classRubricValid = !selectedTypes.has('class') || (
-    evaluationProfiles.class.classRules.length > 0
-    && isTotalOneHundred(
-      evaluationProfiles.class.classRules.reduce((total, rule) => total + rule.weight, 0),
-    )
-    && evaluationProfiles.class.classRules.every((rule) => {
-      if (!rule.label.trim()) return false;
-      if (rule.criterionType === 'classes') {
-        return rule.expectedQuantity !== undefined && rule.expectedQuantity >= 0;
-      }
-      if (!rule.source?.trim() || !rule.target?.trim()) return false;
-      if (rule.criterionType === 'multiplicity') {
-        return !!rule.multiplicityEnd && !!rule.expectedMultiplicity?.trim();
-      }
-      return true;
-    })
-  );
-  const batchGlobalWeightsValid = selectedGlobalWeightsValid;
 
-  const updateGlobalWeight = (key: string, value: number) => {
-    setGlobalWeights((prev) => ({ ...prev, [key]: value }));
-  };
+  const [check, setCheck] = useState<RubricCheckResult | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
 
-  const toggleType = (key: string) => {
-    const next = new Set(selectedTypes);
-    if (next.has(key)) {
-      next.delete(key);
-    } else {
-      next.add(key);
-    }
-    setSelectedTypes(next);
-  };
+  const solutionForRubric = useRef<HTMLInputElement>(null);
 
-  const updateWeights = (typeKey: string, weights: TypeWeights) => {
-    setWeightsByType((prev) => ({ ...prev, [typeKey]: weights }));
-  };
+  useEffect(() => {
+    if (rubric) writePersisted(RUBRIC_KEY, rubric);
+    else clearPersisted(RUBRIC_KEY);
+  }, [rubric]);
 
-  const updateEvaluationProfile = (typeKey: string, profile: EvaluationProfile) => {
-    setEvaluationProfiles((prev) => ({ ...prev, [typeKey]: profile }));
-  };
+  useEffect(() => {
+    writePersisted(RUBRIC_CONFIRMED_KEY, confirmed);
+  }, [confirmed]);
 
-  const applyRubricProfiles = (profiles: Record<string, EvaluationProfile>) => {
-    setEvaluationProfiles((prev) => ({ ...prev, ...profiles }));
-  };
+  const step: 1 | 2 = rubric && confirmed ? 2 : 1;
+  const rules = rubric?.rules;
 
-  /**
-   * El backend aplica un único perfil de evaluación por request (igual que
-   * los pesos globales), no uno distinto por tipo de diagrama. Se envía el
-   * perfil del primer tipo seleccionado; si es 'similarity' (por defecto)
-   * no se envía nada y el comportamiento es idéntico al actual.
-   */
-  const buildEvaluationProfileJson = (types: Set<string>): string | null => {
-    const firstType = DIAGRAM_TYPES.find(({ key }) => types.has(key))?.key;
-    if (!firstType) return null;
-    const profile = evaluationProfiles[firstType];
-    if (!profile) return null;
-    if (profile.mode === 'similarity' && profile.classRules.length === 0) return null;
-    return JSON.stringify(evaluationProfileToApiPayload(profile));
-  };
-
-  const handleSingleCompare = async () => {
-    if (!expectedFile || !studentFile) {
-      setError('Por favor selecciona ambos archivos (solución y del estudiante)');
+  // Antes de calificar al grupo: ¿la rúbrica corresponde a esta solución?
+  useEffect(() => {
+    if (step !== 2 || !solutionFile || !rules) {
+      setCheck(null);
+      setCheckError(null);
       return;
     }
-    if (selectedTypes.size === 0) {
-      setError('Seleccioná al menos un tipo de diagrama.');
-      return;
-    }
-    if (!selectedCriterionWeightsValid) {
-      setError('Los pesos de cada tipo de diagrama seleccionado deben sumar 100%.');
-      return;
-    }
-    if (!classRubricValid) {
-      setError('Los pesos de la rúbrica del diagrama de clases deben sumar 100%.');
-      return;
-    }
-    if (!selectedGlobalWeightsValid) {
-      setError(`Los pesos globales de los diagramas seleccionados deben sumar 100%. Actualmente suman ${Math.round(selectedGlobalWeightTotal)}%.`);
-      return;
-    }
-    setLoading(true);
-    setError(null);
+    let current = true;
+    setChecking(true);
+    setCheckError(null);
+    checkRubricAgainstSolution(solutionFile, rules)
+      .then((result) => { if (current) setCheck(result); })
+      .catch((err) => {
+        if (current) {
+          setCheck(null);
+          setCheckError(err instanceof Error ? err.message : 'No se pudo revisar la solución.');
+        }
+      })
+      .finally(() => { if (current) setChecking(false); });
+    return () => { current = false; };
+  }, [step, solutionFile, rules]);
+
+  const loadRubric = async (load: () => Promise<TeacherRubric>) => {
+    setLoadingRubric(true);
+    setRubricError(null);
     try {
-      const formData = new FormData();
-      formData.append('expected_file', expectedFile);
-      formData.append('student_file', studentFile);
-      formData.append('case_sensitive', 'false');
-      formData.append('strict_types', 'true');
-      formData.append('xmi_source', 'astah');
-      formData.append('selected_types', Array.from(selectedTypes).join(','));
-      formData.append('use_semantic_matching', String(useSemanticMatching));
-      formData.append('semantic_threshold', String(semanticThreshold));
-      if (selectedTypes.has('class')) formData.append('global_weight_class', String(globalWeights.class));
-      if (selectedTypes.has('usecase')) formData.append('global_weight_usecase', String(globalWeights.usecase));
-      if (selectedTypes.has('sequence')) formData.append('global_weight_sequence', String(globalWeights.sequence));
-      for (const [typeKey, w] of Object.entries(weightsByType)) {
-        if (!selectedTypes.has(typeKey)) continue;
-        formData.append(`${typeKey}_weight_classes`, String(w.classes));
-        formData.append(`${typeKey}_weight_attributes`, String(w.attributes));
-        formData.append(`${typeKey}_weight_methods`, String(w.methods));
-        if (typeKey === 'usecase') {
-          formData.append(`${typeKey}_weight_include`, String(w.include_relations ?? 20));
-          formData.append(`${typeKey}_weight_extend`, String(w.extend_relations ?? 15));
-        } else {
-          formData.append(`${typeKey}_weight_relationships`, String(w.relationships));
-        }
-        if (typeKey === 'sequence') {
-          formData.append('sequence_weight_sync_messages', String(w.sync_messages ?? 35));
-          formData.append('sequence_weight_async_messages', String(w.async_messages ?? 20));
-          formData.append('sequence_weight_creation_messages', String(w.creation_messages ?? 15));
-          formData.append('sequence_weight_fragment_usage', String(w.fragment_usage ?? 30));
-        }
-      }
-      const evaluationProfileJson = buildEvaluationProfileJson(selectedTypes);
-      if (evaluationProfileJson) formData.append('evaluation_profile_json', evaluationProfileJson);
-      const response = await fetch(API_URL + '/api/compare-auto', {
-        method: 'POST', body: formData,
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Error al comparar archivos');
-      }
-      const data: AutoCompareResponse = await response.json();
-      setResult(data, { studentFileName: studentFile.name });
-      navigate('/resultados');
+      setRubric(await load());
+      setConfirmed(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      setRubricError(err instanceof Error ? err.message : 'No se pudo cargar la rúbrica.');
     } finally {
-      setLoading(false);
+      setLoadingRubric(false);
     }
   };
 
-  const handleBatchCompare = async () => {
-    if (!expectedFile || !batchZipFile) {
-      setError('Por favor selecciona la solución XMI y el ZIP de estudiantes.');
+  const onRubricFile = (file: File) => {
+    if (fileExtension(file) !== '.xlsx') {
+      setRubricError('La rúbrica tiene que ser el archivo .xlsx con la tabla de calificación.');
       return;
     }
-    if (!selectedCriterionWeightsValid) {
-      setError('Los pesos de cada tipo de diagrama seleccionado deben sumar 100%.');
+    void loadRubric(() => importRubricFromExcel(file));
+  };
+
+  const onSolutionForRubric = (file: File) => {
+    if (!isUmlFile(file)) {
+      setRubricError('La solución tiene que ser un .xmi exportado desde Astah.');
       return;
     }
-    if (!classRubricValid) {
-      setError('Los pesos de la rúbrica del diagrama de clases deben sumar 100%.');
-      return;
-    }
-    if (!batchGlobalWeightsValid) {
-      setError('Los pesos globales de la evaluación por lote deben sumar 100%.');
-      return;
-    }
-    setLoading(true);
+    // la misma solución sirve después para evaluar: no hace falta subirla dos veces
+    setSolutionFile(file);
+    void loadRubric(() => deriveRubricFromSolution(file));
+  };
+
+  const updateRules = (rules: ClassRubricRule[]) => {
+    setRubric((current) => (current ? { ...current, rules } : current));
+  };
+
+  const discardRubric = () => {
+    setRubric(null);
+    setConfirmed(false);
+    setRubricError(null);
+  };
+
+  const evaluate = async () => {
+    if (!rubric || !solutionFile || !deliveriesFile) return;
+    setEvaluating(true);
     setError(null);
-    clearGlobalEvaluation();
     try {
+      const single = fileExtension(deliveriesFile) !== '.zip';
       const formData = new FormData();
-      formData.append('expected_file', expectedFile);
-      formData.append('students_zip', batchZipFile);
-      formData.append('use_semantic_matching', String(useSemanticMatching));
-      formData.append('semantic_threshold', String(semanticThreshold));
-      formData.append('global_weight_class', String(globalWeights.class));
-      formData.append('global_weight_usecase', String(globalWeights.usecase));
-      formData.append('global_weight_sequence', String(globalWeights.sequence));
-      const evaluationProfileJson = buildEvaluationProfileJson(new Set(['class', 'usecase', 'sequence']));
-      if (evaluationProfileJson) formData.append('evaluation_profile_json', evaluationProfileJson);
-      const response = await fetch(API_URL + '/api/compare-batch', {
-        method: 'POST', body: formData,
-      });
+      formData.append('expected_file', solutionFile);
+      formData.append('students_zip', await asStudentsZip(deliveriesFile));
+      // medido contra sus 46 notas: con matching semántico califica peor
+      // (sube el error contra sus 46 notas de Práctica 1), así que no se usa
+      formData.append('use_semantic_matching', 'false');
+      formData.append('global_weight_class', '100');
+      formData.append('global_weight_usecase', '0');
+      formData.append('global_weight_sequence', '0');
+      formData.append('evaluation_profile_json', evaluationProfileJson(rubric.rules));
+
+      const response = await fetch(API_URL + '/api/compare-batch', { method: 'POST', body: formData });
       if (!response.ok) {
-        const payload = await response.json();
-        throw new Error(payload.detail || 'Error al evaluar lote');
+        const payload = await response.json().catch(() => null);
+        throw new Error(
+          typeof payload?.detail === 'string' ? payload.detail : 'No se pudo evaluar las entregas.',
+        );
       }
       const data: BatchCompareResponse = await response.json();
+
+      // las correcciones a mano eran de la evaluación anterior
+      clearSheetEdits();
+      clearGlobalEvaluation();
       setBatchEvaluation(data);
-      navigate('/lote');
+      if (single) {
+        navigate('/hoja', { state: { studentId: studentIdFrom(deliveriesFile) } });
+      } else {
+        navigate('/lote');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      setError(err instanceof Error ? err.message : 'No se pudo evaluar las entregas.');
     } finally {
-      setLoading(false);
+      setEvaluating(false);
     }
   };
 
   return (
     <div className="space-y-8">
-      {/* Encabezado con estado del flujo (paso 1 de 3) */}
       <div className="space-y-5">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-            <Upload className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Nueva comparación</h2>
-            <p className="text-muted-foreground max-w-2xl">
-              Sube la solución oficial (docente) y la solución del estudiante para comenzar la evaluación.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Nueva evaluación</h2>
+          <p className="mt-1 max-w-2xl text-muted-foreground">
+            {step === 1
+              ? 'Empezá por la rúbrica: la misma tabla que usás en Excel para calificar.'
+              : 'Ahora tu solución y las entregas de los estudiantes.'}
+          </p>
         </div>
-        <Stepper current={1} />
+        <Stepper current={step} />
       </div>
 
-      {/* Selector de modo */}
-      <div className="flex items-center gap-2">
-        <Badge
-          variant={uploadMode === 'simple' ? 'default' : 'outline'}
-          className="cursor-pointer px-4 py-2 text-sm"
-          onClick={() => { setUploadMode('simple'); setError(null); }}
-        >
-          Un estudiante
-        </Badge>
-        <Badge
-          variant={uploadMode === 'batch' ? 'default' : 'outline'}
-          className="cursor-pointer px-4 py-2 text-sm"
-          onClick={() => { setUploadMode('batch'); setError(null); }}
-        >
-          Lote (ZIP de estudiantes)
-        </Badge>
-      </div>
-
-      {/* Dos zonas de subida */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <FileUploadZone
-          label="1. Solución oficial (Docente)"
-          description="Este archivo será la referencia para la evaluación."
-          file={expectedFile}
-          onFileSelect={(file) => {
-            if (!isUmlFile(file)) {
-              setError('La solución oficial debe ser un archivo .xmi, .xml o .uml.');
-              return;
-            }
-            setExpectedFile(file);
-            setError(null);
-          }}
-          icon={<FileCode className="w-8 h-8" />}
-        />
-        {uploadMode === 'simple' ? (
-          <FileUploadZone
-            label="2. Solución del estudiante"
-            description="Este archivo será comparado con la solución oficial."
-            file={studentFile}
-            onFileSelect={(file) => {
-              if (fileExtension(file) === '.zip') {
-                setBatchZipFile(file);
-                setStudentFile(null);
-                setUploadMode('batch');
-                setError(null);
-                return;
-              }
-              if (!isUmlFile(file)) {
-                setError('La solución del estudiante debe ser un archivo .xmi, .xml o .uml.');
-                return;
-              }
-              setStudentFile(file);
-              setError(null);
-            }}
-            icon={<Upload className="w-8 h-8" />}
+      {step === 1 && !rubric && (
+        <section className="space-y-4">
+          <DropZone
+            id="rubrica-excel"
+            title="Subí tu rúbrica (.xlsx)"
+            description="El Excel con Criterio · % · Esperados · Modelados · Nota ponderada · Observaciones. Se muestra igual que en tu hoja para que la revises."
+            accept=".xlsx"
+            file={null}
+            icon={loadingRubric ? <Loader2 className="h-7 w-7 animate-spin" /> : <FileSpreadsheet className="h-7 w-7" />}
+            onFile={onRubricFile}
           />
-        ) : (
-          <FileUploadZone
-            label="2. ZIP de estudiantes"
-            description="Un .xmi por estudiante; el nombre del archivo se usa como carné."
-            accept=".zip"
-            file={batchZipFile}
-            onFileSelect={(file) => {
-              if (fileExtension(file) !== '.zip') {
-                setError('El archivo del lote debe ser un ZIP que contenga los XMI.');
-                return;
-              }
-              setBatchZipFile(file);
-              setError(null);
-            }}
-            icon={<FolderArchive className="w-8 h-8" />}
-          />
-        )}
-      </div>
-
-      <Card className="border-dashed">
-        <button
-          type="button"
-          onClick={() => setShowConfig(!showConfig)}
-          className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-muted/30 transition-colors rounded-t-lg"
-        >
-          <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-muted-foreground" />
-            <span className="font-medium">Configuración de pesos</span>
-          </div>
-          {showConfig ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
-        </button>
-
-        {showConfig && (
-          <CardContent className="pt-0 pb-4 border-t">
-            <p className="text-xs text-muted-foreground mt-3 mb-3">
-              Seleccioná qué tipos de diagrama evaluar y configurá el porcentaje de cada criterio.
-            </p>
-
-            <div className="flex flex-wrap gap-4 mb-4">
-              {DIAGRAM_TYPES.map(({ key, label }) => (
-                <label key={key} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedTypes.has(key)}
-                    onChange={() => toggleType(key)}
-                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm font-medium">{label}</span>
-                </label>
-              ))}
-            </div>
-
-            <div className="space-y-2">
-              {DIAGRAM_TYPES.filter(({ key }) => selectedTypes.has(key)).map(({ key, label }) => (
-                <div key={key} className="p-3 border rounded-lg">
-                  <h4 className="text-sm font-semibold">{label}</h4>
-                  {key === 'class' ? (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Los pesos se definen por criterio en la rúbrica de clases.
-                    </p>
-                  ) : (
-                    <WeightsPanel
-                      typeKey={key}
-                      weights={weightsByType[key] || DEFAULT_WEIGHTS[key]}
-                      onChange={(w) => updateWeights(key, w)}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 p-3 border rounded-lg bg-muted/10">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="text-sm font-semibold">Corrección semántica</h4>
-                  <p className="text-xs text-muted-foreground">FastText para detectar sinónimos y variantes</p>
-                </div>
-                <Switch
-                  checked={useSemanticMatching}
-                  onCheckedChange={setUseSemanticMatching}
-                />
-              </div>
-              {useSemanticMatching && (
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-medium">Umbral:</span>
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={1.0}
-                    step={0.05}
-                    value={semanticThreshold}
-                    onChange={(e) => setSemanticThreshold(Number(e.target.value))}
-                    className="flex-1"
-                  />
-                  <span className="text-xs font-mono w-10 text-right">{semanticThreshold.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-
-            <GlobalWeightsPanel
-              weights={globalWeights}
-              onChange={updateGlobalWeight}
-              selectedTypes={selectedTypes}
+          <p className="text-center text-sm text-muted-foreground">
+            ¿No tenés la rúbrica en Excel?{' '}
+            <button
+              type="button"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+              onClick={() => solutionForRubric.current?.click()}
+            >
+              Armarla desde tu solución (.xmi)
+            </button>
+            <input
+              ref={solutionForRubric}
+              type="file"
+              accept=".xmi,.xml,.uml"
+              className="hidden"
+              onChange={(event) => {
+                const chosen = event.target.files?.[0];
+                if (chosen) onSolutionForRubric(chosen);
+                event.target.value = '';
+              }}
             />
-
-            <div className="mt-4 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                El modo de evaluación se configura una vez y aplica a todos los tipos de diagrama
-                seleccionados en esta comparación.
-              </p>
-              {(() => {
-                const firstType = DIAGRAM_TYPES.find(({ key }) => selectedTypes.has(key))?.key as
-                  | 'class' | 'usecase' | 'sequence' | undefined;
-                if (!firstType) return null;
-                const profile = evaluationProfiles[firstType] ?? DEFAULT_EVALUATION_PROFILE;
-                const mode: ScoringMode = profile.mode;
-                return (
-                  <>
-                    {firstType === 'class' ? (
-                      <ClassRubricPanel
-                        rules={profile.classRules}
-                        onChange={(classRules) => updateEvaluationProfile(firstType, {
-                          ...profile,
-                          mode: 'expected_with_penalty',
-                          classRules,
-                        })}
-                      />
-                    ) : (
-                      <ScoringModeSelector
-                        value={mode}
-                        onChange={(newMode) => updateEvaluationProfile(firstType, { ...profile, mode: newMode })}
-                      />
-                    )}
-                    {firstType !== 'class' && SCORING_MODES_USING_EXPECTED_COUNTS.includes(mode) && (
-                      <ExpectedCountsPanel
-                        diagramType={firstType}
-                        counts={profile.expectedCounts}
-                        onChange={(expectedCounts) => updateEvaluationProfile(firstType, { ...profile, expectedCounts })}
-                      />
-                    )}
-                    <RubricUploadPanel onApply={applyRubricProfiles} />
-                  </>
-                );
-              })()}
-            </div>
-          </CardContent>
-        )}
-      </Card>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="w-4 h-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+          </p>
+          {rubricError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{rubricError}</AlertDescription>
+            </Alert>
+          )}
+        </section>
       )}
 
-      {/* Recomendaciones */}
-      <div className="rounded-xl border bg-accent/40 p-4 text-sm">
-        <p className="font-semibold text-primary mb-1.5">Recomendaciones</p>
-        <ul className="space-y-1 text-muted-foreground list-disc pl-5">
-          <li>Exporta los diagramas a XMI desde <strong>Astah Professional</strong> o Visual Paradigm.</li>
-          <li>Asegúrate de que los archivos correspondan al mismo tipo de diagrama.</li>
-          <li>En modo lote, nombra cada archivo con el carné del estudiante (ej. <code>AB12345.xmi</code>).</li>
-        </ul>
-      </div>
+      {step === 1 && rubric && (
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {rubric.origin === 'excel' ? 'Rúbrica de tu Excel' : 'Rúbrica armada desde tu solución'}
+              </p>
+              <h3 className="text-xl font-semibold">{rubric.title}</h3>
+            </div>
+            <Button variant="ghost" onClick={discardRubric}>
+              Usar otra rúbrica
+            </Button>
+          </div>
 
-      <div className="flex justify-end">
-        <Button
-          size="lg"
-          onClick={uploadMode === 'simple' ? handleSingleCompare : handleBatchCompare}
-          disabled={
-            loading ||
-            (uploadMode === 'simple'
-              ? !expectedFile || !studentFile
-              : !expectedFile || !batchZipFile) ||
-            selectedTypes.size === 0 ||
-            (uploadMode === 'simple'
-              ? !selectedCriterionWeightsValid || !selectedGlobalWeightsValid
-                || !classRubricValid
-              : !selectedCriterionWeightsValid || !batchGlobalWeightsValid
-                || !classRubricValid)
-          }
-          className="min-w-[220px]"
-        >
-          {loading ? (
-            <>
-              <span className="animate-spin mr-2">&#x27f3;</span>
-              {uploadMode === 'simple' ? 'Analizando…' : 'Evaluando lote…'}
-            </>
-          ) : (
-            <>
-              {uploadMode === 'simple' ? 'Comparar ahora' : 'Evaluar lote'}
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </>
+          {rubric.warnings.length > 0 && (
+            <Alert className="border-amber-500/40 bg-amber-500/10">
+              <TriangleAlert className="h-4 w-4 text-amber-600" />
+              <AlertDescription>
+                <ul className="space-y-1">
+                  {rubric.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                </ul>
+              </AlertDescription>
+            </Alert>
           )}
-        </Button>
-      </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <RubricEditorTable rules={rubric.rules} onChange={updateRules} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Podés cambiar los porcentajes, las clases esperadas y cada multiplicidad.
+              Pasá el mouse por una fila para quitarla.
+            </p>
+            <Button
+              size="lg"
+              disabled={!rubricIsValid(rubric.rules)}
+              onClick={() => setConfirmed(true)}
+            >
+              Usar esta rúbrica
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {step === 2 && rubric && (
+        <section className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{rubric.title}</span>
+              <span className="text-muted-foreground">
+                · {rubric.rules.length} criterios · {Math.round(rubricTotal(rubric.rules))}%
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setConfirmed(false)}>
+              <PencilLine className="mr-2 h-4 w-4" />
+              Ajustar rúbrica
+            </Button>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <DropZone
+              id="solucion"
+              title="Tu solución (.xmi)"
+              description="El diagrama de clases resuelto, exportado desde Astah."
+              accept=".xmi,.xml,.uml"
+              file={solutionFile}
+              icon={<FileCode className="h-7 w-7" />}
+              compact
+              onFile={(file) => {
+                if (!isUmlFile(file)) {
+                  setError('La solución tiene que ser un .xmi exportado desde Astah.');
+                  return;
+                }
+                setSolutionFile(file);
+                setError(null);
+              }}
+            />
+            <DropZone
+              id="entregas"
+              title="Entregas"
+              description="Un .xmi para un estudiante, o un .zip con todo el grupo. El nombre de cada archivo es el carné (AB12345.xmi)."
+              accept=".xmi,.xml,.uml,.zip"
+              file={deliveriesFile}
+              icon={
+                deliveriesFile && fileExtension(deliveriesFile) === '.zip'
+                  ? <FolderArchive className="h-7 w-7" />
+                  : <Upload className="h-7 w-7" />
+              }
+              compact
+              onFile={(file) => {
+                if (!isUmlFile(file) && fileExtension(file) !== '.zip') {
+                  setError('Las entregas tienen que ser un .xmi o un .zip con los .xmi adentro.');
+                  return;
+                }
+                setDeliveriesFile(file);
+                setError(null);
+              }}
+            />
+          </div>
+
+          <RubricCheckPanel
+            checking={checking}
+            check={check}
+            error={checkError}
+            onAdjust={() => setConfirmed(false)}
+          />
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button variant="ghost" onClick={() => setConfirmed(false)} disabled={evaluating}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Volver a la rúbrica
+            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              {hasAnyEdits && (
+                <span className="text-xs text-muted-foreground">
+                  Se descartan las correcciones a mano de la evaluación anterior.
+                </span>
+              )}
+              <Button
+                size="lg"
+                className="min-w-[12rem]"
+                disabled={evaluating || !solutionFile || !deliveriesFile}
+                onClick={() => void evaluate()}
+              >
+                {evaluating ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Evaluando…
+                  </>
+                ) : (
+                  <>
+                    {deliveriesFile && fileExtension(deliveriesFile) !== '.zip'
+                      ? 'Evaluar estudiante'
+                      : 'Evaluar grupo'}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

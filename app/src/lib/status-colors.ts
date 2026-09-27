@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 /**
  * Fuente única de los colores/umbrales de estado de comparación.
  * Usa los tokens semánticos definidos en index.css (match/partial/mismatch/extra),

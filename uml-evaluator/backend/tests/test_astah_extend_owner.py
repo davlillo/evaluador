@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Parseo Astah de «extend»: el dueño UseCase.extend es la extensión."""
 from pathlib import Path
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { ClassSvg, type ClassDiff } from '@/components/diagram/ClassSvg';
 import type { DiffStatus } from '@/lib/status-colors';
 import type { DiagramInfo } from '@/types/comparison';

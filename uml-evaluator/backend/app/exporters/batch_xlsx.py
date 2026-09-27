@@ -1,8 +1,12 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Exporta el resultado de una evaluación de lote a un archivo Excel (.xlsx)
-con 3 hojas: Notas (resumen por estudiante), Detalle (criterio por
-criterio, con las cantidades esperada/registrada y el factor de curva
-aplicado), y Resumen (metadatos del lote).
+con 4 hojas: Hoja de calificación (el formato propio del docente, un bloque
+por estudiante con la fórmula viva), Notas (resumen por estudiante), Detalle
+(criterio por criterio, con las cantidades esperada/registrada y el factor de
+curva aplicado), y Resumen (metadatos del lote).
 
 Reemplaza el CSV plano anterior (app/src/lib/batch-csv.ts en el frontend),
 que solo tenía Carné/Similitud/Nota/Estado sin ningún desglose.
@@ -16,10 +20,13 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from app.grading import percent_to_nota, is_aprobado
+
+#: Equipo que desarrolló el sistema; firma cada Excel exportado.
+AUTORES = "davlillos"
 
 HEADER_FILL = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
 HEADER_FONT = Font(color="FFFFFF", bold=True)
@@ -219,6 +226,7 @@ def _write_resumen_sheet(wb: Workbook, batch: Dict[str, Any]) -> None:
         ("Peso global — Clases (%)", global_weights.get("class")),
         ("Peso global — Casos de uso (%)", global_weights.get("usecase")),
         ("Peso global — Secuencia (%)", global_weights.get("sequence")),
+        ("Generado con", f"UML Evaluador — desarrollado por {AUTORES}"),
     ]
     for label, value in rows:
         ws.append([label, value])
@@ -227,12 +235,167 @@ def _write_resumen_sheet(wb: Workbook, batch: Dict[str, Any]) -> None:
     ws.column_dimensions["B"].width = 20
 
 
-def build_batch_xlsx(batch: Dict[str, Any], nota_overrides: Optional[Dict[str, float]] = None) -> bytes:
+#: Encabezado de la hoja del docente, en su orden (rúbricas del 2EP).
+HOJA_DOCENTE_HEADERS = [
+    "Criterio", "%", "Esperados", "Modelados", "Nota ponderada", "Observaciones",
+]
+
+#: La fórmula tal cual está en la celda de su hoja.
+CURVA_FORMULA = "=IF(C{f}>=D{f},(D{f}/C{f})*B{f},IF(C{f}<D{f},(C{f}/D{f})*B{f},0))"
+
+GROUP_FONT = Font(bold=True)
+STUDENT_FONT = Font(bold=True, size=12)
+PESO_FORMATO = "0.00"
+
+
+def _hoja_rows(comparison, modeled, observations):
+    """Filas de la hoja de un estudiante, en el orden de su Excel.
+
+    Primero "Clases", después la sección "Relaciones" (que solo suma), y
+    debajo cada encabezado de grupo con sus multiplicidades. Los encabezados
+    no llevan peso: en su hoja la columna % de esas filas va vacía.
+    """
+    clases, relaciones = [], []
+    for row in comparison.get("class_rubric_breakdown") or []:
+        rule_id = row.get("rule_id", "")
+        if row.get("criterion_type") == "classes":
+            esperados = float(row.get("expected") or 0)
+            automatico = float(row.get("modeled") or 0)
+        else:
+            esperados = 1.0
+            automatico = 1.0 if row.get("correct") else 0.0
+        fila = {
+            "tipo": "criterio",
+            "etiqueta": row.get("label", rule_id),
+            "peso": float(row.get("weight", 0.0)),
+            "grupo": row.get("group_label"),
+            "esperados": esperados,
+            "modelados": float(modeled.get(rule_id, automatico)),
+            "observacion": observations.get(rule_id) or row.get("message", ""),
+        }
+        (clases if row.get("criterion_type") == "classes" else relaciones).append(fila)
+
+    filas = list(clases)
+    if relaciones:
+        filas.append({"tipo": "seccion", "etiqueta": "Relaciones"})
+    grupo_actual = None
+    for fila in relaciones:
+        if fila["grupo"] and fila["grupo"] != grupo_actual:
+            filas.append({"tipo": "grupo", "etiqueta": fila["grupo"]})
+        grupo_actual = fila["grupo"]
+        filas.append(fila)
+    return filas
+
+
+def _write_hoja_docente_sheet(
+    wb: Workbook,
+    batch: Dict[str, Any],
+    modeled_overrides: Dict[str, Dict[str, float]],
+    observations: Dict[str, Dict[str, str]],
+) -> None:
+    """Un bloque por estudiante con el formato de la rúbrica del docente.
+
+    Se escriben fórmulas, no valores, para que pueda seguir trabajando en
+    Excel: si corrige un "Modelados" ahí, la nota se recalcula sola.
+    """
+    ws = wb.create_sheet("Hoja de calificación")
+    fila = 1
+
+    for r in batch.get("results", []):
+        if r.get("status") == "error":
+            continue
+        comparison = ((r.get("runs") or {}).get("class") or {}).get("comparison") or {}
+        if not (comparison.get("class_rubric_breakdown") or []):
+            continue
+
+        student_id = r.get("student_id", "")
+        ws.cell(row=fila, column=1, value=student_id).font = STUDENT_FONT
+        fila += 2  # una fila en blanco entre el carné y la tabla, como en su hoja
+
+        for columna, titulo in enumerate(HOJA_DOCENTE_HEADERS, start=1):
+            celda = ws.cell(row=fila, column=columna, value=titulo)
+            celda.fill = HEADER_FILL
+            celda.font = HEADER_FONT
+        fila += 1
+
+        primera = fila
+        filas_clases, fila_relaciones, filas_relacion = [], None, []
+        for datos in _hoja_rows(
+            comparison,
+            modeled_overrides.get(student_id, {}),
+            observations.get(student_id, {}),
+        ):
+            etiqueta = ws.cell(row=fila, column=1, value=datos["etiqueta"])
+            if datos["tipo"] == "seccion":
+                etiqueta.font = GROUP_FONT
+                fila_relaciones = fila
+            elif datos["tipo"] == "grupo":
+                etiqueta.font = GROUP_FONT
+                etiqueta.alignment = Alignment(indent=1)
+            else:
+                if fila_relaciones is None:
+                    filas_clases.append(fila)
+                    etiqueta.font = GROUP_FONT
+                else:
+                    filas_relacion.append(fila)
+                    if datos["grupo"]:
+                        etiqueta.alignment = Alignment(indent=2)
+                    else:
+                        etiqueta.font = GROUP_FONT
+                        etiqueta.alignment = Alignment(indent=1)
+                ws.cell(row=fila, column=2, value=datos["peso"]).number_format = PESO_FORMATO
+                ws.cell(row=fila, column=3, value=datos["esperados"])
+                ws.cell(row=fila, column=4, value=datos["modelados"])
+                nota = ws.cell(row=fila, column=5, value=CURVA_FORMULA.format(f=fila))
+                nota.number_format = PESO_FORMATO
+                ws.cell(row=fila, column=6, value=datos["observacion"])
+            fila += 1
+
+        ultima = fila - 1
+        if fila_relaciones is not None:
+            relaciones = ws.cell(
+                row=fila_relaciones, column=2,
+                value="=SUM(B%d:B%d)" % (fila_relaciones + 1, ultima),
+            )
+            relaciones.font = GROUP_FONT
+            relaciones.number_format = PESO_FORMATO
+
+        ws.cell(row=fila, column=1, value="Total").font = GROUP_FONT
+        # clases + la sección de relaciones: sumar la columna entera contaría
+        # cada peso dos veces, una en su fila y otra en "Relaciones"
+        sumandos = ["B%d" % f for f in filas_clases]
+        if fila_relaciones is not None:
+            sumandos.append("B%d" % fila_relaciones)
+        total_peso = ws.cell(row=fila, column=2, value="=" + "+".join(sumandos))
+        total_peso.font = GROUP_FONT
+        total_peso.number_format = PESO_FORMATO
+        total_nota = ws.cell(
+            row=fila, column=5, value="=SUM(E%d:E%d)/10" % (primera, ultima),
+        )
+        total_nota.font = GROUP_FONT
+        total_nota.number_format = PESO_FORMATO
+        fila += 3  # dos filas en blanco entre estudiantes
+
+    for columna, ancho in zip("ABCDEF", (46, 10, 12, 12, 16, 60)):
+        ws.column_dimensions[columna].width = ancho
+
+
+def build_batch_xlsx(
+    batch: Dict[str, Any],
+    nota_overrides: Optional[Dict[str, float]] = None,
+    modeled_overrides: Optional[Dict[str, Dict[str, float]]] = None,
+    observations: Optional[Dict[str, Dict[str, str]]] = None,
+) -> bytes:
     """Construye el .xlsx del lote y retorna los bytes listos para servir."""
     wb = Workbook()
     wb.remove(wb.active)
+    # firma en las propiedades del archivo (Archivo > Información en Excel)
+    wb.properties.creator = AUTORES
+    wb.properties.lastModifiedBy = AUTORES
+    wb.properties.title = "Notas — UML Evaluador"
 
     overrides = nota_overrides or {}
+    _write_hoja_docente_sheet(wb, batch, modeled_overrides or {}, observations or {})
     _write_notas_sheet(wb, batch, overrides)
     _write_detalle_sheet(wb, batch)
     _write_resumen_sheet(wb, batch)

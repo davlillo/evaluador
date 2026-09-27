@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
+# UML Evaluador completo con un solo comando:
+#
+#     docker compose up --build
+#
+# y abrir http://localhost:8080 (la API queda en http://localhost:8080/docs).
+# Desde otra máquina de la red: http://IP-de-este-equipo:8080
+#
+# Para apagarlo: Ctrl+C, o `docker compose down` si se levantó con -d.
+name: uml-evaluador
+
+services:
+  backend:
+    build: ./uml-evaluator/backend
+    restart: unless-stopped
+    # sin puerto publicado: solo lo ve el frontend, a través de nginx
+
+  frontend:
+    build:
+      context: ./app
+      args:
+        # vacío = mismo origen; nginx reenvía /api al backend
+        VITE_API_URL: ""
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy

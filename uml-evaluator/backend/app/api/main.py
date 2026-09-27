@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 API principal del Sistema de Evaluación de Diagramas UML.
 FastAPI con endpoints para subida de archivos y comparación.
@@ -6,9 +9,11 @@ FastAPI con endpoints para subida de archivos y comparación.
 import io
 import json
 import os
+import re
 import tempfile
 import shutil
 import zipfile
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, List, Dict, Literal
@@ -21,9 +26,12 @@ from pydantic import BaseModel, Field
 
 from app.parsers.xmi_parser import parse_xmi_file, parse_xmi_string, parse_xmi_file_multi
 from app.parsers.rubric_parser import parse_rubric_xlsx, RubricParseError
+from app.parsers.teacher_rubric_parser import parse_teacher_rubric_xlsx
 from app.parsers.rubric_template_builder import generate_rubric_template
 from app.exporters.batch_xlsx import build_batch_xlsx
 from app.comparator.uml_comparator import compare_uml_diagrams
+from app.comparator.rubric_builder import build_rubric_from_solution
+from app.comparator.rubric_check import check_rubric_against_solution
 from app.comparator.scoring_modes import (
     ClassRubricRule, EvaluationProfile, ScoringMode, ExpectedCount,
 )
@@ -57,12 +65,27 @@ async def lifespan(app: FastAPI):
     shutil.rmtree(UPLOAD_DIR, ignore_errors=True)
 
 
+AUTORES = "davlillos"
+
 app = FastAPI(
     title="UML Evaluator API",
-    description="Sistema automático de evaluación de diagramas UML mediante comparación de archivos XMI/XML",
+    description=(
+        "Sistema automático de evaluación de diagramas UML con la rúbrica del docente. "
+        f"Desarrollado por **{AUTORES}**."
+    ),
     version="1.0.0",
+    contact={"name": AUTORES},
+    license_info={"name": "MIT", "identifier": "MIT"},
     lifespan=lifespan
 )
+
+
+@app.middleware("http")
+async def firma_de_autoria(request, call_next):
+    """Cada respuesta de la API lleva la firma del equipo."""
+    response = await call_next(request)
+    response.headers["X-Desarrollado-Por"] = AUTORES
+    return response
 
 # Configurar CORS
 app.add_middleware(
@@ -93,6 +116,7 @@ class ClassRubricRuleModel(BaseModel):
     relationship_type: str = "association"
     multiplicity_end: Optional[Literal["source", "target"]] = None
     expected_multiplicity: Optional[str] = None
+    group_label: Optional[str] = None
 
 
 class EvaluationProfileModel(BaseModel):
@@ -218,6 +242,20 @@ def _safe_extract_zip(zip_path: str, target_dir: str) -> None:
                 shutil.copyfileobj(src, dst)
 
 
+#: Carné UES: dos letras y cinco dígitos (AB12345).
+CARNE_RE = re.compile(r'(?<!\d)([A-Za-z]{2}\d{5})(?!\d)')
+
+
+def _student_id_from_filename(filename: str) -> str:
+    """El nombre del archivo es el carné, pero a veces viene con basura
+    ("proyect.xmiRM25034.xmi"). Si adentro hay exactamente un carné, vale ese."""
+    stem = os.path.splitext(os.path.basename(filename))[0].strip()
+    carnes = CARNE_RE.findall(stem)
+    if len(carnes) == 1:
+        return carnes[0].upper()
+    return stem
+
+
 def _index_students_from_dir(extracted_dir: str) -> Dict[str, str]:
     indexed: Dict[str, str] = {}
     for root_dir, _, files in os.walk(extracted_dir):
@@ -226,8 +264,8 @@ def _index_students_from_dir(extracted_dir: str) -> Dict[str, str]:
             if ext not in VALID_UML_EXTENSIONS:
                 continue
             full_path = os.path.join(root_dir, filename)
-            # Regla principal: estudiante = nombre base del archivo.
-            student_id = os.path.splitext(os.path.basename(filename))[0].strip()
+            # Regla principal: estudiante = carné en el nombre del archivo.
+            student_id = _student_id_from_filename(filename)
             normalized = ''.join(ch.lower() for ch in student_id if ch.isalnum())
             if normalized in GENERIC_STUDENT_IDS:
                 # Si el nombre es genérico (CLASES/CASOS/SECUENCIA), intentar carpeta padre.
@@ -1152,21 +1190,167 @@ async def parse_rubric(
             os.remove(rubric_path)
 
 
+@app.post("/api/rubric/import")
+async def import_teacher_rubric(
+    rubric_file: UploadFile = File(..., description="La rúbrica del docente en su propio Excel"),
+):
+    """Lee la rúbrica en el formato de hoja del docente
+    (Criterio | % | Esperados | Modelados | Nota ponderada | Observaciones)
+    y la devuelve como reglas editables, con los avisos de lo que se corrigió
+    al leerla (typos en nombres de clase, pesos que no suman 100)."""
+    ext = os.path.splitext((rubric_file.filename or '').lower())[1]
+    if ext != '.xlsx':
+        raise HTTPException(status_code=400, detail="La rúbrica debe ser un archivo .xlsx.")
+
+    rubric_path = os.path.join(UPLOAD_DIR, f"teacher_rubric_{os.path.basename(rubric_file.filename or 'rubrica.xlsx')}")
+    try:
+        with open(rubric_path, "wb") as f:
+            f.write(await rubric_file.read())
+        try:
+            rubric = parse_teacher_rubric_xlsx(rubric_path)
+        except RubricParseError as e:
+            raise HTTPException(status_code=422, detail={"errors": e.errors})
+        return {
+            "title": rubric.title,
+            "class_rules": [asdict(rule) for rule in rubric.rules],
+            "warnings": rubric.warnings,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"No se pudo leer la rúbrica: {str(e)}")
+    finally:
+        if os.path.exists(rubric_path):
+            os.remove(rubric_path)
+
+
+@app.post("/api/rubric/check")
+async def check_rubric(
+    expected_file: UploadFile = File(..., description="XMI con la solución del docente"),
+    evaluation_profile_json: str = Form(..., description="La rúbrica a verificar"),
+):
+    """Evalúa la solución del docente con su propia rúbrica: debería sacar 10.
+    Lo que no cumple ni la solución se devuelve explicado, para detectar una
+    rúbrica de otro turno o un criterio que no coincide con lo dibujado."""
+    profile = _build_evaluation_profile(evaluation_profile_json)
+    if profile is None or not profile.class_rules:
+        raise HTTPException(status_code=422, detail="La rúbrica no tiene criterios.")
+
+    ext = os.path.splitext((expected_file.filename or '').lower())[1]
+    if ext not in VALID_UML_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Extensión '{ext}' no válida. Use .xmi, .xml o .uml.",
+        )
+
+    temp_path = os.path.join(UPLOAD_DIR, f"check_{os.path.basename(expected_file.filename or 'solucion.xmi')}")
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(await expected_file.read())
+        diagrams = parse_xmi_file_multi(temp_path, xmi_source='astah')
+        class_diagram = diagrams.get('class')
+        if class_diagram is None:
+            raise HTTPException(
+                status_code=422,
+                detail="El archivo no contiene un diagrama de clases.",
+            )
+        check = check_rubric_against_solution(profile, class_diagram)
+        return {"nota": check.nota, "issues": [asdict(issue) for issue in check.issues]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"No se pudo revisar la solución: {str(e)}")
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+@app.post("/api/rubric/from-solution")
+async def rubric_from_solution(
+    expected_file: UploadFile = File(..., description="XMI con la solución del docente"),
+    weight_classes: float = Form(20.0, ge=0, le=100, description="Peso del criterio Clases"),
+):
+    """Deriva la rúbrica del diagrama de clases a partir de la solución.
+
+    El docente sube su .xmi y recibe la tabla ya armada (clases esperadas,
+    multiplicidades por relación, clases de asociación) con los pesos
+    repartidos, para corregirla en pantalla en vez de teclearla."""
+    ext = os.path.splitext((expected_file.filename or '').lower())[1]
+    if ext not in {'.xmi', '.xml', '.uml'}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Extensión '{ext}' no válida. Use .xmi, .xml o .uml.",
+        )
+
+    temp_path = os.path.join(UPLOAD_DIR, f"solution_{expected_file.filename}")
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(await expected_file.read())
+
+        diagrams = parse_xmi_file_multi(temp_path, xmi_source='astah')
+        class_diagram = diagrams.get('class')
+        if class_diagram is None:
+            raise HTTPException(
+                status_code=422,
+                detail="El archivo no contiene un diagrama de clases.",
+            )
+
+        rules = build_rubric_from_solution(class_diagram, peso_clases=weight_classes)
+        return {
+            "class_rules": [
+                {
+                    "rule_id": rule.rule_id,
+                    "criterion_type": rule.criterion_type,
+                    "label": rule.label,
+                    "group_label": rule.group_label,
+                    "weight": rule.weight,
+                    "expected_quantity": rule.expected_quantity,
+                    "source": rule.source,
+                    "target": rule.target,
+                    "relationship_type": rule.relationship_type,
+                    "multiplicity_end": rule.multiplicity_end,
+                    "expected_multiplicity": rule.expected_multiplicity,
+                }
+                for rule in rules
+            ],
+            "expected_diagram": class_diagram.to_dict(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=400, detail=f"Error al derivar la rúbrica: {str(e)}",
+        )
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
 class BatchXlsxExportRequest(BaseModel):
     """Body de /api/export/batch-xlsx. El frontend reenvía el
     BatchCompareResponse tal como lo tiene en pantalla (no se re-evalúa acá)
-    junto con las notas que el docente haya editado a mano, ya que esas
-    ediciones solo viven en el cliente."""
+    junto con lo que el docente haya editado a mano, ya que esas ediciones
+    solo viven en el cliente (localStorage)."""
     batch: Dict[str, Any]
+    #: carné -> nota final corregida
     nota_overrides: Dict[str, float] = {}
+    #: carné -> {rule_id: "Modelados" corregido en la hoja}
+    modeled_overrides: Dict[str, Dict[str, float]] = {}
+    #: carné -> {rule_id: observación escrita por el docente}
+    observations: Dict[str, Dict[str, str]] = {}
 
 
 @app.post("/api/export/batch-xlsx")
 async def export_batch_xlsx(request: BatchXlsxExportRequest):
-    """Genera el Excel de notas de un lote (hojas Notas/Detalle/Resumen),
-    reemplazando el CSV plano anterior."""
+    """Genera el Excel del lote: la hoja con el formato propio del docente
+    más Notas/Detalle/Resumen."""
     try:
-        content = build_batch_xlsx(request.batch, request.nota_overrides)
+        content = build_batch_xlsx(
+            request.batch,
+            request.nota_overrides,
+            request.modeled_overrides,
+            request.observations,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar el Excel: {str(e)}")
 
@@ -1235,8 +1419,35 @@ async def compare_batch(
             raise HTTPException(status_code=400, detail=f"No se pudo leer el ZIP: {str(e)}")
 
         student_files = _index_students_from_dir(temp_root)
+
+        # la carpeta de entregas suele traer también la solución (CLAVEIMPAR.xmi);
+        # calificarla como un alumno más ensucia la tabla y el Excel de notas.
+        # Un archivo CON carné nunca se descarta: si es idéntico a la solución,
+        # es una copia de la clave y el docente tiene que verlo.
+        with open(expected_path, "rb") as f:
+            expected_bytes = f.read()
+        expected_name = os.path.basename(expected_file.filename or '').lower()
+        excluded_students = []
+        for student_id, student_path in list(student_files.items()):
+            if CARNE_RE.fullmatch(student_id):
+                continue
+            with open(student_path, "rb") as f:
+                identical = f.read() == expected_bytes
+            same_name = os.path.basename(student_path).lower() == expected_name
+            if identical or same_name:
+                excluded_students.append({
+                    'student_id': student_id,
+                    'reason': 'Es la solución del docente, no una entrega.',
+                })
+                del student_files[student_id]
+
         if not student_files:
-            raise HTTPException(status_code=400, detail="No se encontraron archivos XMI en el ZIP.")
+            detail = (
+                "El ZIP solo trae la solución del docente, ninguna entrega."
+                if excluded_students
+                else "No se encontraron archivos XMI en el ZIP."
+            )
+            raise HTTPException(status_code=400, detail=detail)
 
         # Pesos globales renormalizados sobre tipos detectados
         raw_global = {
@@ -1339,6 +1550,7 @@ async def compare_batch(
             'global_weights_used': {k: round(v * 100, 1) for k, v in detected_weights.items()},
             'detected_diagrams': detected_types,
             'expected_diagrams': {k: v.to_dict() for k, v in expected_diagrams.items()},
+            'excluded_students': excluded_students,
         }
 
     except HTTPException:

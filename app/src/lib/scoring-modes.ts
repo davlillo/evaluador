@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 /**
  * Tipos y constantes de los 4 modos de evaluación (ver
  * backend/app/comparator/scoring_modes.py). Distinto del `EvaluationMode`
@@ -30,6 +33,8 @@ export interface ClassRubricRule {
   ruleId: string;
   criterionType: ClassRubricCriterionType;
   label: string;
+  /** Encabezado del grupo, como agrupa el docente en su Excel. */
+  groupLabel?: string;
   weight: number;
   expectedQuantity?: number;
   source?: string;
@@ -86,6 +91,7 @@ export function evaluationProfileToApiPayload(profile: EvaluationProfile) {
       rule_id: rule.ruleId,
       criterion_type: rule.criterionType,
       label: rule.label,
+      group_label: rule.groupLabel,
       weight: rule.weight,
       expected_quantity: rule.expectedQuantity,
       source: rule.source,
@@ -105,6 +111,7 @@ export function apiProfileToEvaluationProfile(raw: {
     rule_id: string;
     criterion_type: ClassRubricCriterionType;
     label: string;
+    group_label?: string | null;
     weight: number;
     expected_quantity?: number | null;
     source?: string | null;
@@ -125,6 +132,7 @@ export function apiProfileToEvaluationProfile(raw: {
       ruleId: rule.rule_id,
       criterionType: rule.criterion_type,
       label: rule.label,
+      groupLabel: rule.group_label ?? undefined,
       weight: rule.weight,
       expectedQuantity: rule.expected_quantity ?? undefined,
       source: rule.source ?? undefined,

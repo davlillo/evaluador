@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 /* eslint-disable react-refresh/only-export-components -- hooks junto al provider */
 import {
   createContext,

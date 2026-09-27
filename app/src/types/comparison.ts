@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 /**
  * Tipos para el resultado de comparación de diagramas UML
  */
@@ -244,6 +247,12 @@ export interface ClassRubricResult {
   rule_id: string;
   criterion_type: 'classes' | 'relationship' | 'multiplicity' | 'association_class';
   label: string;
+  /** Encabezado del grupo al que pertenece ("Asociación Afiliado-Ganado"). */
+  group_label?: string | null;
+  /** Solo en el cliente: lo que escribió el docente en la hoja. */
+  observation?: string;
+  /** Solo en el cliente: el docente corrigió "Modelados" a mano. */
+  edited_by_teacher?: boolean;
   source?: string | null;
   target?: string | null;
   relationship_type?: string | null;

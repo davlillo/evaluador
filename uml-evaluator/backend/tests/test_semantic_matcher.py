@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests del motor semántico: heurística determinista + embeddings FastText opcionales.
 """

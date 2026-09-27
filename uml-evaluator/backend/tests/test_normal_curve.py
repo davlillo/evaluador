@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests de la curva normal min(E,R)/max(E,R), la fórmula real del docente.
 

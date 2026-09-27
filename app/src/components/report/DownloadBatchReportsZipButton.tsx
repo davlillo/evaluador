@@ -1,30 +1,43 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { useMemo, useState } from 'react';
 import { AlertCircle, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useGlobalEvaluation } from '@/context/GlobalEvaluationContext';
+import { useGradingSheet } from '@/context/GradingSheetContext';
 import { downloadBatchReportsZip } from '@/lib/batch-reports-zip';
+import { withSheetEdits } from '@/lib/student-edits';
 import type { GlobalStudentResult } from '@/types/evaluation-session';
 
 const DEFAULT_KINDS = ['class', 'usecase', 'sequence'];
 
 export function DownloadBatchReportsZipButton() {
   const { batchResult, globalResult, expectedDiagrams, getStudentById } = useGlobalEvaluation();
+  const { getOverrides, getObservations } = useGradingSheet();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const students = useMemo((): GlobalStudentResult[] => {
     if (batchResult) {
+      // las actas salen con las correcciones de la hoja, igual que el Excel
       return batchResult.results
         .map((row) => getStudentById(row.student_id))
-        .filter((s): s is GlobalStudentResult => s !== null);
+        .filter((s): s is GlobalStudentResult => s !== null)
+        .map((s) => withSheetEdits(
+          s,
+          getOverrides(s.student_id),
+          getObservations(s.student_id),
+          batchResult.global_weights_used,
+        ));
     }
     if (globalResult) {
       return globalResult.results;
     }
     return [];
-  }, [batchResult, globalResult, getStudentById]);
+  }, [batchResult, globalResult, getStudentById, getOverrides, getObservations]);
 
   const detectedDiagrams = useMemo(() => {
     if (batchResult?.detected_diagrams?.length) {

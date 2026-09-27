@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { useId } from 'react';
 import type { DiffStatus } from '@/lib/status-colors';
 import {

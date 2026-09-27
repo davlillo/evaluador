@@ -1,0 +1,921 @@
+{
+ "T1-IMPAR": {
+  "hoja_excel": "Tuno10AMImpar",
+  "solucion": "Turno1Impar.xmi",
+  "reglas": [
+   {
+    "rule_id": "r1",
+    "label": "Clases",
+    "weight": 20.0,
+    "criterion_type": "classes",
+    "expected_quantity": 6
+   },
+   {
+    "rule_id": "r2",
+    "label": "Multiplicidad 1 en Afiliado",
+    "weight": 5.0,
+    "criterion_type": "multiplicity",
+    "source": "Afiliado",
+    "target": "Ganado",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "1"
+   },
+   {
+    "rule_id": "r3",
+    "label": "Multiplicidad 1..* en Ganado",
+    "weight": 5.0,
+    "criterion_type": "multiplicity",
+    "source": "Afiliado",
+    "target": "Ganado",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "1..*"
+   },
+   {
+    "rule_id": "r4",
+    "label": "Multiplicidad 1 en Ganado",
+    "weight": 5.0,
+    "criterion_type": "multiplicity",
+    "source": "Ganado",
+    "target": "Produccion",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "1"
+   },
+   {
+    "rule_id": "r5",
+    "label": "Multiplicidad 1..* en Producción",
+    "weight": 5.0,
+    "criterion_type": "multiplicity",
+    "source": "Ganado",
+    "target": "Produccion",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "1..*"
+   },
+   {
+    "rule_id": "r6",
+    "label": "Multiplicidad 0..1 en Tratamiento",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Tratamiento",
+    "target": "HistorialEnfermedad",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "0..1"
+   },
+   {
+    "rule_id": "r7",
+    "label": "Multiplicidad 0..* en Historial",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Tratamiento",
+    "target": "HistorialEnfermedad",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "0..*"
+   },
+   {
+    "rule_id": "r8",
+    "label": "Clase de asociación Enfermedad-Ganado",
+    "weight": 20.0,
+    "criterion_type": "association_class",
+    "source": "Enfermedad",
+    "target": "Ganado",
+    "relationship_type": "association_class"
+   },
+   {
+    "rule_id": "r9",
+    "label": "Multiplicidad 0..* en  Tratamiento",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Tratamiento",
+    "target": "Medicamento",
+    "relationship_type": "aggregation",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "0..*"
+   },
+   {
+    "rule_id": "r10",
+    "label": "Multiplicidad 1..* en Medicamento",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Tratamiento",
+    "target": "Medicamento",
+    "relationship_type": "aggregation",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "1..*"
+   }
+  ],
+  "alumnos": {
+   "HL21003": {
+    "nota_docente": 2.6667,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "1",
+     "r4": "0",
+     "r5": "1",
+     "r6": "0",
+     "r7": "0",
+     "r8": "0",
+     "r9": "0",
+     "r10": "0"
+    }
+   },
+   "MR23129": {
+    "nota_docente": 6.0,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0",
+     "r8": "1",
+     "r9": "1",
+     "r10": "1"
+    }
+   },
+   "ES23002": {
+    "nota_docente": 5.1667,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0",
+     "r8": "1",
+     "r9": "0",
+     "r10": "0"
+    }
+   },
+   "MP23013": {
+    "nota_docente": 4.8333,
+    "modelados_docente": {
+     "r1": "9",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0",
+     "r8": "1",
+     "r9": "0",
+     "r10": "0"
+    }
+   },
+   "EJ25001": {
+    "nota_docente": 3.5,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0",
+     "r8": "0",
+     "r9": "0",
+     "r10": "0"
+    }
+   },
+   "MS25016": {
+    "nota_docente": 3.7143,
+    "modelados_docente": {
+     "r1": "7",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "1",
+     "r6": "0",
+     "r7": "0",
+     "r8": "0",
+     "r9": "0",
+     "r10": "0"
+    }
+   },
+   "GF25017": {
+    "nota_docente": 4.5,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0",
+     "r8": "0",
+     "r9": "0",
+     "r10": "1"
+    }
+   },
+   "VH25018": {
+    "nota_docente": 1.6667,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0",
+     "r8": "0",
+     "r9": "0",
+     "r10": "0"
+    }
+   }
+  }
+ },
+ "T1-PAR": {
+  "hoja_excel": "Turno10AMPar",
+  "solucion": "Turno1Par.xmi",
+  "reglas": [
+   {
+    "rule_id": "r1",
+    "label": "Clases",
+    "weight": 20.0,
+    "criterion_type": "classes",
+    "expected_quantity": 5
+   },
+   {
+    "rule_id": "r2",
+    "label": "Multiplicidad 1 en Afiliado",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Afiliado",
+    "target": "Ganado",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "1"
+   },
+   {
+    "rule_id": "r3",
+    "label": "Multiplicidad 1..* en Ganado",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Afiliado",
+    "target": "Ganado",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "1..*"
+   },
+   {
+    "rule_id": "r4",
+    "label": "Multiplicidad 1 en Ganado",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Ganado",
+    "target": "Produccion",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "1"
+   },
+   {
+    "rule_id": "r5",
+    "label": "Multiplicidad 1..* en Producción",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Ganado",
+    "target": "Produccion",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "1..*"
+   },
+   {
+    "rule_id": "r6",
+    "label": "Clase de asociación Enfermedad-Ganado",
+    "weight": 20.0,
+    "criterion_type": "association_class",
+    "source": "Enfermedad",
+    "target": "Ganado",
+    "relationship_type": "association_class"
+   },
+   {
+    "rule_id": "r7",
+    "label": "Clase de asociación Historial-Medicamento",
+    "weight": 20.0,
+    "criterion_type": "association_class",
+    "source": "HistorialEnfermedad",
+    "target": "Medicamento",
+    "relationship_type": "association_class"
+   }
+  ],
+  "alumnos": {
+   "HN22002": {
+    "nota_docente": 3.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "1",
+     "r5": "1",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "EG23003": {
+    "nota_docente": 1.4286,
+    "modelados_docente": {
+     "r1": "7",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "MA23030": {
+    "nota_docente": 2.6,
+    "modelados_docente": {
+     "r1": "4",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "1",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "HP24006": {
+    "nota_docente": 4.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "LH24001": {
+    "nota_docente": 5.6,
+    "modelados_docente": {
+     "r1": "4",
+     "r2": "1",
+     "r3": "0",
+     "r4": "1",
+     "r5": "0",
+     "r6": "1",
+     "r7": "0"
+    }
+   },
+   "TH24004": {
+    "nota_docente": 3.4286,
+    "modelados_docente": {
+     "r1": "7",
+     "r2": "0",
+     "r3": "0",
+     "r4": "1",
+     "r5": "1",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "ML25012": {
+    "nota_docente": 3.4286,
+    "modelados_docente": {
+     "r1": "7",
+     "r2": "1",
+     "r3": "1",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "RE25012": {
+    "nota_docente": 3.4286,
+    "modelados_docente": {
+     "r1": "7",
+     "r2": "1",
+     "r3": "1",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "BM25015": {
+    "nota_docente": 5.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "1",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "LC25017": {
+    "nota_docente": 4.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "MP25032": {
+    "nota_docente": 3.25,
+    "modelados_docente": {
+     "r1": "8",
+     "r2": "0",
+     "r3": "0",
+     "r4": "1",
+     "r5": "1",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "MP25019": {
+    "nota_docente": 6.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "1",
+     "r3": "1",
+     "r4": "0",
+     "r5": "0",
+     "r6": "1",
+     "r7": "0"
+    }
+   },
+   "RF25010": {
+    "nota_docente": 1.0,
+    "modelados_docente": {
+     "r1": "10",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "SV25001": {
+    "nota_docente": 4.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "BB25002": {
+    "nota_docente": 2.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "1",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "CF25015": {
+    "nota_docente": 4.4286,
+    "modelados_docente": {
+     "r1": "7",
+     "r2": "1",
+     "r3": "1",
+     "r4": "1",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   }
+  }
+ },
+ "T2-IMPAR": {
+  "hoja_excel": "Turno1110AMImpar",
+  "solucion": "Turno2Ambas.xmi",
+  "reglas": [
+   {
+    "rule_id": "r1",
+    "label": "Clases",
+    "weight": 20.0,
+    "criterion_type": "classes",
+    "expected_quantity": 5
+   },
+   {
+    "rule_id": "r2",
+    "label": "Multiplicidad 1 en Institucion",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "EstudioRealizado",
+    "target": "InstitucionEducativa",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "1"
+   },
+   {
+    "rule_id": "r3",
+    "label": "Multiplicidad 0..* en Estudio",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "EstudioRealizado",
+    "target": "InstitucionEducativa",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "0..*"
+   },
+   {
+    "rule_id": "r4",
+    "label": "Multiplicidad 1 en Empresa",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Empresa",
+    "target": "Experiencia",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "1"
+   },
+   {
+    "rule_id": "r5",
+    "label": "Multiplicidad 0..* en Experiencia",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Empresa",
+    "target": "Experiencia",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "0..*"
+   },
+   {
+    "rule_id": "r6",
+    "label": "Clase de asociación Candidato-GradoAcademico",
+    "weight": 20.0,
+    "criterion_type": "association_class",
+    "source": "Candidato",
+    "target": "GradoAcademico",
+    "relationship_type": "association_class"
+   },
+   {
+    "rule_id": "r7",
+    "label": "Clase de asociación Candidato-Puesto",
+    "weight": 20.0,
+    "criterion_type": "association_class",
+    "source": "Candidato",
+    "target": "Puesto",
+    "relationship_type": "association_class"
+   }
+  ],
+  "alumnos": {
+   "SM21071": {
+    "nota_docente": 4.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "1",
+     "r7": "0"
+    }
+   },
+   "CA23048": {
+    "nota_docente": 1.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "RI24001": {
+    "nota_docente": 3.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "1",
+     "r7": "0"
+    }
+   },
+   "CG24039": {
+    "nota_docente": 1.6,
+    "modelados_docente": {
+     "r1": "4",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "CL25006": {
+    "nota_docente": 1.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "BV25006": {
+    "nota_docente": 1.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "AM25011": {
+    "nota_docente": 2.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "FT25001": {
+    "nota_docente": 3.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "1",
+     "r7": "0"
+    }
+   },
+   "SA25005": {
+    "nota_docente": 1.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "SC25004": {
+    "nota_docente": 3.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "1"
+    }
+   },
+   "MV25034": {
+    "nota_docente": 3.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "1",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "MR25057": {
+    "nota_docente": 6.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "1",
+     "r7": "1"
+    }
+   }
+  }
+ },
+ "T2-PAR": {
+  "hoja_excel": "Turno1110AMPar",
+  "solucion": "Turno2Ambas.xmi",
+  "reglas": [
+   {
+    "rule_id": "r1",
+    "label": "Clases",
+    "weight": 20.0,
+    "criterion_type": "classes",
+    "expected_quantity": 5
+   },
+   {
+    "rule_id": "r2",
+    "label": "Multiplicidad 1 en Institucion",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "EstudioRealizado",
+    "target": "InstitucionEducativa",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "1"
+   },
+   {
+    "rule_id": "r3",
+    "label": "Multiplicidad 0..* en Estudio",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "EstudioRealizado",
+    "target": "InstitucionEducativa",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "0..*"
+   },
+   {
+    "rule_id": "r4",
+    "label": "Multiplicidad 1 en Empresa",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Empresa",
+    "target": "Experiencia",
+    "relationship_type": "association",
+    "multiplicity_end": "source",
+    "expected_multiplicity": "1"
+   },
+   {
+    "rule_id": "r5",
+    "label": "Multiplicidad 0..* en Experiencia",
+    "weight": 10.0,
+    "criterion_type": "multiplicity",
+    "source": "Empresa",
+    "target": "Experiencia",
+    "relationship_type": "association",
+    "multiplicity_end": "target",
+    "expected_multiplicity": "0..*"
+   },
+   {
+    "rule_id": "r6",
+    "label": "Clase de asociación Candidato-GradoAcademico",
+    "weight": 20.0,
+    "criterion_type": "association_class",
+    "source": "Candidato",
+    "target": "GradoAcademico",
+    "relationship_type": "association_class"
+   },
+   {
+    "rule_id": "r7",
+    "label": "Clase de asociación Candidato-Puesto",
+    "weight": 20.0,
+    "criterion_type": "association_class",
+    "source": "Candidato",
+    "target": "Puesto",
+    "relationship_type": "association_class"
+   }
+  ],
+  "alumnos": {
+   "HM22035": {
+    "nota_docente": 2.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "1",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "PO23007": {
+    "nota_docente": 2.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "BC23010": {
+    "nota_docente": 2.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "BC24001": {
+    "nota_docente": 2.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "UT25001": {
+    "nota_docente": 1.2,
+    "modelados_docente": {
+     "r1": "3",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "OC25005": {
+    "nota_docente": 2.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "LV25007": {
+    "nota_docente": 2.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "RI25001": {
+    "nota_docente": 2.0,
+    "modelados_docente": {
+     "r1": "5",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "0"
+    }
+   },
+   "FH25003": {
+    "nota_docente": 3.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "1",
+     "r7": "0"
+    }
+   },
+   "MD25003": {
+    "nota_docente": 3.6667,
+    "modelados_docente": {
+     "r1": "6",
+     "r2": "0",
+     "r3": "0",
+     "r4": "0",
+     "r5": "0",
+     "r6": "0",
+     "r7": "1"
+    }
+   }
+  }
+ }
+}

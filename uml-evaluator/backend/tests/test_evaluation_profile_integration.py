@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests de integración del EvaluationProfile con UMLComparator: confirman que
 (a) sin perfil el comportamiento es idéntico al actual (regresión cero) y

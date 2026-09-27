@@ -9,6 +9,16 @@ Monorepo with two independent projects:
 
 ## Commands
 
+### Everything with Docker (repo root)
+
+```bash
+docker compose up --build   # http://localhost:8080 (API docs at /docs)
+docker compose down
+```
+
+The frontend image is built with an empty `VITE_API_URL` (same origin; nginx proxies `/api`
+to the backend) and `--base=/`. See `app/src/lib/api.ts` before changing either.
+
 ### Frontend (`app/`)
 
 ```bash

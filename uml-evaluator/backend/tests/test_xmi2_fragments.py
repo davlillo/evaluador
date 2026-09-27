@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests de extracción de fragmentos combinados (alt/loop) en XMI 2.x genérico
 (StarUML/EA/Visual Paradigm), a diferencia de Astah XMI 1.1 que ya tenía

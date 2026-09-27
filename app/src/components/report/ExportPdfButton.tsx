@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { useState } from 'react';
 import { AlertCircle, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';

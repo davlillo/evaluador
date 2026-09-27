@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Astah XMI 1.1: aggregation=\"aggregate\" debe parsearse como agregación."""
 from pathlib import Path
 

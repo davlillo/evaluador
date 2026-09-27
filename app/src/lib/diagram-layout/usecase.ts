@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 /**
  * Layout de casos de uso: bloques por actor, grilla 2 columnas real,
  * include/extend siempre al lado (misma fila), marco ajustado.

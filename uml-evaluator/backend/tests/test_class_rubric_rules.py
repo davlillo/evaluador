@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 import pytest
 
 from app.comparator.scoring_modes import ClassRubricRule, EvaluationProfile, ScoringMode
@@ -293,7 +296,39 @@ def test_multiplicidad_elige_la_relacion_correcta_entre_duplicadas():
     assert result.class_rubric_breakdown[0]["modeled"] == "1..*"
 
 
-def test_relacion_exige_el_tipo_configurado_sin_suponer_equivalencias():
+def test_composicion_pedida_no_acepta_una_asociacion_simple():
+    expected = UMLDiagram(name="Docente", diagram_type="class")
+    student = UMLDiagram(
+        name="SH20022",
+        diagram_type="class",
+        relationships=[UMLRelationship(
+            source="OrdenServicio",
+            target="TrabajoRealizado",
+            relationship_type=RelationshipType.ASSOCIATION,
+        )],
+    )
+    rule = ClassRubricRule(
+        rule_id="composition",
+        criterion_type="relationship",
+        label="Composición OrdenServicio-TrabajoRealizado",
+        weight=100,
+        source="OrdenServicio",
+        target="TrabajoRealizado",
+        relationship_type="composition",
+    )
+
+    result = UMLComparator(
+        evaluation_profile=EvaluationProfile(class_rules=[rule]),
+    ).compare(expected, student)
+
+    assert result.overall_similarity == 0
+    assert result.class_rubric_breakdown[0]["modeled"] == "No encontrada"
+
+
+def test_agregacion_pedida_acepta_una_asociacion_simple():
+    """En Práctica 1 el docente dio el punto a quien dibujó asociación donde
+    su rúbrica pedía agregación; aceptarlo baja el error contra sus notas
+    (ver tests/test_calibracion_docente.py)."""
     expected = UMLDiagram(name="Docente", diagram_type="class")
     student = UMLDiagram(
         name="EJ25001",
@@ -318,11 +353,11 @@ def test_relacion_exige_el_tipo_configurado_sin_suponer_equivalencias():
         evaluation_profile=EvaluationProfile(class_rules=[rule]),
     ).compare(expected, student)
 
-    assert result.overall_similarity == 0
-    assert result.class_rubric_breakdown[0]["modeled"] == "No encontrada"
+    assert result.overall_similarity == 100
 
 
-def test_multiplicidad_ausente_no_recibe_puntos():
+def test_multiplicidad_en_blanco_no_satisface_una_esperada_distinta_de_uno():
+    """Extremo vacio = "1" implicito de UML; si se esperaba 1..*, sigue siendo 0."""
     expected = UMLDiagram(name="Docente", diagram_type="class")
     student = UMLDiagram(
         name="Estudiante",
@@ -343,29 +378,91 @@ def test_multiplicidad_ausente_no_recibe_puntos():
     ).compare(expected, student)
 
     assert result.overall_similarity == 0
-    assert result.class_rubric_breakdown[0]["modeled"] == "No exportada"
+    assert result.class_rubric_breakdown[0]["modeled"] == "1"
+
+
+def test_multiplicidad_en_blanco_vale_como_uno():
+    """Astah exporta vacio el extremo con la multiplicidad implicita "1".
+
+    Asi esta la solucion del docente y asi lo califico el: los renglones
+    "Multiplicidad 1 en Afiliado" reciben punto cuando el estudiante deja el
+    extremo en blanco. Ver tests/test_calibracion_docente.py.
+    """
+    expected = UMLDiagram(name="Docente", diagram_type="class")
+    student = UMLDiagram(
+        name="Estudiante",
+        diagram_type="class",
+        relationships=[UMLRelationship(
+            source="Afiliado",
+            target="Ganado",
+            relationship_type=RelationshipType.ASSOCIATION,
+            source_multiplicity=None,
+            target_multiplicity="1..*",
+        )],
+    )
+    rules = [
+        _multiplicity("m-src", "Multiplicidad 1 en Afiliado", 50,
+                      "Afiliado", "Ganado", "source", "1"),
+        _multiplicity("m-tgt", "Multiplicidad 1..* en Ganado", 50,
+                      "Afiliado", "Ganado", "target", "1..*"),
+    ]
+
+    result = UMLComparator(
+        evaluation_profile=EvaluationProfile(class_rules=rules),
+    ).compare(expected, student)
+
+    assert result.overall_similarity == 100
+    assert result.class_rubric_breakdown[0]["modeled"] == "1"
+
+
+def test_agregacion_esperada_acepta_composicion():
+    """El docente da el punto si se modelo "mas fuerte" de lo pedido."""
+    expected = UMLDiagram(name="Docente", diagram_type="class")
+    student = UMLDiagram(
+        name="Estudiante",
+        diagram_type="class",
+        relationships=[UMLRelationship(
+            source="Tratamiento",
+            target="Medicamento",
+            relationship_type=RelationshipType.COMPOSITION,
+            target_multiplicity="1..*",
+        )],
+    )
+    rule = ClassRubricRule(
+        rule_id="agg", criterion_type="multiplicity",
+        label="Multiplicidad 1..* en Medicamento", weight=100,
+        source="Tratamiento", target="Medicamento",
+        relationship_type="aggregation",
+        multiplicity_end="target", expected_multiplicity="1..*",
+    )
+
+    result = UMLComparator(
+        evaluation_profile=EvaluationProfile(class_rules=[rule]),
+    ).compare(expected, student)
+
+    assert result.overall_similarity == 100
 
 
 def test_multiplicidad_informa_si_el_par_tiene_otro_tipo():
     expected = UMLDiagram(name="Docente", diagram_type="class")
     student = UMLDiagram(
-        name="EJ25001",
+        name="SH20022",
         diagram_type="class",
         relationships=[UMLRelationship(
-            source="Tratamiento",
-            target="Medicamento",
+            source="OrdenServicio",
+            target="TrabajoRealizado",
             relationship_type=RelationshipType.ASSOCIATION,
             target_multiplicity="1..*",
         )],
     )
     rule = ClassRubricRule(
-        rule_id="aggregation-multiplicity",
+        rule_id="composition-multiplicity",
         criterion_type="multiplicity",
-        label="Multiplicidad en Medicamento",
+        label="Multiplicidad 1..* en TrabajoRealizado",
         weight=100,
-        source="Tratamiento",
-        target="Medicamento",
-        relationship_type="aggregation",
+        source="OrdenServicio",
+        target="TrabajoRealizado",
+        relationship_type="composition",
         multiplicity_end="target",
         expected_multiplicity="1..*",
     )
@@ -377,7 +474,7 @@ def test_multiplicidad_informa_si_el_par_tiene_otro_tipo():
 
     assert result.overall_similarity == 0
     assert row["modeled_relationship_type"] == "association"
-    assert "rúbrica exige agregación" in row["message"]
+    assert "rúbrica exige composición" in row["message"]
 
 
 def test_asociacion_generica_acepta_composicion_como_especializacion():
@@ -410,3 +507,56 @@ def test_asociacion_generica_acepta_composicion_como_especializacion():
 
     assert result.overall_similarity == pytest.approx(100)
     assert all(row["score"] == 100 for row in result.class_rubric_breakdown)
+
+
+def _reflexiva(esperada_origen, esperada_destino):
+    return [
+        ClassRubricRule(
+            rule_id="ref-1", criterion_type="multiplicity",
+            label="Multiplicidad %s en Sala" % esperada_origen, weight=50,
+            source="Sala", target="Sala", relationship_type="association",
+            multiplicity_end="source", expected_multiplicity=esperada_origen,
+            group_label="Asociación reflexiva Sala",
+        ),
+        ClassRubricRule(
+            rule_id="ref-2", criterion_type="multiplicity",
+            label="Multiplicidad %s en Sala" % esperada_destino, weight=50,
+            source="Sala", target="Sala", relationship_type="association",
+            multiplicity_end="target", expected_multiplicity=esperada_destino,
+            group_label="Asociación reflexiva Sala",
+        ),
+    ]
+
+
+def _con_reflexiva(origen, destino):
+    return UMLDiagram(
+        name="Estudiante",
+        diagram_type="class",
+        classes=[UMLClass(name="Sala")],
+        relationships=[UMLRelationship(
+            source="Sala", target="Sala",
+            relationship_type=RelationshipType.ASSOCIATION,
+            source_multiplicity=origen, target_multiplicity=destino,
+        )],
+    )
+
+
+def _nota_reflexiva(esperadas, dibujadas):
+    resultado = UMLComparator(
+        evaluation_profile=EvaluationProfile(class_rules=_reflexiva(*esperadas)),
+    ).compare(UMLDiagram(name="Docente", diagram_type="class"), _con_reflexiva(*dibujadas))
+    return resultado.overall_similarity
+
+
+def test_reflexiva_acredita_los_dos_extremos_aunque_esten_al_reves():
+    """Sala <-> Sala: el nombre no dice cuál extremo es el origen."""
+    assert _nota_reflexiva(("1", "1..*"), ("1..*", "1")) == 100
+
+
+def test_reflexiva_no_acredita_dos_veces_el_mismo_extremo():
+    # se esperaba 1 y 1..*, dibujó 1 y 1: solo uno de los dos extremos está bien
+    assert _nota_reflexiva(("1", "1..*"), ("1", "1")) == 50
+
+
+def test_reflexiva_con_extremos_en_blanco_vale_como_uno_y_uno():
+    assert _nota_reflexiva(("1", "1"), (None, None)) == 100

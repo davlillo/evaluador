@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Invoca compare_files_auto (POST /api/compare-auto) con UploadFile, sin httpx.
 Cubre archivos individuales, selected_types, pesos, modos de scoring y errores.

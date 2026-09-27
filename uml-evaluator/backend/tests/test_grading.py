@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Tests de la conversión porcentaje -> nota 0-10."""
 import pytest
 

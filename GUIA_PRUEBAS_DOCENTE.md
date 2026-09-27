@@ -21,6 +21,14 @@ Los XMI de esta guía salen de **Astah**. En la pantalla de un estudiante la app
 
 ### Arrancar los servidores (Windows)
 
+Lo más simple, desde la raíz del repositorio:
+
+```powershell
+.\iniciar.ps1
+```
+
+Abre las dos ventanas y, la primera vez, instala lo que falte. Para hacerlo a mano:
+
 **Backend** (PowerShell):
 
 ```powershell
@@ -51,10 +59,11 @@ Abrir `http://localhost:5173`.
 | `/reporte` | Acta imprimible / PDF de ese estudiante |
 | `/lote` | Tabla de notas del ZIP |
 | `/lote/desglose` | Detalle de un alumno del lote |
+| `/hoja` | **Hoja de calificación**: la tabla del Excel, editable |
 
 Flujo **un estudiante**: `/` → Comparar ahora → `/resultados` → (opcional) Ver reporte → `/reporte`.
 
-Flujo **lote**: `/` → Evaluar lote → `/lote` → Ver desglose → `/lote/desglose`.
+Flujo **lote**: `/` → Evaluar lote → `/lote` → Abrir hoja → `/hoja`.
 
 En `/`, el badge **Un estudiante** / **Lote (ZIP de estudiantes)** elige el flujo. Expandir **Configuración de pesos** para tipos de diagrama, pesos, corrección semántica, modo de evaluación y rúbrica.
 
@@ -112,6 +121,57 @@ En pantalla, si hubo descuento, aparece un recuadro **ámbar** junto al criterio
 > Se esperaban 3 y se registraron 4: factor 0.7500 (75.0 pts).
 
 Ese recuadro **no** sale en modo **Similitud** (salvo que no haya penalización de curva). En **Cantidades sin descuento** tampoco sale por un extra, porque el extra no descuenta.
+
+---
+
+## 4-bis. La hoja de calificación (flujo recomendado)
+
+Es la pantalla que reproduce la hoja de Excel: **Criterio · % · Esperados · Modelados · Nota ponderada · Observaciones**, con la fórmula `min(E,M)/max(E,M) × peso` y `Total = Σ / 10` (pesos en porcentaje).
+
+### Cómo se usa
+
+1. **Paso 1 · Rúbrica.** Subir la rúbrica `.xlsx` del docente (ej. `test_files/rubricas/2EP_Turno3_Par.xlsx`). Se muestra con la estructura de su hoja: *Clases*, la sección *Relaciones*, cada encabezado de relación con sus multiplicidades y las clases de asociación. Se ajustan el %, las clases esperadas y cada multiplicidad; *Usar esta rúbrica* se habilita solo si el total da 100. Sin Excel, *Armarla desde tu solución* la deriva del XMI.
+2. **Paso 2 · Solución y entregas.** El XMI de la solución y, en *Entregas*, un `.xmi` (un estudiante) o un `.zip` (el grupo). *Evaluar*.
+3. Con ZIP se llega a `/lote` → **Abrir hoja**. Con un solo XMI se llega directo a `/hoja`.
+4. En la hoja, la columna **Modelados** viene llena por el sistema. Donde no coincida con su criterio, se escribe el valor a mano: la nota ponderada y el total se recalculan al instante.
+
+**Prueba rápida de fidelidad:** rúbrica `test_files/calibracion/calificacion_docente.xlsx`, solución `calibracion/soluciones/Turno1Impar.xmi`, ZIP con los `.xmi` de `calibracion/T1-IMPAR/`. Las 8 notas tienen que coincidir con `scripts/reporte_calibracion.py --sin-semantica` (MR23129 = 5.00).
+
+### Qué significa cada marca
+
+| Marca | Significado |
+|-------|-------------|
+| ✨ junto a Modelados | El valor lo calculó el sistema |
+| ✏️ junto a Modelados | Usted lo corrigió; el borde de la celda queda resaltado |
+| ✏️ en la columna Nota de `/lote` | Esa nota tiene correcciones manuales |
+| *Restaurar valores del sistema* | Descarta las correcciones de ese estudiante |
+
+Debajo de cada criterio aparece el detalle que redactó el motor (`Multiplicidad esperada 1..*; modelada 0..*`), para poder decidir sin abrir Astah.
+
+### Qué se guarda
+
+Las correcciones y observaciones se guardan en el navegador: **recargar la página no las pierde**, y al volver a `/hoja` se abre en el último estudiante que estaba revisando. Se van solo si se limpian los datos del sitio o se evalúa un lote nuevo.
+
+### Exportar
+
+*Exportar Excel de notas* en `/lote` baja un `.xlsx` de cuatro hojas. La primera, **Hoja de calificación**, trae un bloque por estudiante con el mismo formato de su archivo y **con fórmulas vivas**: si corrige un `Modelados` en Excel, el total se recalcula ahí también. Las correcciones hechas en pantalla ya vienen aplicadas.
+
+---
+
+## 4-ter. Qué tan parecido califica al criterio del docente
+
+El sistema está calibrado contra 46 entregas reales ya calificadas a mano (las de `Práctica 1`, 4 turnos). Para ver la comparación alumno por alumno:
+
+```powershell
+cd "uml-evaluator\backend"
+venv\Scripts\python.exe scripts\reporte_calibracion.py
+```
+
+Resultado actual: error promedio **0.39 puntos** sobre 10, **mediana 0.00** (más de la mitad recibe exactamente la nota que puso el docente), 74% dentro de ±0.5 y 89% dentro de ±1.0.
+
+El test `tests/test_calibracion_docente.py` vigila que esa correspondencia no se rompa con cambios futuros.
+
+Donde el sistema todavía no acierta solo es cuando el estudiante renombró todo el dominio (modeló `Ganadero` donde la solución dice `Afiliado`, o `Leche` donde dice `Producción`) o dejó clases repetidas. Para eso está la columna editable.
 
 ---
 

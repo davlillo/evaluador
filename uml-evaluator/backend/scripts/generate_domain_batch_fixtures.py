@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Genera fixtures de lote para 5 dominios nuevos (no clínica), reutilizando
 clinica_solucion.xmi como plantilla estructural (misma topología: 7 clases,

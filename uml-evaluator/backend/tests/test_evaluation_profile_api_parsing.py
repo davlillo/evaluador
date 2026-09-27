@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests del helper _build_evaluation_profile de app.api.main: traduce el JSON
 de EvaluationProfileModel (recibido por request) al EvaluationProfile de

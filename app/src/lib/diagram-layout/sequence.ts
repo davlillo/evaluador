@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import type { DiagramLifeline, DiagramMessage } from '@/types/comparison';
 
 const ACTOR_NAME_HINTS = [

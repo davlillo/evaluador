@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import type { ReactNode } from 'react';
 import { ArrowLeft, FileText, User, CircleDot, Link2, GitBranch, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';

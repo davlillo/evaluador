@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Invoca compare_batch (POST /api/compare-batch) con ZIP sintéticos.
 """
@@ -129,3 +132,22 @@ class TestLoteBordesZip:
         assert class_sim == pytest.approx(100.0, abs=0.5)
         assert row["final_score"] == pytest.approx(class_sim * class_weight, abs=0.05)
         assert row["final_score"] == pytest.approx(40.0, abs=1.0)
+
+
+class TestSolucionDentroDelZip:
+    """La carpeta de entregas del 2EP trae CLAVEIMPAR.xmi junto a los alumnos."""
+
+    def test_la_solucion_sin_carne_no_se_califica_como_alumno(self, tmp_path):
+        body = _batch(tmp_path, {
+            "CLAVEIMPAR.xmi": MULTI_DIAGRAMA,
+            "AA00002.xmi": ESTUDIANTE_INCOMPLETO,
+        })
+
+        assert [r["student_id"] for r in body["results"]] == ["AA00002"]
+        assert body["excluded_students"][0]["student_id"] == "CLAVEIMPAR"
+
+    def test_un_alumno_que_entrega_la_solucion_copiada_si_aparece(self, tmp_path):
+        body = _batch(tmp_path, {"AA00001.xmi": MULTI_DIAGRAMA})
+
+        assert [r["student_id"] for r in body["results"]] == ["AA00001"]
+        assert body["excluded_students"] == []

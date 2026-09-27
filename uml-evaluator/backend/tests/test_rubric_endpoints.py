@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests de los endpoints de rúbrica (GET /api/rubric-template, POST
 /api/rubric/parse), invocando las funciones async directamente (sin

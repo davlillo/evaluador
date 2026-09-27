@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Construye la plantilla Excel de rúbrica de evaluación (cantidades esperadas
 por tipo de diagrama) que el profesor descarga desde GET /api/rubric-template,

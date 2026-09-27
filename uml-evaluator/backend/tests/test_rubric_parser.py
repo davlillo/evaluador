@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests del parser de rúbrica Excel (app.parsers.rubric_parser), usando la
 plantilla generada por app.parsers.rubric_template_builder como base y

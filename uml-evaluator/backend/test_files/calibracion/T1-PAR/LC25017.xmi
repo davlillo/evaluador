@@ -1,0 +1,1812 @@
+<?xml version = "1.0" encoding = "UTF-8" standalone = "yes"?>
+<XMI xmi.version="1.1" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/" xmlns:UML="org.omg.xmi.namespace.UML">
+  <XMI.header>
+    <XMI.documentation>
+      <XMI.exporter>Jomt XMI writer</XMI.exporter>
+      <XMI.exporterVersion>1.2.0.37</XMI.exporterVersion>
+      <XMI.currentModelVersion>37</XMI.currentModelVersion>
+      <XMI.maxModelVersion>37</XMI.maxModelVersion>
+      <XMI.currentModelProducer>A.P</XMI.currentModelProducer>
+      <XMI.sortedVersionHistories>
+        <XMI.versionEntry productVersion="Community 7.2.0" modelVersion="37"/>
+        <XMI.versionEntry productVersion="Professional 7.0.0" modelVersion="37"/>
+      </XMI.sortedVersionHistories>
+    </XMI.documentation>
+    <XMI.metamodel xmi.name="UML" xmi.version="1.4"/>
+  </XMI.header>
+  <XMI.content>
+    <UML:Model xmi.id="1-9023066c4e607f1b0fe33513ddb3f8b3" name="Class+Diagram0+lc25017" version="0" unSolvedFlag="false" isRoot="true" isLeaf="false" isAbstract="false" xmlns:UML="org.omg.xmi.namespace.UML">
+      <XMI.extension>
+        <UML:Model.customStyleMap>
+          <UML:Model.styleProperty key="uml.color.deep_history.alpha" value="FF"/>
+          <UML:Model.styleProperty key="diagram.editor.text.anti-aliasing" value="true"/>
+          <UML:Model.styleProperty key="uml.color.com_lifeline" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.class.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.artifact.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.subsystem.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.node_instance.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.composite_state.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.package" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.connector.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.4.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.role" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.model" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.name.2" value="boundary"/>
+          <UML:Model.styleProperty key="uml.stereotype.name.1" value="interface"/>
+          <UML:Model.styleProperty key="uml.stereotype.name.4" value="entity"/>
+          <UML:Model.styleProperty key="uml.color.interaction_use.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.com_lifeline.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.1.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.stereotype.name.3" value="control"/>
+          <UML:Model.styleProperty key="uml.stereotype.name.6" value=""/>
+          <UML:Model.styleProperty key="uml.stereotype.name.5" value=""/>
+          <UML:Model.styleProperty key="view.gradation_background.selected" value="0"/>
+          <UML:Model.styleProperty key="uml.stereotype.name.8" value=""/>
+          <UML:Model.styleProperty key="uml.stereotype.name.7" value=""/>
+          <UML:Model.styleProperty key="uml.stereotype.name.0" value="actor"/>
+          <UML:Model.styleProperty key="other.color.common" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="view.gradation.vertical" value="3"/>
+          <UML:Model.styleProperty key="uml.color.merge" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.node_instance" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.artifact" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.7.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.usecase" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.submachine_state.alpha" value="FF"/>
+          <UML:Model.styleProperty key="diagram.editor.other.anti-aliasing" value="true"/>
+          <UML:Model.styleProperty key="uml.color.action_state.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.interaction_use" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.0.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.class" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.seq_lifeline.alpha" value="FF"/>
+          <UML:Model.styleProperty key="shadow.on.elements" value="false"/>
+          <UML:Model.styleProperty key="uml.color.component.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.state_invariant.alpha" value="FF"/>
+          <UML:Model.styleProperty key="view.gradation.null" value="0"/>
+          <UML:Model.styleProperty key="uml.color.submachine_state" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.node" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.choice" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.sub_activity" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.6.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.component_instance" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.shallow_history" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.choice.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.activity_parameter_node" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.note.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.activity_parameter_node.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.node.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.model.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.5.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.object_flow_state.alpha" value="FF"/>
+          <UML:Model.styleProperty key="other.color.common.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.entrypoint.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.part.alpha" value="FF"/>
+          <UML:Model.styleProperty key="view.gradation.diagonal" value="1"/>
+          <UML:Model.styleProperty key="uml.color.seq_lifeline" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.8.alpha" value="FF"/>
+          <UML:Model.styleProperty key="view.gradation_element.selected" value="0"/>
+          <UML:Model.styleProperty key="uml.color.subsystem" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.usecase.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.merge.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.part" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.exitpoint.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.partition.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.shallow_history.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.flow_final_node.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.note" value="#FFCCCC"/>
+          <UML:Model.styleProperty key="uml.color.package.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.component_instance.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.sub_activity.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.action_state" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.state_invariant" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.deep_history" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.exitpoint" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.port.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.object_flow_state" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.connector" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.role.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.3.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.port" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.entrypoint" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.component" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="view.gradation.horizontal" value="2"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.2.alpha" value="FF"/>
+          <UML:Model.styleProperty key="uml.color.composite_state" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.6" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.partition" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.5" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.8" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.7" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.2" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.1" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.4" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.color.flow_final_node" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.3" value="#FFFFCC"/>
+          <UML:Model.styleProperty key="uml.stereotype.color.0" value="#FFFFCC"/>
+        </UML:Model.customStyleMap>
+      </XMI.extension>
+      <UML:ModelElement.taggedValue>
+        <UML:TaggedValue xmi.id="2-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.profiles" value="%3C%3Fxml+version+%3D+%221.0%22+encoding+%3D+%22UTF-8%22+standalone+%3D+%22yes%22%3F%3E%0D%0A%3CumlProfiles%3E%0D%0A+%3CumlProfile%3E%0D%0A++%3Cname%3Ejude.profiles%3C%2Fname%3E%0D%0A+%3C%2FumlProfile%3E%0D%0A%3C%2FumlProfiles%3E%0D%0A%0D%0A">
+          <UML:TaggedValue.modelElement>
+            <UML:ModelElement xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:TaggedValue.modelElement>
+        </UML:TaggedValue>
+        <UML:TaggedValue xmi.id="3-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.usericons" value="%3C%3Fxml+version+%3D+%221.0%22+encoding+%3D+%22UTF-8%22+standalone+%3D+%22yes%22%3F%3E%0D%0A%3CmmUserIcon%3E%0D%0A+%3CmmUserIconInfo%3E%0D%0A++%3Cname%3Ejude.usericons%3C%2Fname%3E%0D%0A+%3C%2FmmUserIconInfo%3E%0D%0A%3C%2FmmUserIcon%3E%0D%0A%0D%0A">
+          <UML:TaggedValue.modelElement>
+            <UML:ModelElement xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:TaggedValue.modelElement>
+        </UML:TaggedValue>
+      </UML:ModelElement.taggedValue>
+      <UML:Namespace.ownedElement>
+        <UML:Class xmi.id="21-9023066c4e607f1b0fe33513ddb3f8b3" name="Class0" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+        </UML:Class>
+        <UML:Class xmi.id="98-9023066c4e607f1b0fe33513ddb3f8b3" name="Afiliados" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Namespace.ownedElement></UML:Namespace.ownedElement>
+          <UML:Classifier.feature>
+            <UML:Attribute xmi.id="wm-9023066c4e607f1b0fe33513ddb3f8b3" name="nombre" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="121-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="wm-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="22z-9023066c4e607f1b0fe33513ddb3f8b3" name="documentoIdentificacion" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="285-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="22z-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="3f2-9023066c4e607f1b0fe33513ddb3f8b3" name="fechaNacimiento" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="3ko-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="3f2-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="4ax-9023066c4e607f1b0fe33513ddb3f8b3" name="fechaInscripcion" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="4h3-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="4ax-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+          </UML:Classifier.feature>
+        </UML:Class>
+        <UML:Class xmi.id="1bl-9023066c4e607f1b0fe33513ddb3f8b3" name="String" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+        </UML:Class>
+        <UML:Class xmi.id="54e-9023066c4e607f1b0fe33513ddb3f8b3" name="Ganadero" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+        </UML:Class>
+        <UML:Class xmi.id="632-9023066c4e607f1b0fe33513ddb3f8b3" name="CabezaGanadoVacuno" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Namespace.ownedElement></UML:Namespace.ownedElement>
+          <UML:Classifier.feature>
+            <UML:Attribute xmi.id="caq-9023066c4e607f1b0fe33513ddb3f8b3" name="raza" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="cl2-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="caq-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="dkn-9023066c4e607f1b0fe33513ddb3f8b3" name="edad" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="dvx-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="dkn-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="egf-9023066c4e607f1b0fe33513ddb3f8b3" name="sexo" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="esl-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="egf-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="fjf-9023066c4e607f1b0fe33513ddb3f8b3" name="numeroDeSerie" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="fwf-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="fjf-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+          </UML:Classifier.feature>
+        </UML:Class>
+        <UML:Association xmi.id="736-9023066c4e607f1b0fe33513ddb3f8b3" name="Tienen" version="0" unSolvedFlag="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="738-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="54e-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="2anq-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="2anr-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="736-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="73e-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="2azi-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="2azj-9023066c4e607f1b0fe33513ddb3f8b3" lower="1" upper="-1" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="54e-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="736-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:AssociationEnd xmi.idref="738-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationEnd xmi.idref="73e-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:Association xmi.id="8hg-9023066c4e607f1b0fe33513ddb3f8b3" name="DebeTener" version="0" unSolvedFlag="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="8hi-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="8hl-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="8hm-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="54e-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="8hg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="8ho-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="54e-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="bvy-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="bvz-9023066c4e607f1b0fe33513ddb3f8b3" lower="1" upper="-1" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="8hg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:AssociationEnd xmi.idref="8hi-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationEnd xmi.idref="8ho-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:Class xmi.id="hnh-9023066c4e607f1b0fe33513ddb3f8b3" name="Diagnostico" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Namespace.ownedElement></UML:Namespace.ownedElement>
+          <UML:Classifier.feature>
+            <UML:Attribute xmi.id="ips-9023066c4e607f1b0fe33513ddb3f8b3" name="confirmacionEnfermedad" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="hnh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="ivm-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="ips-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="hnh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="vi-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="m7z-9023066c4e607f1b0fe33513ddb3f8b3" name="dia" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="hnh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="mj9-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="m7z-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="hnh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="nbr-9023066c4e607f1b0fe33513ddb3f8b3" name="tiempoPadecidoEnSemanas" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="hnh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="nnv-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="nbr-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="hnh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+          </UML:Classifier.feature>
+        </UML:Class>
+        <UML:Association xmi.id="kcs-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="kcu-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="kcx-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="kcy-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="hnh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="kcs-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="kd0-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="hnh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="kd3-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="kd4-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="kcs-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:AssociationEnd xmi.idref="kcu-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationEnd xmi.idref="kd0-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:Class xmi.id="rwg-9023066c4e607f1b0fe33513ddb3f8b3" name="Enfermedad" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Namespace.ownedElement></UML:Namespace.ownedElement>
+          <UML:Classifier.feature>
+            <UML:Attribute xmi.id="uzx-9023066c4e607f1b0fe33513ddb3f8b3" name="nombre" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="van-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="uzx-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="vrl-9023066c4e607f1b0fe33513ddb3f8b3" name="codigo" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="w37-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="vrl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="1ial-9023066c4e607f1b0fe33513ddb3f8b3" name="dia" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="1inf-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="1ial-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="1j8v-9023066c4e607f1b0fe33513ddb3f8b3" name="tiempoPadecidoEnSemanas" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="1jml-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="1j8v-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+          </UML:Classifier.feature>
+        </UML:Class>
+        <UML:Association xmi.id="so8-9023066c4e607f1b0fe33513ddb3f8b3" name="PuedePadecer" version="0" unSolvedFlag="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="soa-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="sod-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="soe-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="so8-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="sog-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="1glr-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="1gls-9023066c4e607f1b0fe33513ddb3f8b3" lower="0" upper="-1" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="so8-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:AssociationEnd xmi.idref="soa-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationEnd xmi.idref="sog-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:Class xmi.id="udb-9023066c4e607f1b0fe33513ddb3f8b3" name="Medicamento" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Namespace.ownedElement></UML:Namespace.ownedElement>
+          <UML:Classifier.feature>
+            <UML:Attribute xmi.id="wuh-9023066c4e607f1b0fe33513ddb3f8b3" name="nombre" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="x0h-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="wuh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="xdh-9023066c4e607f1b0fe33513ddb3f8b3" name="codigo" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="xkd-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="xdh-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+          </UML:Classifier.feature>
+        </UML:Class>
+        <UML:Class xmi.id="y7y-9023066c4e607f1b0fe33513ddb3f8b3" name="Registro" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Namespace.ownedElement></UML:Namespace.ownedElement>
+          <UML:Classifier.feature>
+            <UML:Attribute xmi.id="12pu-9023066c4e607f1b0fe33513ddb3f8b3" name="produccionDiariaLeche" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="130m-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="12pu-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="13yz-9023066c4e607f1b0fe33513ddb3f8b3" name="fechaProduccion" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="14an-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="13yz-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="15wy-9023066c4e607f1b0fe33513ddb3f8b3" name="cantidadLecheProducidadLitros" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="169k-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="15wy-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+          </UML:Classifier.feature>
+        </UML:Class>
+        <UML:Association xmi.id="zwu-9023066c4e607f1b0fe33513ddb3f8b3" name="Tiene" version="0" unSolvedFlag="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="zww-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="26t1-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="26t2-9023066c4e607f1b0fe33513ddb3f8b3" lower="1" upper="1" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="zwu-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="zx2-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="26xx-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="26xy-9023066c4e607f1b0fe33513ddb3f8b3" lower="1" upper="1" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="zwu-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:AssociationEnd xmi.idref="zww-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationEnd xmi.idref="zx2-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:Association xmi.id="17k7-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="17k9-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="17kc-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="17kd-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="17k7-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="17kf-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="17ki-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="17kj-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="17k7-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:AssociationEnd xmi.idref="17k9-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationEnd xmi.idref="17kf-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:Association xmi.id="18tn-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="18tp-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="18ts-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="18tt-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="18tn-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="18tv-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="18ty-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="18tz-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.association>
+                <UML:Association xmi.idref="18tn-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.association>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:Association>
+        <UML:AssociationEnd xmi.idref="18tp-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationEnd xmi.idref="18tv-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationClass xmi.id="1u3m-9023066c4e607f1b0fe33513ddb3f8b3" name="TratamientoTratado" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false">
+          <UML:ModelElement.namespace>
+            <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+          </UML:ModelElement.namespace>
+          <UML:ModelElement.visibility xmi.value="public"/>
+          <UML:Namespace.ownedElement></UML:Namespace.ownedElement>
+          <UML:Classifier.feature>
+            <UML:Attribute xmi.id="1y4s-9023066c4e607f1b0fe33513ddb3f8b3" name="tiempoAplicadoMedicamentoEnDias" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="1you-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="1y4s-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="207r-9023066c4e607f1b0fe33513ddb3f8b3" name="dosisAsignada" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="20sp-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="207r-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+            <UML:Attribute xmi.id="22l8-9023066c4e607f1b0fe33513ddb3f8b3" name="unidadMedidadDosis" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="composite">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:ModelElement.taggedValue>
+                <UML:TaggedValue xmi.id="2374-9023066c4e607f1b0fe33513ddb3f8b3" version="0" tag="jude.type_modifier">
+                  <UML:TaggedValue.modelElement>
+                    <UML:ModelElement xmi.idref="22l8-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                  </UML:TaggedValue.modelElement>
+                </UML:TaggedValue>
+              </UML:ModelElement.taggedValue>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.type>
+                <UML:Classifier xmi.idref="1bl-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:StructuralFeature.type>
+            </UML:Attribute>
+          </UML:Classifier.feature>
+          <UML:Association.connection>
+            <UML:AssociationEnd xmi.id="1u3o-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="1u6m-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="1u6n-9023066c4e607f1b0fe33513ddb3f8b3" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.associationClass>
+                <UML:AssociationClass xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.associationClass>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+            <UML:AssociationEnd xmi.id="1u3u-9023066c4e607f1b0fe33513ddb3f8b3" name="" version="0" unSolvedFlag="false" ownerScope="instance" targetScope="instance" changeability="changeable" aggregation="none" ordering="unordered" navigableType="unspecified navigable" isNavigable="false">
+              <UML:ModelElement.namespace>
+                <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:ModelElement.namespace>
+              <UML:ModelElement.visibility xmi.value="private"/>
+              <UML:Feature.owner>
+                <UML:Classifier xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:Feature.owner>
+              <UML:Feature.visibility xmi.value="private"/>
+              <UML:StructuralFeature.multiplicity>
+                <UML:Multiplicity xmi.id="1u6p-9023066c4e607f1b0fe33513ddb3f8b3">
+                  <UML:Multiplicity.range>
+                    <UML:MultiplicityRange xmi.id="1u6q-9023066c4e607f1b0fe33513ddb3f8b3" lower="1" upper="-1" lowerValue="" upperValue=""/>
+                  </UML:Multiplicity.range>
+                </UML:Multiplicity>
+              </UML:StructuralFeature.multiplicity>
+              <UML:AssociationEnd.participant>
+                <UML:Classifier xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.participant>
+              <UML:AssociationEnd.associationClass>
+                <UML:AssociationClass xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              </UML:AssociationEnd.associationClass>
+              <UML:AssociationEnd.visibility xmi.value="private"/>
+            </UML:AssociationEnd>
+          </UML:Association.connection>
+        </UML:AssociationClass>
+        <UML:AssociationEnd xmi.idref="1u3o-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        <UML:AssociationEnd xmi.idref="1u3u-9023066c4e607f1b0fe33513ddb3f8b3"/>
+      </UML:Namespace.ownedElement>
+    </UML:Model>
+    <UML:Primitive xmi.id="vi-9023066c4e607f1b0fe33513ddb3f8b3" name="boolean" version="0" unSolvedFlag="false" isRoot="false" isLeaf="false" isAbstract="false" isActive="false"></UML:Primitive>
+    <XMI.extension></XMI.extension>
+    <XMI.extension>
+      <JUDE:Diagram xmi.id="4-9023066c4e607f1b0fe33513ddb3f8b3" name="Class Diagram0" typeInfo="Class Diagram" version="0" xmlns:JUDE="http://objectclub.esm.co.jp/Jude/namespace/">
+        <UML:ModelElement.namespace>
+          <UML:Namespace xmi.idref="1-9023066c4e607f1b0fe33513ddb3f8b3"/>
+        </UML:ModelElement.namespace>
+        <JUDE:Diagram.presentations>
+          <JUDE:FramePresentation xmi.id="6-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483646" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="1237.4133609729133" height="572.0286760641238" doAutoResize="true" visibility="true" label="+">
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>-92.63336097291334</XMI.field>
+              <XMI.field>10.0</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:FramePresentation>
+          <JUDE:ClassifierPresentation xmi.id="97-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483635" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="202.0" height="102.46875" doAutoResize="false" visibility="true" label="Afiliados" isActive="false" allAttributeVisibility="true" allOperationVisibility="true" visibilityKindVisibility="true" attributeTypeVisibility="true" parameterVisibility="true" parameterTypeVisibility="true" returnTypeVisibility="true" isClassNameItalic="false" attributeInitValueVisibility="true" pathVisibility="0" attributeStereotypeVisibility="true" operationStereotypeVisibility="true" attributeConstraintVisibility="true" operationConstraintVisibility="true" publicAttributeVisibility="true" protectedAttributeVisibility="true" packageAttributeVisibility="true" privateAttributeVisibility="true" publicOperationVisibility="true" protectedOperationVisibility="true" packageOperationVisibility="true" privateOperationVisibility="true" classType="0" interfaceType="0" nameVisibility="true" templateParameterVisibility="true" templateParameterMultiline="false" boundClassTemplateParameterNameVisibility="false" boundClassTemplateParameterVisibility="true">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="98-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.clients>
+              <JUDE:AssociationPresentation xmi.idref="72w-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.clients>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="attribute.filter_by_visibility" value=""/>
+              <JUDE:UPresentation.styleProperty key="fill.color.alpha" value="FF"/>
+              <JUDE:UPresentation.styleProperty key="fill.color" value="#FFFFCC"/>
+              <JUDE:UPresentation.styleProperty key="operation.filter_by_visibility" value=""/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>117.74626865671641</XMI.field>
+              <XMI.field>93.0</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:ClassifierPresentation>
+          <JUDE:ClassifierPresentation xmi.id="54d-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483634" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="75.0" height="42.09375" doAutoResize="true" visibility="true" label="Ganadero" isActive="false" allAttributeVisibility="true" allOperationVisibility="true" visibilityKindVisibility="true" attributeTypeVisibility="true" parameterVisibility="true" parameterTypeVisibility="true" returnTypeVisibility="true" isClassNameItalic="false" attributeInitValueVisibility="true" pathVisibility="0" attributeStereotypeVisibility="true" operationStereotypeVisibility="true" attributeConstraintVisibility="true" operationConstraintVisibility="true" publicAttributeVisibility="true" protectedAttributeVisibility="true" packageAttributeVisibility="true" privateAttributeVisibility="true" publicOperationVisibility="true" protectedOperationVisibility="true" packageOperationVisibility="true" privateOperationVisibility="true" classType="0" interfaceType="0" nameVisibility="true" templateParameterVisibility="true" templateParameterMultiline="false" boundClassTemplateParameterNameVisibility="false" boundClassTemplateParameterVisibility="true">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="54e-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.clients>
+              <JUDE:AssociationPresentation xmi.idref="72w-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:AssociationPresentation xmi.idref="8h6-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.clients>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="attribute.filter_by_visibility" value=""/>
+              <JUDE:UPresentation.styleProperty key="fill.color.alpha" value="FF"/>
+              <JUDE:UPresentation.styleProperty key="fill.color" value="#FFFFCC"/>
+              <JUDE:UPresentation.styleProperty key="operation.filter_by_visibility" value=""/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>441.74626865671644</XMI.field>
+              <XMI.field>72.07960199004975</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:ClassifierPresentation>
+          <JUDE:ClassifierPresentation xmi.id="631-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483633" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="156.0" height="102.46875" doAutoResize="true" visibility="true" label="CabezaGanadoVacuno" isActive="false" allAttributeVisibility="true" allOperationVisibility="true" visibilityKindVisibility="true" attributeTypeVisibility="true" parameterVisibility="true" parameterTypeVisibility="true" returnTypeVisibility="true" isClassNameItalic="false" attributeInitValueVisibility="true" pathVisibility="0" attributeStereotypeVisibility="true" operationStereotypeVisibility="true" attributeConstraintVisibility="true" operationConstraintVisibility="true" publicAttributeVisibility="true" protectedAttributeVisibility="true" packageAttributeVisibility="true" privateAttributeVisibility="true" publicOperationVisibility="true" protectedOperationVisibility="true" packageOperationVisibility="true" privateOperationVisibility="true" classType="0" interfaceType="0" nameVisibility="true" templateParameterVisibility="true" templateParameterMultiline="false" boundClassTemplateParameterNameVisibility="false" boundClassTemplateParameterVisibility="true">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="632-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.clients>
+              <JUDE:AssociationPresentation xmi.idref="8h6-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:AssociationPresentation xmi.idref="sny-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:AssociationPresentation xmi.idref="zwk-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.clients>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="attribute.filter_by_visibility" value=""/>
+              <JUDE:UPresentation.styleProperty key="fill.color.alpha" value="FF"/>
+              <JUDE:UPresentation.styleProperty key="fill.color" value="#FFFFCC"/>
+              <JUDE:UPresentation.styleProperty key="operation.filter_by_visibility" value=""/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>405.74626865671644</XMI.field>
+              <XMI.field>249.07960199004975</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:ClassifierPresentation>
+          <JUDE:ClassifierPresentation xmi.id="rwf-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483628" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="227.0" height="102.46875" doAutoResize="true" visibility="true" label="Enfermedad" isActive="false" allAttributeVisibility="true" allOperationVisibility="true" visibilityKindVisibility="true" attributeTypeVisibility="true" parameterVisibility="true" parameterTypeVisibility="true" returnTypeVisibility="true" isClassNameItalic="false" attributeInitValueVisibility="true" pathVisibility="0" attributeStereotypeVisibility="true" operationStereotypeVisibility="true" attributeConstraintVisibility="true" operationConstraintVisibility="true" publicAttributeVisibility="true" protectedAttributeVisibility="true" packageAttributeVisibility="true" privateAttributeVisibility="true" publicOperationVisibility="true" protectedOperationVisibility="true" packageOperationVisibility="true" privateOperationVisibility="true" classType="0" interfaceType="0" nameVisibility="true" templateParameterVisibility="true" templateParameterMultiline="false" boundClassTemplateParameterNameVisibility="false" boundClassTemplateParameterVisibility="true">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="rwg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.clients>
+              <JUDE:AssociationPresentation xmi.idref="sny-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:AssociationPathPresentation xmi.idref="1u3h-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.clients>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="attribute.filter_by_visibility" value=""/>
+              <JUDE:UPresentation.styleProperty key="fill.color.alpha" value="FF"/>
+              <JUDE:UPresentation.styleProperty key="fill.color" value="#FFFFCC"/>
+              <JUDE:UPresentation.styleProperty key="operation.filter_by_visibility" value=""/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>-52.25373134328359</XMI.field>
+              <XMI.field>249.07960199004975</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:ClassifierPresentation>
+          <JUDE:ClassifierPresentation xmi.id="uda-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483626" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="111.0" height="72.28125" doAutoResize="true" visibility="true" label="Medicamento" isActive="false" allAttributeVisibility="true" allOperationVisibility="true" visibilityKindVisibility="true" attributeTypeVisibility="true" parameterVisibility="true" parameterTypeVisibility="true" returnTypeVisibility="true" isClassNameItalic="false" attributeInitValueVisibility="true" pathVisibility="0" attributeStereotypeVisibility="true" operationStereotypeVisibility="true" attributeConstraintVisibility="true" operationConstraintVisibility="true" publicAttributeVisibility="true" protectedAttributeVisibility="true" packageAttributeVisibility="true" privateAttributeVisibility="true" publicOperationVisibility="true" protectedOperationVisibility="true" packageOperationVisibility="true" privateOperationVisibility="true" classType="0" interfaceType="0" nameVisibility="true" templateParameterVisibility="true" templateParameterMultiline="false" boundClassTemplateParameterNameVisibility="false" boundClassTemplateParameterVisibility="true">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="udb-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.clients>
+              <JUDE:AssociationPathPresentation xmi.idref="1u3h-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.clients>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="attribute.filter_by_visibility" value=""/>
+              <JUDE:UPresentation.styleProperty key="fill.color.alpha" value="FF"/>
+              <JUDE:UPresentation.styleProperty key="fill.color" value="#FFFFCC"/>
+              <JUDE:UPresentation.styleProperty key="operation.filter_by_visibility" value=""/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>-37.012990602543084</XMI.field>
+              <XMI.field>464.6536760641239</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:ClassifierPresentation>
+          <JUDE:ClassifierPresentation xmi.id="y7x-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483625" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="243.0" height="87.375" doAutoResize="true" visibility="true" label="Registro" isActive="false" allAttributeVisibility="true" allOperationVisibility="true" visibilityKindVisibility="true" attributeTypeVisibility="true" parameterVisibility="true" parameterTypeVisibility="true" returnTypeVisibility="true" isClassNameItalic="false" attributeInitValueVisibility="true" pathVisibility="0" attributeStereotypeVisibility="true" operationStereotypeVisibility="true" attributeConstraintVisibility="true" operationConstraintVisibility="true" publicAttributeVisibility="true" protectedAttributeVisibility="true" packageAttributeVisibility="true" privateAttributeVisibility="true" publicOperationVisibility="true" protectedOperationVisibility="true" packageOperationVisibility="true" privateOperationVisibility="true" classType="0" interfaceType="0" nameVisibility="true" templateParameterVisibility="true" templateParameterMultiline="false" boundClassTemplateParameterNameVisibility="false" boundClassTemplateParameterVisibility="true">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Class xmi.idref="y7y-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.clients>
+              <JUDE:AssociationPresentation xmi.idref="zwk-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.clients>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="attribute.filter_by_visibility" value=""/>
+              <JUDE:UPresentation.styleProperty key="fill.color.alpha" value="FF"/>
+              <JUDE:UPresentation.styleProperty key="fill.color" value="#FFFFCC"/>
+              <JUDE:UPresentation.styleProperty key="operation.filter_by_visibility" value=""/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>653.78</XMI.field>
+              <XMI.field>256.6536760641239</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:ClassifierPresentation>
+          <JUDE:AssociationClassPresentation xmi.id="1u3j-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="268.0" height="87.375" doAutoResize="true" visibility="true" label="TratamientoTratado" isActive="false" allAttributeVisibility="true" allOperationVisibility="true" visibilityKindVisibility="true" attributeTypeVisibility="true" parameterVisibility="true" parameterTypeVisibility="true" returnTypeVisibility="true" isClassNameItalic="false" attributeInitValueVisibility="true" pathVisibility="0" attributeStereotypeVisibility="true" operationStereotypeVisibility="true" attributeConstraintVisibility="true" operationConstraintVisibility="true" publicAttributeVisibility="true" protectedAttributeVisibility="true" packageAttributeVisibility="true" privateAttributeVisibility="true" publicOperationVisibility="true" protectedOperationVisibility="true" packageOperationVisibility="true" privateOperationVisibility="true" classType="0" interfaceType="0" nameVisibility="true" templateParameterVisibility="true" templateParameterMultiline="false" boundClassTemplateParameterNameVisibility="false" boundClassTemplateParameterVisibility="true">
+            <JUDE:UPresentation.semanticModel>
+              <UML:AssociationClass xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.clients>
+              <JUDE:AssociationClassAnchorPresentation xmi.idref="1u3k-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.clients>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="attribute.filter_by_visibility" value=""/>
+              <JUDE:UPresentation.styleProperty key="fill.color.alpha" value="FF"/>
+              <JUDE:UPresentation.styleProperty key="fill.color" value="#FFFFCC"/>
+              <JUDE:UPresentation.styleProperty key="operation.filter_by_visibility" value=""/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>218.24626865671647</XMI.field>
+              <XMI.field>384.8666390270868</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:AssociationClassPresentation>
+          <JUDE:TextPresentation xmi.id="2400-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="-1" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="42.0" height="23.09375" doAutoResize="false" visibility="true" label="1" text="1">
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="fill.color.alpha" value="FF"/>
+              <JUDE:UPresentation.styleProperty key="fill.color" value="#FFFFCC"/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>189.54584566058583</XMI.field>
+              <XMI.field>391.9499723604202</XMI.field>
+            </JUDE:JomtPresentation.location>
+          </JUDE:TextPresentation>
+          <JUDE:AssociationPresentation xmi.id="72w-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483632" stereotypeVisibility="true" constraintVisibility="true" notationType="0" rightAngle="true" visibility="true" qualifierBoxATypeVisibility="true" qualifierBoxBTypeVisibility="true" nameDirectionVisible="true" nameDirectionReverse="0">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Association xmi.idref="736-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.servers>
+              <JUDE:ClassifierPresentation xmi.idref="97-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:ClassifierPresentation xmi.idref="54d-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.servers>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="line.shape" value="line_right_angle"/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>0.0</XMI.field>
+              <XMI.field>0.0</XMI.field>
+            </JUDE:JomtPresentation.location>
+            <JUDE:PathPresentation.namePresentation>
+              <JUDE:LabelPresentation xmi.id="7yu-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="38.0" height="15.09375" doAutoResize="true" visibility="true" label="Tienen">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>361.74626865671644</XMI.field>
+                  <XMI.field>120.13355099502488</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="72w-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:PathPresentation.namePresentation>
+            <JUDE:PathPresentation.points>
+              <XMI.field>380.74626865671644</XMI.field>
+              <XMI.field>144.234375</XMI.field>
+              <XMI.field>380.74626865671644</XMI.field>
+              <XMI.field>93.12647699004975</XMI.field>
+            </JUDE:PathPresentation.points>
+            <JUDE:BinaryRelationPresentation.sourceEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.sourceEnd>
+            <JUDE:BinaryRelationPresentation.targetEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.targetEnd>
+            <JUDE:PathPresentation.points>
+              <XMI.field>380.74626865671644</XMI.field>
+              <XMI.field>144.234375</XMI.field>
+              <XMI.field>380.74626865671644</XMI.field>
+              <XMI.field>93.12647699004975</XMI.field>
+            </JUDE:PathPresentation.points>
+            <JUDE:AssociationPresentation.qualifierBoxAPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="7yo-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>319.74626865671644</XMI.field>
+                  <XMI.field>129.234375</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="72w-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxAPresentation>
+            <JUDE:AssociationPresentation.qualifierBoxBPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="7yp-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>401.74626865671644</XMI.field>
+                  <XMI.field>78.12647699004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="72w-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxBPresentation>
+            <JUDE:AssociationPresentation.multiplicityBPresentation>
+              <JUDE:LabelPresentation xmi.id="7yt-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="18.0" height="15.09375" doAutoResize="true" visibility="true" label="1..*">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>414.74626865671644</XMI.field>
+                  <XMI.field>103.57960199004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="72w-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:AssociationPresentation.multiplicityBPresentation>
+          </JUDE:AssociationPresentation>
+          <JUDE:AssociationPresentation xmi.id="8h6-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483631" stereotypeVisibility="true" constraintVisibility="true" notationType="0" rightAngle="true" visibility="true" qualifierBoxATypeVisibility="true" qualifierBoxBTypeVisibility="true" nameDirectionVisible="true" nameDirectionReverse="0">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Association xmi.idref="8hg-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.servers>
+              <JUDE:ClassifierPresentation xmi.idref="54d-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:ClassifierPresentation xmi.idref="631-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.servers>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="line.shape" value="line_right_angle"/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>0.0</XMI.field>
+              <XMI.field>0.0</XMI.field>
+            </JUDE:JomtPresentation.location>
+            <JUDE:PathPresentation.namePresentation>
+              <JUDE:LabelPresentation xmi.id="gkw-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="62.0" height="15.09375" doAutoResize="true" visibility="true" label="DebeTener">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>474.36789027833805</XMI.field>
+                  <XMI.field>183.07960199004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.localMovement>
+                  <XMI.field>-38.0</XMI.field>
+                  <XMI.field>-3.0</XMI.field>
+                </JUDE:JomtPresentation.localMovement>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="8h6-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:PathPresentation.namePresentation>
+            <JUDE:PathPresentation.points>
+              <XMI.field>502.74626865671644</XMI.field>
+              <XMI.field>181.62647699004975</XMI.field>
+              <XMI.field>507.98951189995967</XMI.field>
+              <XMI.field>181.62647699004975</XMI.field>
+            </JUDE:PathPresentation.points>
+            <JUDE:BinaryRelationPresentation.sourceEnd>
+              <XMI.field>0.8133333333333334</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.sourceEnd>
+            <JUDE:BinaryRelationPresentation.targetEnd>
+              <XMI.field>0.6554054054054054</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.targetEnd>
+            <JUDE:PathPresentation.points>
+              <XMI.field>502.74626865671644</XMI.field>
+              <XMI.field>181.62647699004975</XMI.field>
+              <XMI.field>507.98951189995967</XMI.field>
+              <XMI.field>181.62647699004975</XMI.field>
+            </JUDE:PathPresentation.points>
+            <JUDE:AssociationPresentation.qualifierBoxAPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="gkq-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>482.74626865671644</XMI.field>
+                  <XMI.field>114.17335199004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="8h6-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxAPresentation>
+            <JUDE:AssociationPresentation.qualifierBoxBPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="gkr-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>487.98951189995967</XMI.field>
+                  <XMI.field>219.07960199004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="8h6-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxBPresentation>
+            <JUDE:AssociationPresentation.multiplicityBPresentation>
+              <JUDE:LabelPresentation xmi.id="gkv-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="18.0" height="15.09375" doAutoResize="true" visibility="true" label="1..*">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>480.98951189995967</XMI.field>
+                  <XMI.field>223.53272699004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="8h6-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:AssociationPresentation.multiplicityBPresentation>
+          </JUDE:AssociationPresentation>
+          <JUDE:AssociationPresentation xmi.id="sny-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483627" stereotypeVisibility="true" constraintVisibility="true" notationType="0" rightAngle="true" visibility="true" qualifierBoxATypeVisibility="true" qualifierBoxBTypeVisibility="true" nameDirectionVisible="true" nameDirectionReverse="0">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Association xmi.idref="so8-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.servers>
+              <JUDE:ClassifierPresentation xmi.idref="631-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:ClassifierPresentation xmi.idref="rwf-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.servers>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="line.shape" value="line_right_angle"/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>0.0</XMI.field>
+              <XMI.field>0.0</XMI.field>
+            </JUDE:JomtPresentation.location>
+            <JUDE:PathPresentation.namePresentation>
+              <JUDE:LabelPresentation xmi.id="snz-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="82.0" height="15.09375" doAutoResize="true" visibility="true" label="PuedePadecer">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>249.24626865671644</XMI.field>
+                  <XMI.field>301.76710199004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="sny-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:PathPresentation.namePresentation>
+            <JUDE:BinaryRelationPresentation.sourceEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.sourceEnd>
+            <JUDE:BinaryRelationPresentation.targetEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.targetEnd>
+            <JUDE:PathPresentation.points></JUDE:PathPresentation.points>
+            <JUDE:AssociationPresentation.qualifierBoxAPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="ttc-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>365.74626865671644</XMI.field>
+                  <XMI.field>285.31397699004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="sny-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxAPresentation>
+            <JUDE:AssociationPresentation.qualifierBoxBPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="tth-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>174.7462686567164</XMI.field>
+                  <XMI.field>285.31397699004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="sny-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxBPresentation>
+            <JUDE:AssociationPresentation.multiplicityBPresentation>
+              <JUDE:LabelPresentation xmi.id="sru-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="18.0" height="15.09375" doAutoResize="true" visibility="true" label="0..*">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>183.7462686567164</XMI.field>
+                  <XMI.field>274.76710199004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="sny-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:AssociationPresentation.multiplicityBPresentation>
+          </JUDE:AssociationPresentation>
+          <JUDE:AssociationPresentation xmi.id="zwk-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483624" stereotypeVisibility="true" constraintVisibility="true" notationType="0" rightAngle="true" visibility="true" qualifierBoxATypeVisibility="true" qualifierBoxBTypeVisibility="true" nameDirectionVisible="true" nameDirectionReverse="0">
+            <JUDE:UPresentation.semanticModel>
+              <UML:Association xmi.idref="zwu-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.servers>
+              <JUDE:ClassifierPresentation xmi.idref="631-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:ClassifierPresentation xmi.idref="y7x-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.servers>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="line.shape" value="line_right_angle"/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>0.0</XMI.field>
+              <XMI.field>0.0</XMI.field>
+            </JUDE:JomtPresentation.location>
+            <JUDE:PathPresentation.namePresentation>
+              <JUDE:LabelPresentation xmi.id="274j-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="31.0" height="15.09375" doAutoResize="true" visibility="true" label="Tiene">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>592.2631343283582</XMI.field>
+                  <XMI.field>301.77867232841265</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="zwk-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:PathPresentation.namePresentation>
+            <JUDE:BinaryRelationPresentation.sourceEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.sourceEnd>
+            <JUDE:BinaryRelationPresentation.targetEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.targetEnd>
+            <JUDE:PathPresentation.points></JUDE:PathPresentation.points>
+            <JUDE:AssociationPresentation.qualifierBoxAPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="274d-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>561.7462686567164</XMI.field>
+                  <XMI.field>285.3212541163295</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="zwk-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxAPresentation>
+            <JUDE:AssociationPresentation.qualifierBoxBPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="274e-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>613.78</XMI.field>
+                  <XMI.field>285.32984054049587</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="zwk-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxBPresentation>
+            <JUDE:AssociationPresentation.multiplicityAPresentation>
+              <JUDE:LabelPresentation xmi.id="274h-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="10.0" height="15.09375" doAutoResize="true" visibility="true" label="1">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>574.7445892415519</XMI.field>
+                  <XMI.field>310.7760583748178</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="zwk-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:AssociationPresentation.multiplicityAPresentation>
+            <JUDE:AssociationPresentation.multiplicityBPresentation>
+              <JUDE:LabelPresentation xmi.id="274i-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="10.0" height="15.09375" doAutoResize="true" visibility="true" label="1">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>630.7783207415116</XMI.field>
+                  <XMI.field>310.7812861253313</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="zwk-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:AssociationPresentation.multiplicityBPresentation>
+          </JUDE:AssociationPresentation>
+          <JUDE:AssociationPathPresentation xmi.id="1u3h-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="2147483622" stereotypeVisibility="true" constraintVisibility="true" notationType="0" rightAngle="true" visibility="true" qualifierBoxATypeVisibility="true" qualifierBoxBTypeVisibility="true" nameDirectionVisible="true" nameDirectionReverse="0">
+            <JUDE:UPresentation.semanticModel>
+              <UML:AssociationClass xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.clients>
+              <JUDE:AssociationClassAnchorPresentation xmi.idref="1u3k-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.clients>
+            <JUDE:UPresentation.servers>
+              <JUDE:ClassifierPresentation xmi.idref="rwf-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:ClassifierPresentation xmi.idref="uda-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.servers>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="line.shape" value="line_right_angle"/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>0.0</XMI.field>
+              <XMI.field>0.0</XMI.field>
+            </JUDE:JomtPresentation.location>
+            <JUDE:PathPresentation.namePresentation>
+              <JUDE:LabelPresentation xmi.id="1wyq-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="108.0" height="15.09375" doAutoResize="true" visibility="true" label="TratamientoTratado">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>-18.133360972913337</XMI.field>
+                  <XMI.field>405.5541390270868</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.localMovement>
+                  <XMI.field>37.0</XMI.field>
+                  <XMI.field>22.0</XMI.field>
+                </JUDE:JomtPresentation.localMovement>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="1u3h-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:PathPresentation.namePresentation>
+            <JUDE:PathPresentation.points>
+              <XMI.field>61.24626865671641</XMI.field>
+              <XMI.field>404.1010140270868</XMI.field>
+              <XMI.field>18.487009397456916</XMI.field>
+              <XMI.field>404.1010140270868</XMI.field>
+            </JUDE:PathPresentation.points>
+            <JUDE:BinaryRelationPresentation.sourceEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.sourceEnd>
+            <JUDE:BinaryRelationPresentation.targetEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.targetEnd>
+            <JUDE:PathPresentation.points>
+              <XMI.field>61.24626865671641</XMI.field>
+              <XMI.field>404.1010140270868</XMI.field>
+              <XMI.field>18.487009397456916</XMI.field>
+              <XMI.field>404.1010140270868</XMI.field>
+            </JUDE:PathPresentation.points>
+            <JUDE:AssociationPresentation.qualifierBoxAPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="1wyk-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>41.24626865671641</XMI.field>
+                  <XMI.field>351.54835199004975</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="1u3h-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxAPresentation>
+            <JUDE:AssociationPresentation.qualifierBoxBPresentation>
+              <JUDE:QualifierBoxPresentation xmi.id="1wyl-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="0.0" height="0.0" doAutoResize="true" visibility="true">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>-1.5129906025430842</XMI.field>
+                  <XMI.field>434.6536760641239</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="1u3h-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:QualifierBoxPresentation>
+            </JUDE:AssociationPresentation.qualifierBoxBPresentation>
+            <JUDE:AssociationPresentation.multiplicityBPresentation>
+              <JUDE:LabelPresentation xmi.id="1wyp-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="18.0" height="15.09375" doAutoResize="true" visibility="true" label="1..*">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>-8.512990602543084</XMI.field>
+                  <XMI.field>439.1068010641239</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="1u3h-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:AssociationPresentation.multiplicityBPresentation>
+          </JUDE:AssociationPathPresentation>
+          <JUDE:AssociationClassAnchorPresentation xmi.id="1u3k-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" rightAngle="false" visibility="true">
+            <JUDE:UPresentation.semanticModel>
+              <UML:AssociationClass xmi.idref="1u3m-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.semanticModel>
+            <JUDE:UPresentation.diagram>
+              <JUDE:Diagram xmi.idref="4-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.diagram>
+            <JUDE:UPresentation.servers>
+              <JUDE:AssociationClassPresentation xmi.idref="1u3j-9023066c4e607f1b0fe33513ddb3f8b3"/>
+              <JUDE:AssociationPathPresentation xmi.idref="1u3h-9023066c4e607f1b0fe33513ddb3f8b3"/>
+            </JUDE:UPresentation.servers>
+            <JUDE:UPresentation.customStyleMap>
+              <JUDE:UPresentation.styleProperty key="line.shape" value="line"/>
+            </JUDE:UPresentation.customStyleMap>
+            <JUDE:JomtPresentation.location>
+              <XMI.field>0.0</XMI.field>
+              <XMI.field>0.0</XMI.field>
+            </JUDE:JomtPresentation.location>
+            <JUDE:PathPresentation.namePresentation>
+              <JUDE:LabelPresentation xmi.id="1wvj-9023066c4e607f1b0fe33513ddb3f8b3" version="0" depth="0" stereotypeVisibility="true" constraintVisibility="true" notationType="0" width="108.0" height="15.09375" doAutoResize="true" visibility="true" label="TratamientoTratado">
+                <JUDE:JomtPresentation.location>
+                  <XMI.field>73.30645384190157</XMI.field>
+                  <XMI.field>412.6215637669826</XMI.field>
+                </JUDE:JomtPresentation.location>
+                <JUDE:JomtPresentation.localMovement>
+                  <XMI.field>40.0</XMI.field>
+                  <XMI.field>1.0</XMI.field>
+                </JUDE:JomtPresentation.localMovement>
+                <JUDE:JomtPresentation.compositeParent>
+                  <JUDE:UPresentation xmi.idref="1u3k-9023066c4e607f1b0fe33513ddb3f8b3"/>
+                </JUDE:JomtPresentation.compositeParent>
+              </JUDE:LabelPresentation>
+            </JUDE:PathPresentation.namePresentation>
+            <JUDE:BinaryRelationPresentation.sourceEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.sourceEnd>
+            <JUDE:BinaryRelationPresentation.targetEnd>
+              <XMI.field>0.5</XMI.field>
+              <XMI.field>0.5</XMI.field>
+            </JUDE:BinaryRelationPresentation.targetEnd>
+            <JUDE:PathPresentation.points></JUDE:PathPresentation.points>
+          </JUDE:AssociationClassAnchorPresentation>
+        </JUDE:Diagram.presentations>
+        <JUDE:Diagram.customStyleMap>
+          <JUDE:Diagram.styleProperty key="operation.compartment.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="association.end.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="protected.attribute.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="operation.parameter.type.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="operation.stereotype.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="private.operation.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="attribute.type.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="private.attribute.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="protected.operation.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="class.stereotype.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="attribute.initial.value.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="package.operation.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="attribute.compartment.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="public.operation.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="operation.return.type.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="package.attribute.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="operation.parameter.directionkind.visibility" value="false"/>
+          <JUDE:Diagram.styleProperty key="association.name.direction.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="attribute.constraint.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="operation.parameter.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="operation.constraint.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="package.stereotype.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="visibility.kind.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="public.attribute.visibility" value="true"/>
+          <JUDE:Diagram.styleProperty key="attribute.stereotype.visibility" value="true"/>
+        </JUDE:Diagram.customStyleMap>
+      </JUDE:Diagram>
+    </XMI.extension>
+  </XMI.content>
+</XMI>
+

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Parser para archivos XMI/XML de diagramas UML.
 Soporta múltiples herramientas de modelado (StarUML, Enterprise Architect,
@@ -21,7 +24,22 @@ PRIMITIVE_TYPES = {
     'long', 'short', 'byte', 'char', 'void', 'date', 'datetime', 'object',
     'number', 'real', 'decimal', 'natural', 'unlimited', 'unlimitednatural',
     'any', 'null', 'undefined',
+    # java.time y afines: Astah los materializa como <UML:Class> stub cuando
+    # el estudiante escribe el tipo de un atributo, pero no son clases del
+    # dominio y el docente no las cuenta.
+    'localdate', 'localdatetime', 'localtime', 'time', 'timestamp',
+    'bigdecimal', 'biginteger', 'character',
 }
+
+# Nombres por defecto que Astah asigna al soltar una clase sin renombrarla
+# ("Class0", "Clase3"...). El docente las descarta al contar; el sistema
+# tambien, si no infla el conteo de clases modeladas.
+DEFAULT_CLASS_NAME_RE = re.compile(r'^(?:class|clase)\d+$', re.IGNORECASE)
+
+
+def is_placeholder_class_name(name: str) -> bool:
+    """True si el nombre es un placeholder de la herramienta, no del dominio."""
+    return bool(DEFAULT_CLASS_NAME_RE.match((name or '').strip()))
 
 # Verbos en infinitivo (ES/EN) que indican que una clase es un caso de uso.
 UC_VERBS = {
@@ -1424,6 +1442,28 @@ class XMIParserV11:
                 parent_map[child] = parent
         return parent_map
 
+    def _drawn_classifier_ids(self, root: ET.Element) -> set:
+        """IDs de los clasificadores que estan DIBUJADOS en algun diagrama.
+
+        Astah embebe todo el JDK (java.lang, java.util) como <UML:Class> en el
+        archivo, y ademas deja clases sueltas que el estudiante creo y borro del
+        lienzo. Nada de eso se ve en el diagrama, y el docente cuenta lo que ve.
+        Un <JUDE:ClassifierPresentation> por clase dibujada apunta a su clase
+        via UPresentation.semanticModel; ese es el conjunto real.
+        """
+        drawn: set = set()
+        for elem in root.iter():
+            if self._local_tag(elem) != 'ClassifierPresentation':
+                continue
+            for child in elem.iter():
+                if self._local_tag(child) != 'UPresentation.semanticModel':
+                    continue
+                for subject in child:
+                    ref = self._xmi_attr(subject, 'idref')
+                    if ref:
+                        drawn.add(ref)
+        return drawn
+
     def _is_java_boilerplate_element(self, elem: ET.Element, parent_map: Dict[ET.Element, ET.Element]) -> bool:
         """True si el elemento vive bajo paquetes java/javax embebidos por Astah."""
         java_packages = {'java', 'javax', 'lang', 'util'}
@@ -1455,6 +1495,7 @@ class XMIParserV11:
 
     def _count_domain_classes(self, root: ET.Element) -> int:
         parent_map = self._build_parent_map(root)
+        drawn_ids = self._drawn_classifier_ids(root)
         count = 0
         for elem in root.iter():
             if self._local_tag(elem) not in ('Class',):
@@ -1462,7 +1503,12 @@ class XMIParserV11:
             name = self._decode_name(elem.get('name', ''))
             if not name or name.lower() in PRIMITIVE_TYPES:
                 continue
-            if self._is_java_boilerplate_element(elem, parent_map):
+            if is_placeholder_class_name(name):
+                continue
+            if drawn_ids:
+                if self._xmi_attr(elem, 'id') not in drawn_ids:
+                    continue
+            elif self._is_java_boilerplate_element(elem, parent_map):
                 continue
             count += 1
         return count
@@ -1532,6 +1578,7 @@ class XMIParserV11:
         class_map: Dict[str, UMLClass] = {}
         classes_by_name: Dict[str, UMLClass] = {}
         parent_map = self._build_parent_map(root)
+        drawn_ids = self._drawn_classifier_ids(root)
 
         for elem in root.iter():
             if self._local_tag(elem) not in ('Class',):
@@ -1540,10 +1587,16 @@ class XMIParserV11:
             name = self._decode_name(elem.get('name', ''))
             if not name or name.lower() in PRIMITIVE_TYPES:
                 continue
-            if self._is_java_boilerplate_element(elem, parent_map):
+            if is_placeholder_class_name(name):
                 continue
 
             elem_id = self._xmi_attr(elem, 'id')
+            if drawn_ids:
+                # el archivo trae informacion de diagrama: vale lo dibujado
+                if elem_id not in drawn_ids:
+                    continue
+            elif self._is_java_boilerplate_element(elem, parent_map):
+                continue
             name_key = name.lower()
             uml_class = classes_by_name.get(name_key)
             if uml_class is None:
@@ -1604,6 +1657,16 @@ class XMIParserV11:
             if elem_id:
                 class_map[elem_id] = uml_class
                 self.id_to_name[elem_id] = uml_class.name
+
+        for elem in root.iter():
+            if self._local_tag(elem) != 'AssociationClass':
+                continue
+            name = self._decode_name(elem.get('name', ''))
+            elem_id = self._xmi_attr(elem, 'id')
+            if name and elem_id:
+                # fuera de diagram.classes a proposito: el docente puntua las
+                # clases de asociacion en su propio criterio, no en "Clases".
+                self.id_to_name[elem_id] = name
 
         diagram.relationships = self._extract_relationships_v11(root, class_map, [], [])
         diagram.packages = self._extract_packages_v11(root)
@@ -2042,7 +2105,12 @@ class XMIParserV11:
                                                 upper = mr.get('upper', '')
                                                 if upper == '-1':
                                                     upper = '*'
-                                                if lower and upper:
+                                                if lower == '-1':
+                                                    lower = '*'
+                                                if lower == '*' and upper == '*':
+                                                    # así exporta Astah la multiplicidad "*"
+                                                    multiplicity = '*'
+                                                elif lower and upper:
                                                     multiplicity = f'{lower}..{upper}'
                                                 elif lower:
                                                     multiplicity = lower
@@ -2064,11 +2132,40 @@ class XMIParserV11:
         """Extrae relaciones entre clases en XMI 1.1 (asociaciones + herencia)."""
         relationships = []
         valid_names = {c.name for c in classes.values()}
+        # una clase de asociacion es extremo valido de una asociacion normal
+        # (en la solucion del docente, Tratamiento se asocia a HistorialEnfermedad)
+        association_class_names = set()
+        for elem in root.iter():
+            if self._local_tag(elem) == 'AssociationClass':
+                name = self._decode_name(elem.get('name', ''))
+                if name:
+                    association_class_names.add(name)
+        valid_names |= association_class_names
 
         for elem in root.iter():
             local = self._local_tag(elem)
 
-            if local == 'Association':
+            if local == 'AssociationClass':
+                source_name, target_name, src_mult, tgt_mult, _, _ = (
+                    self._extract_association_ends_v11(elem)
+                )
+                if not source_name or not target_name:
+                    continue
+                if source_name not in valid_names or target_name not in valid_names:
+                    continue
+                rel = UMLRelationship(
+                    source=source_name,
+                    target=target_name,
+                    relationship_type=RelationshipType.ASSOCIATION_CLASS,
+                    name=self._decode_name(elem.get('name', '')) or None,
+                )
+                if src_mult:
+                    rel.source_multiplicity = src_mult
+                if tgt_mult:
+                    rel.target_multiplicity = tgt_mult
+                relationships.append(rel)
+
+            elif local == 'Association':
                 source_name, target_name, src_mult, tgt_mult, src_agg, tgt_agg = self._extract_association_ends_v11(elem)
                 if not source_name or not target_name:
                     continue

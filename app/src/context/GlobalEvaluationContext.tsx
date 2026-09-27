@@ -1,12 +1,17 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 /* eslint-disable react-refresh/only-export-components -- hooks junto al provider */
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+import { clearPersisted, readPersisted, writePersisted } from '@/lib/persisted-state';
 import type { DiagramInfo } from '@/types/comparison';
 import type {
   BatchCompareResponse,
@@ -65,13 +70,40 @@ function normalizeGlobalStudent(row: GlobalStudentResult): GlobalStudentResult {
   return { ...row, runs };
 }
 
+/** Lo que se guarda entre recargas. Ver lib/persisted-state.ts. */
+const STORAGE_KEY = 'evaluation';
+
+interface PersistedEvaluation {
+  mode: GlobalEvaluationMode;
+  batchResult: BatchCompareResponse | null;
+  globalResult: GlobalComparisonResponse | null;
+  expectedDiagrams: Record<string, DiagramInfo> | null;
+}
+
+const EMPTY_EVALUATION: PersistedEvaluation = {
+  mode: null, batchResult: null, globalResult: null, expectedDiagrams: null,
+};
+
 export function GlobalEvaluationProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<GlobalEvaluationMode>(null);
-  const [batchResult, setBatchResult] = useState<BatchCompareResponse | null>(null);
-  const [globalResult, setGlobalResult] = useState<GlobalComparisonResponse | null>(null);
-  const [expectedDiagrams, setExpectedDiagrams] = useState<Record<string, DiagramInfo> | null>(null);
+  // se restaura de localStorage: sin esto, recargar /lote o /hoja bota al
+  // docente a la pantalla de carga y pierde las correcciones en curso
+  const restored = useMemo(() => readPersisted(STORAGE_KEY, EMPTY_EVALUATION), []);
+  const [mode, setMode] = useState<GlobalEvaluationMode>(restored.mode);
+  const [batchResult, setBatchResult] = useState<BatchCompareResponse | null>(restored.batchResult);
+  const [globalResult, setGlobalResult] = useState<GlobalComparisonResponse | null>(restored.globalResult);
+  const [expectedDiagrams, setExpectedDiagrams] = useState<Record<string, DiagramInfo> | null>(
+    restored.expectedDiagrams,
+  );
   const [returnPath, setReturnPath] = useState('/lote');
   const [reportReturn, setReportReturn] = useState<ReportReturnState | null>(null);
+
+  useEffect(() => {
+    if (!batchResult && !globalResult) {
+      clearPersisted(STORAGE_KEY);
+      return;
+    }
+    writePersisted(STORAGE_KEY, { mode, batchResult, globalResult, expectedDiagrams });
+  }, [mode, batchResult, globalResult, expectedDiagrams]);
 
   const setBatchEvaluation = useCallback((data: BatchCompareResponse) => {
     setMode('batch');
