@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
-from app.api.main import import_teacher_rubric
+from app.api.routes.rubric import import_teacher_rubric
 from tests.api_helpers import run, upload_bytes
 
 RUBRICAS = Path(__file__).resolve().parent.parent / "test_files" / "rubricas"

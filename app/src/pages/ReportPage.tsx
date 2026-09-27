@@ -14,7 +14,7 @@ import { criterionRows, autoFeedback, verdict } from '@/lib/report-criteria';
 import { resolveDiagramTypeLabel } from '@/lib/report-pdf';
 import { percentTextClass } from '@/lib/status-colors';
 import type {
-  ComparisonResult, DiagramInfo, Breakdown, UseCaseBreakdown, SequenceBreakdown,
+  ComparisonResult, DiagramInfo, Breakdown, UseCaseBreakdown, SequenceBreakdown, WeightsUsed,
 } from '@/types/comparison';
 
 interface SingleDiagramEntry {
@@ -29,7 +29,7 @@ interface MultiDiagramResult {
   overall_similarity: number;
   expected_diagrams?: Record<string, DiagramInfo>;
   student_diagrams?: Record<string, DiagramInfo>;
-  weights_used?: Record<string, Record<string, number>>;
+  weights_used?: Record<string, WeightsUsed>;
 }
 
 function isMultiDiagram(r: unknown): r is MultiDiagramResult {
@@ -95,7 +95,7 @@ export default function ReportPage() {
   let overall: number;
   let expectedDiagrams: Record<string, DiagramInfo> = {};
   let studentDiagrams: Record<string, DiagramInfo> = {};
-  let weightsByType: Record<string, Record<string, number>> = {};
+  let weightsByType: Record<string, WeightsUsed> = {};
 
   if (isMultiDiagram(result)) {
     const m = result;
@@ -115,12 +115,12 @@ export default function ReportPage() {
   }
 
   // Inyectar los pesos por diagrama para que criterionRows los use (no el reparto igualitario).
-  for (const d of diagrams) {
+  // Copia en vez de mutar: el resultado viene del contexto.
+  diagrams = diagrams.map((d) => {
     const w = weightsByType[d.diagram_type];
-    if (w && !d.comparison.weights_used) {
-      (d.comparison as ComparisonResult).weights_used = w as never;
-    }
-  }
+    if (!w || d.comparison.weights_used) return d;
+    return { ...d, comparison: { ...d.comparison, weights_used: w } };
+  });
 
   const { nota, aprobado } = verdict(overall);
   const archivoEstudiante = studentFileName?.trim() || 'No indicado';

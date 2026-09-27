@@ -11,7 +11,7 @@ import json
 import pytest
 from fastapi import HTTPException
 
-from app.api.main import check_rubric
+from app.api.routes.rubric import check_rubric
 from app.comparator.calibracion import FIXTURE_DIR, RUBRICAS_JSON, _rule_from_dict
 from app.comparator.rubric_check import check_rubric_against_solution
 from app.comparator.scoring_modes import EvaluationProfile

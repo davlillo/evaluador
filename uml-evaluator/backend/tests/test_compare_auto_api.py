@@ -10,7 +10,7 @@ import json
 import pytest
 from fastapi import HTTPException
 
-from app.api.main import compare_files_auto
+from app.api.routes.compare import compare_files_auto
 from tests.api_helpers import (
     AUTO_FORM_DEFAULTS,
     ESTUDIANTE_INCOMPLETO,

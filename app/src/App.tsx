@@ -1,16 +1,20 @@
 // SPDX-FileCopyrightText: 2026 davlillos
 // SPDX-License-Identifier: MIT
 
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
 import UploadPage from '@/pages/UploadPage';
-import ResultsPage from '@/pages/ResultsPage';
-import ReportPage from '@/pages/ReportPage';
-import BatchResultsPage from '@/pages/BatchResultsPage';
-import GlobalStudentBreakdownPage from '@/pages/GlobalStudentBreakdownPage';
-import GradingSheetPage from '@/pages/GradingSheetPage';
 import './App.css';
+
+// La primera pantalla carga de una; el resto (y jsPDF, que solo usan las
+// actas) se baja al entrar a cada ruta.
+const ResultsPage = lazy(() => import('@/pages/ResultsPage'));
+const ReportPage = lazy(() => import('@/pages/ReportPage'));
+const BatchResultsPage = lazy(() => import('@/pages/BatchResultsPage'));
+const GlobalStudentBreakdownPage = lazy(() => import('@/pages/GlobalStudentBreakdownPage'));
+const GradingSheetPage = lazy(() => import('@/pages/GradingSheetPage'));
 
 /**
  * Franja lateral institucional roja UES. Reproduce el panel del mockup.
@@ -105,7 +109,9 @@ function AppShell() {
           esHoja ? 'max-w-screen-2xl' : 'max-w-6xl',
         )}
       >
-        <Outlet />
+        <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando…</p>}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <footer className="border-t pt-6 pb-3 shrink-0 print:hidden">

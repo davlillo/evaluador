@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { downloadDetailedReportPdf } from '@/lib/report-pdf';
-import { getDiagramLabel } from '@/components/results/StudentDiagramSection';
+import { getDiagramLabel } from '@/lib/diagram-labels';
 import type { ComparisonResult } from '@/types/comparison';
 
 interface ExportDiagramPdfButtonProps {

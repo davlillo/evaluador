@@ -1,32 +1,32 @@
-﻿Matching semantico: si
+Matching semantico: no
 
 ========================================================================
 T1-IMPAR
-  EJ25001    docente= 3.50  sistema= 3.50  delta=+0.00  Multiplicidad 1..* en Producci¾n
+  EJ25001    docente= 3.50  sistema= 3.50  delta=+0.00  Multiplicidad 1..* en Producción
   ES23002    docente= 5.17  sistema= 4.67  delta=-0.50  Multiplicidad 1 en Ganado
-  GF25017    docente= 4.50  sistema= 3.50  delta=-1.00  Multiplicidad 1..* en Producci¾n, Multiplicidad 1..* en Medicamento
+  GF25017    docente= 4.50  sistema= 4.50  delta=+0.00  Multiplicidad 1..* en Producción, Multiplicidad 0..* en Tratamiento
   HL21003    docente= 2.67  sistema= 3.00  delta=+0.33  Clases
   MP23013    docente= 4.83  sistema= 3.50  delta=-1.33  Clases, Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado, Mul
-  MR23129    docente= 6.00  sistema= 5.00  delta=-1.00  Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado, Multiplicid
+  MR23129    docente= 6.00  sistema= 7.00  delta=+1.00  Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado
   MS25016    docente= 3.71  sistema= 3.21  delta=-0.50  Multiplicidad 1 en Afiliado, Multiplicidad 1 en Ganado, Multiplicidad 
   VH25018    docente= 1.67  sistema= 2.67  delta=+1.00  Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado, Multiplicid
 ========================================================================
 T1-PAR
   BB25002    docente= 2.67  sistema= 3.67  delta=+1.00  Multiplicidad 1..* en Ganado
   BM25015    docente= 5.67  sistema= 3.67  delta=-2.00  
-  CF25015    docente= 4.43  sistema= 1.43  delta=-3.00  Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado, Multiplicid
+  CF25015    docente= 4.43  sistema= 2.43  delta=-2.00  Multiplicidad 1..* en Ganado, Multiplicidad 1 en Ganado
   EG23003    docente= 1.43  sistema= 1.43  delta=+0.00  
   HN22002    docente= 3.67  sistema= 3.43  delta=-0.24  Clases, Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado, Mul
-  HP24006    docente= 4.67  sistema= 4.67  delta=+0.00  Multiplicidad 1..* en Producci¾n
-  LC25017    docente= 4.67  sistema= 1.67  delta=-3.00  Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado, Multiplicid
+  HP24006    docente= 4.67  sistema= 4.67  delta=+0.00  Multiplicidad 1..* en Producción
+  LC25017    docente= 4.67  sistema= 3.67  delta=-1.00  Multiplicidad 1 en Ganado
   LH24001    docente= 5.60  sistema= 5.00  delta=-0.60  Clases, Multiplicidad 1 en Ganado
-  MA23030    docente= 2.60  sistema= 1.60  delta=-1.00  Multiplicidad 1..* en Producci¾n
+  MA23030    docente= 2.60  sistema= 1.60  delta=-1.00  Multiplicidad 1..* en Producción
   ML25012    docente= 3.43  sistema= 1.43  delta=-2.00  Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado
   MP25019    docente= 6.00  sistema= 6.00  delta=+0.00  
   MP25032    docente= 3.25  sistema= 2.25  delta=-1.00  Multiplicidad 1 en Afiliado, Multiplicidad 1..* en Ganado, Multiplicid
   RE25012    docente= 3.43  sistema= 3.43  delta=+0.00  
   RF25010    docente= 1.00  sistema= 1.00  delta=+0.00  
-  SV25001    docente= 4.67  sistema= 3.67  delta=-1.00  Multiplicidad 1 en Ganado
+  SV25001    docente= 4.67  sistema= 4.67  delta=+0.00  Multiplicidad 1..* en Producción
   TH24004    docente= 3.43  sistema= 3.43  delta=+0.00  
 ========================================================================
 T2-IMPAR
@@ -36,7 +36,7 @@ T2-IMPAR
   CG24039    docente= 1.60  sistema= 1.60  delta=+0.00  
   CL25006    docente= 1.67  sistema= 1.67  delta=+0.00  
   FT25001    docente= 3.67  sistema= 3.67  delta=+0.00  
-  MR25057    docente= 6.00  sistema= 4.00  delta=-2.00  Clase de asociaci¾n Candidato-Puesto
+  MR25057    docente= 6.00  sistema= 4.00  delta=-2.00  Clase de asociación Candidato-Puesto
   MV25034    docente= 3.00  sistema= 3.00  delta=+0.00  
   RI24001    docente= 3.67  sistema= 3.67  delta=+0.00  
   SA25005    docente= 1.67  sistema= 1.67  delta=+0.00  
@@ -56,19 +56,19 @@ T2-PAR
   UT25001    docente= 1.20  sistema= 1.20  delta=+0.00  
 
 ########################################################################
-N=46   MAE=0.502   mediana=0.000   peor=3.000
-  dentro de +-0.5: 32/46 (70%)
-  dentro de +-1.0: 40/46 (87%)
-  dentro de +-1.5: 41/46 (89%)
-  dentro de +-2.0: 44/46 (96%)
+N=46   MAE=0.393   mediana=0.000   peor=2.000
+  dentro de +-0.5: 34/46 (74%)
+  dentro de +-1.0: 41/46 (89%)
+  dentro de +-1.5: 42/46 (91%)
+  dentro de +-2.0: 45/46 (98%)
 
 Criterios con mas desacuerdo (docente vs sistema):
-   10/46  Multiplicidad 1 en Ganado
-    9/46  Multiplicidad 1 en Afiliado
-    9/46  Multiplicidad 1..* en Ganado
-    8/46  Multiplicidad 1..* en Producci¾n
+    9/46  Multiplicidad 1..* en Producción
+    9/46  Multiplicidad 1 en Ganado
+    8/46  Multiplicidad 1..* en Ganado
+    7/46  Multiplicidad 1 en Afiliado
     6/46  Clases
-    4/46  Multiplicidad 1..* en Medicamento
-    2/46  Multiplicidad 0..* en  Tratamiento
-    1/46  Clase de asociaci¾n Candidato-Puesto
+    2/46  Multiplicidad 0..* en Tratamiento
+    2/46  Multiplicidad 1..* en Medicamento
+    1/46  Clase de asociación Candidato-Puesto
     1/46  Multiplicidad 0..* en Estudio

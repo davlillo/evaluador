@@ -5,9 +5,11 @@
 
 Es el argumento para mostrarle al docente que el sistema reproduce su criterio.
 
+Por defecto califica como la pantalla: sin matching semantico.
+
 Uso:
     python scripts/reporte_calibracion.py
-    python scripts/reporte_calibracion.py --sin-semantica
+    python scripts/reporte_calibracion.py --con-semantica   # para comparar
 """
 from __future__ import annotations
 
@@ -20,7 +22,9 @@ from app.comparator.calibracion import correr_calibracion  # noqa: E402
 
 
 def main() -> None:
-    semantica = "--sin-semantica" not in sys.argv
+    # la pantalla manda use_semantic_matching=false: medido contra estas 46
+    # notas, el matching semantico empeora el resultado
+    semantica = "--con-semantica" in sys.argv
     resumen = correr_calibracion(use_semantic_matching=semantica)
 
     print("Matching semantico: %s" % ("si" if semantica else "no"))

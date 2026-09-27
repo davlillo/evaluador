@@ -15,11 +15,9 @@ import {
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { useGradingSheet } from '@/context/GradingSheetContext';
 import { withSheetEdits } from '@/lib/student-edits';
-import {
-  StudentDiagramSection,
-  getDiagramLabel,
-  getSimilarityColor,
-} from '@/components/results/StudentDiagramSection';
+import { StudentDiagramSection } from '@/components/results/StudentDiagramSection';
+import { getDiagramLabel } from '@/lib/diagram-labels';
+import { percentTextClass } from '@/lib/status-colors';
 import { ExportDiagramPdfButton } from '@/components/report/ExportPdfButton';
 import { ExportStudentPdfButton } from '@/components/report/ExportStudentPdfButton';
 import type { ComparisonResult, DiagramInfo } from '@/types/comparison';
@@ -149,7 +147,7 @@ export default function GlobalStudentBreakdownPage() {
           </CardTitle>
           <CardDescription>
             Nota global final:{' '}
-            <strong className={`text-foreground ${getSimilarityColor(student.final_score)}`}>
+            <strong className={`text-foreground ${percentTextClass(student.final_score)}`}>
               {formatScore(student.final_score)}
             </strong>
             {!student.complete && (

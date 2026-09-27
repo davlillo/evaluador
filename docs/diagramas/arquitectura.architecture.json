@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "UML Evaluador — arquitectura",
+    "output": "arquitectura.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "calificar",
+        "label": "Calificar un lote",
+        "focus": [
+          "docente",
+          "spa",
+          "nginx",
+          "api",
+          "parsers",
+          "comparador"
+        ],
+        "note": "Del navegador al motor: la SPA sube rúbrica, solución y entregas; FastAPI las parsea y las califica."
+      },
+      {
+        "id": "estado-local",
+        "label": "Estado en el navegador",
+        "focus": [
+          "spa",
+          "almacen",
+          "actas"
+        ],
+        "note": "La sesión, la rúbrica y las ediciones de la hoja viven en localStorage; las actas PDF se arman en el cliente."
+      },
+      {
+        "id": "salidas",
+        "label": "Salidas para el docente",
+        "focus": [
+          "api",
+          "exportador",
+          "spa",
+          "actas"
+        ],
+        "note": "El Excel sale del backend con fórmulas vivas; los PDF y el ZIP de actas, del navegador."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "docente",
+      "type": "external",
+      "label": "Docente",
+      "sublabel": "navegador",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        120,
+        60
+      ]
+    },
+    {
+      "id": "spa",
+      "type": "frontend",
+      "label": "SPA React 19",
+      "sublabel": "Vite · shadcn/ui",
+      "pos": [
+        250,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "React Router 7"
+    },
+    {
+      "id": "almacen",
+      "type": "database",
+      "label": "localStorage",
+      "sublabel": "sesión + ediciones",
+      "pos": [
+        250,
+        130
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "actas",
+      "type": "frontend",
+      "label": "Actas PDF",
+      "sublabel": "jsPDF · JSZip",
+      "pos": [
+        250,
+        470
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "nginx",
+      "type": "cloud",
+      "label": "nginx",
+      "sublabel": "estáticos + proxy",
+      "pos": [
+        500,
+        300
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "tag": ":8080"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI",
+      "sublabel": "app/api/main.py",
+      "pos": [
+        730,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "uvicorn :8000"
+    },
+    {
+      "id": "parsers",
+      "type": "backend",
+      "label": "Parsers",
+      "sublabel": "XMI 1.1 · rúbrica xlsx",
+      "pos": [
+        960,
+        130
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "comparador",
+      "type": "backend",
+      "label": "Comparador",
+      "sublabel": "rúbrica + curva",
+      "pos": [
+        960,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "tag": "min(E,M)/max(E,M)"
+    },
+    {
+      "id": "exportador",
+      "type": "backend",
+      "label": "Exportador",
+      "sublabel": "Excel · openpyxl",
+      "pos": [
+        960,
+        470
+      ],
+      "size": [
+        150,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Navegador del docente",
+      "wraps": [
+        "spa",
+        "almacen",
+        "actas"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "docker compose · uml-evaluador",
+      "wraps": [
+        "nginx",
+        "api",
+        "parsers",
+        "comparador",
+        "exportador"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "red interna · backend sin puerto publicado",
+      "wraps": [
+        "api",
+        "parsers",
+        "comparador",
+        "exportador"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "docente-usa-spa",
+      "from": "docente",
+      "to": "spa",
+      "label": "sube archivos",
+      "variant": "emphasis"
+    },
+    {
+      "id": "spa-persiste",
+      "from": "spa",
+      "to": "almacen",
+      "label": "persiste",
+      "variant": "dashed"
+    },
+    {
+      "id": "spa-genera-actas",
+      "from": "spa",
+      "to": "actas",
+      "label": "genera",
+      "labelAt": [
+        320,
+        418
+      ]
+    },
+    {
+      "id": "spa-llama-api",
+      "from": "spa",
+      "to": "nginx",
+      "label": "HTTP /api",
+      "variant": "emphasis"
+    },
+    {
+      "id": "nginx-proxy",
+      "from": "nginx",
+      "to": "api",
+      "label": "proxy_pass",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-parsea",
+      "from": "api",
+      "to": "parsers",
+      "label": "parsea",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "api-califica",
+      "from": "api",
+      "to": "comparador",
+      "label": "califica",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-exporta",
+      "from": "api",
+      "to": "exportador",
+      "label": "Excel",
+      "fromSide": "bottom",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend",
+      "items": [
+        "React 19 + TypeScript, Vite, Tailwind, shadcn/ui",
+        "Contextos persistidos en localStorage",
+        "Actas PDF con jsPDF + autotable, ZIP con JSZip"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Backend",
+      "items": [
+        "Python 3.11, FastAPI, uvicorn",
+        "Parser Astah XMI 1.1 con ElementTree",
+        "Rúbrica .xlsx y Excel de salida con openpyxl"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Despliegue",
+      "items": [
+        "docker compose up --build en http://localhost:8080",
+        "nginx sirve la SPA y reenvía /api, /docs y /health",
+        "Sin base de datos: el estado vive en el navegador"
+      ]
+    }
+  ]
+}

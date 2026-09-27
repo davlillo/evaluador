@@ -5,107 +5,116 @@
   "reglas": [
    {
     "rule_id": "r1",
+    "criterion_type": "classes",
     "label": "Clases",
     "weight": 20.0,
-    "criterion_type": "classes",
-    "expected_quantity": 6
+    "expected_quantity": 6,
+    "relationship_type": "association"
    },
    {
     "rule_id": "r2",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1 en Afiliado",
     "weight": 5.0,
-    "criterion_type": "multiplicity",
     "source": "Afiliado",
     "target": "Ganado",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "1"
+    "expected_multiplicity": "1",
+    "group_label": "Asociación Afiliado-Ganado"
    },
    {
     "rule_id": "r3",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1..* en Ganado",
     "weight": 5.0,
-    "criterion_type": "multiplicity",
     "source": "Afiliado",
     "target": "Ganado",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "1..*"
+    "expected_multiplicity": "1..*",
+    "group_label": "Asociación Afiliado-Ganado"
    },
    {
     "rule_id": "r4",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1 en Ganado",
     "weight": 5.0,
-    "criterion_type": "multiplicity",
     "source": "Ganado",
-    "target": "Produccion",
+    "target": "Producción",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "1"
+    "expected_multiplicity": "1",
+    "group_label": "Asociación Ganado-Producción"
    },
    {
     "rule_id": "r5",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1..* en Producción",
     "weight": 5.0,
-    "criterion_type": "multiplicity",
     "source": "Ganado",
-    "target": "Produccion",
+    "target": "Producción",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "1..*"
+    "expected_multiplicity": "1..*",
+    "group_label": "Asociación Ganado-Producción"
    },
    {
     "rule_id": "r6",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 0..1 en Tratamiento",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Tratamiento",
-    "target": "HistorialEnfermedad",
+    "target": "Historial",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "0..1"
+    "expected_multiplicity": "0..1",
+    "group_label": "Asociación Tratamiento-Historial"
    },
    {
     "rule_id": "r7",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 0..* en Historial",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Tratamiento",
-    "target": "HistorialEnfermedad",
+    "target": "Historial",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "0..*"
+    "expected_multiplicity": "0..*",
+    "group_label": "Asociación Tratamiento-Historial"
    },
    {
     "rule_id": "r8",
+    "criterion_type": "association_class",
     "label": "Clase de asociación Enfermedad-Ganado",
     "weight": 20.0,
-    "criterion_type": "association_class",
     "source": "Enfermedad",
     "target": "Ganado",
     "relationship_type": "association_class"
    },
    {
     "rule_id": "r9",
-    "label": "Multiplicidad 0..* en  Tratamiento",
-    "weight": 10.0,
     "criterion_type": "multiplicity",
+    "label": "Multiplicidad 0..* en Tratamiento",
+    "weight": 10.0,
     "source": "Tratamiento",
     "target": "Medicamento",
     "relationship_type": "aggregation",
     "multiplicity_end": "source",
-    "expected_multiplicity": "0..*"
+    "expected_multiplicity": "0..*",
+    "group_label": "Agregación Tratamiento-Medicamento"
    },
    {
     "rule_id": "r10",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1..* en Medicamento",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Tratamiento",
     "target": "Medicamento",
     "relationship_type": "aggregation",
     "multiplicity_end": "target",
-    "expected_multiplicity": "1..*"
+    "expected_multiplicity": "1..*",
+    "group_label": "Agregación Tratamiento-Medicamento"
    }
   ],
   "alumnos": {
@@ -237,70 +246,75 @@
   "reglas": [
    {
     "rule_id": "r1",
+    "criterion_type": "classes",
     "label": "Clases",
     "weight": 20.0,
-    "criterion_type": "classes",
-    "expected_quantity": 5
+    "expected_quantity": 5,
+    "relationship_type": "association"
    },
    {
     "rule_id": "r2",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1 en Afiliado",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Afiliado",
     "target": "Ganado",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "1"
+    "expected_multiplicity": "1",
+    "group_label": "Asociación Afiliado-Ganado"
    },
    {
     "rule_id": "r3",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1..* en Ganado",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Afiliado",
     "target": "Ganado",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "1..*"
+    "expected_multiplicity": "1..*",
+    "group_label": "Asociación Afiliado-Ganado"
    },
    {
     "rule_id": "r4",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1 en Ganado",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Ganado",
-    "target": "Produccion",
+    "target": "Producción",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "1"
+    "expected_multiplicity": "1",
+    "group_label": "Asociación Ganado-Producción"
    },
    {
     "rule_id": "r5",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1..* en Producción",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Ganado",
-    "target": "Produccion",
+    "target": "Producción",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "1..*"
+    "expected_multiplicity": "1..*",
+    "group_label": "Asociación Ganado-Producción"
    },
    {
     "rule_id": "r6",
+    "criterion_type": "association_class",
     "label": "Clase de asociación Enfermedad-Ganado",
     "weight": 20.0,
-    "criterion_type": "association_class",
     "source": "Enfermedad",
     "target": "Ganado",
     "relationship_type": "association_class"
    },
    {
     "rule_id": "r7",
+    "criterion_type": "association_class",
     "label": "Clase de asociación Historial-Medicamento",
     "weight": 20.0,
-    "criterion_type": "association_class",
-    "source": "HistorialEnfermedad",
+    "source": "Historial",
     "target": "Medicamento",
     "relationship_type": "association_class"
    }
@@ -506,69 +520,74 @@
   "reglas": [
    {
     "rule_id": "r1",
+    "criterion_type": "classes",
     "label": "Clases",
     "weight": 20.0,
-    "criterion_type": "classes",
-    "expected_quantity": 5
+    "expected_quantity": 5,
+    "relationship_type": "association"
    },
    {
     "rule_id": "r2",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1 en Institucion",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
-    "source": "EstudioRealizado",
-    "target": "InstitucionEducativa",
+    "source": "Estudio",
+    "target": "Institucion",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "1"
+    "expected_multiplicity": "1",
+    "group_label": "Asociación Estudio-Institucion"
    },
    {
     "rule_id": "r3",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 0..* en Estudio",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
-    "source": "EstudioRealizado",
-    "target": "InstitucionEducativa",
+    "source": "Estudio",
+    "target": "Institucion",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "0..*"
+    "expected_multiplicity": "0..*",
+    "group_label": "Asociación Estudio-Institucion"
    },
    {
     "rule_id": "r4",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1 en Empresa",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Empresa",
     "target": "Experiencia",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "1"
+    "expected_multiplicity": "1",
+    "group_label": "Asociación Empresa-Experiencia"
    },
    {
     "rule_id": "r5",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 0..* en Experiencia",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Empresa",
     "target": "Experiencia",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "0..*"
+    "expected_multiplicity": "0..*",
+    "group_label": "Asociación Empresa-Experiencia"
    },
    {
     "rule_id": "r6",
+    "criterion_type": "association_class",
     "label": "Clase de asociación Candidato-GradoAcademico",
     "weight": 20.0,
-    "criterion_type": "association_class",
     "source": "Candidato",
     "target": "GradoAcademico",
     "relationship_type": "association_class"
    },
    {
     "rule_id": "r7",
+    "criterion_type": "association_class",
     "label": "Clase de asociación Candidato-Puesto",
     "weight": 20.0,
-    "criterion_type": "association_class",
     "source": "Candidato",
     "target": "Puesto",
     "relationship_type": "association_class"
@@ -727,69 +746,74 @@
   "reglas": [
    {
     "rule_id": "r1",
+    "criterion_type": "classes",
     "label": "Clases",
     "weight": 20.0,
-    "criterion_type": "classes",
-    "expected_quantity": 5
+    "expected_quantity": 5,
+    "relationship_type": "association"
    },
    {
     "rule_id": "r2",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1 en Institucion",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
-    "source": "EstudioRealizado",
-    "target": "InstitucionEducativa",
+    "source": "Estudio",
+    "target": "Institucion",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "1"
+    "expected_multiplicity": "1",
+    "group_label": "Asociación Estudio-Institucion"
    },
    {
     "rule_id": "r3",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 0..* en Estudio",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
-    "source": "EstudioRealizado",
-    "target": "InstitucionEducativa",
+    "source": "Estudio",
+    "target": "Institucion",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "0..*"
+    "expected_multiplicity": "0..*",
+    "group_label": "Asociación Estudio-Institucion"
    },
    {
     "rule_id": "r4",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 1 en Empresa",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Empresa",
     "target": "Experiencia",
     "relationship_type": "association",
     "multiplicity_end": "source",
-    "expected_multiplicity": "1"
+    "expected_multiplicity": "1",
+    "group_label": "Asociación Empresa-Experiencia"
    },
    {
     "rule_id": "r5",
+    "criterion_type": "multiplicity",
     "label": "Multiplicidad 0..* en Experiencia",
     "weight": 10.0,
-    "criterion_type": "multiplicity",
     "source": "Empresa",
     "target": "Experiencia",
     "relationship_type": "association",
     "multiplicity_end": "target",
-    "expected_multiplicity": "0..*"
+    "expected_multiplicity": "0..*",
+    "group_label": "Asociación Empresa-Experiencia"
    },
    {
     "rule_id": "r6",
+    "criterion_type": "association_class",
     "label": "Clase de asociación Candidato-GradoAcademico",
     "weight": 20.0,
-    "criterion_type": "association_class",
     "source": "Candidato",
     "target": "GradoAcademico",
     "relationship_type": "association_class"
    },
    {
     "rule_id": "r7",
+    "criterion_type": "association_class",
     "label": "Clase de asociación Candidato-Puesto",
     "weight": 20.0,
-    "criterion_type": "association_class",
     "source": "Candidato",
     "target": "Puesto",
     "relationship_type": "association_class"

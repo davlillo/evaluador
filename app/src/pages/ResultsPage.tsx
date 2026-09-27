@@ -13,10 +13,8 @@ import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { ClassResultsView } from '@/components/results/ClassResultsView';
 import { UseCaseResultsView } from '@/components/results/UseCaseResultsView';
 import { SequenceResultsView } from '@/components/results/SequenceResultsView';
-import {
-  StudentDiagramSection,
-  getDiagramLabel,
-} from '@/components/results/StudentDiagramSection';
+import { StudentDiagramSection } from '@/components/results/StudentDiagramSection';
+import { getDiagramLabel } from '@/lib/diagram-labels';
 import type {
   ComparisonResult,
   Breakdown,

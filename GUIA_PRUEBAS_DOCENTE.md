@@ -1,8 +1,10 @@
 # Guía de pruebas para docentes
 
-Cómo comprobar que UML Evaluador califica bien en los **cuatro modos de nota** y en los **dos flujos de la aplicación** (un estudiante y lote).
+Cómo comprobar, desde la pantalla y sin tocar código, que UML Evaluador lee bien su rúbrica,
+califica como usted y exporta lo que usted corrigió.
 
-Esta guía está pensada para usarse con la interfaz, no con código. Al final hay una sección opcional para quien quiera probar el endpoint global en Swagger.
+Para el uso diario está la [Guía del docente](GUIA_DOCENTE.md). Esta guía es un guion de
+pruebas: cada sección dice qué hacer y qué tiene que verse.
 
 ---
 
@@ -10,43 +12,20 @@ Esta guía está pensada para usarse con la interfaz, no con código. Al final h
 
 | Requisito | Detalle |
 |-----------|---------|
-| Backend | `http://localhost:8000` |
-| Frontend | `http://localhost:5173` |
-| Navegador | Chrome o Edge |
-| Archivos de prueba | Carpeta `uml-evaluator/backend/test_files/` |
-| ZIP de lote | Un `.zip` con varios `.xmi`; el **nombre del archivo es el carné** (ejemplo: `AB12345.xmi`) |
-| Excel (opcional) | Para la rúbrica de cantidades (`.xlsx`) |
+| Docker Desktop | Para levantar todo con un comando |
+| Navegador | Chrome, Edge o Firefox |
+| Archivos de prueba | `uml-evaluator/backend/test_files/` (vienen con el repositorio) |
 
-Los XMI de esta guía salen de **Astah**. En la pantalla de un estudiante la app fija el origen a Astah.
-
-### Arrancar los servidores (Windows)
-
-Lo más simple, desde la raíz del repositorio:
+Desde la raíz del repositorio:
 
 ```powershell
-.\iniciar.ps1
+docker compose up --build
 ```
 
-Abre las dos ventanas y, la primera vez, instala lo que falte. Para hacerlo a mano:
+Abrir `http://localhost:8080`. La documentación de la API queda en `http://localhost:8080/docs`.
 
-**Backend** (PowerShell):
-
-```powershell
-cd "uml-evaluator\backend"
-venv\Scripts\activate
-python run.py
-```
-
-Debe verse: `http://localhost:8000` y documentación en `http://localhost:8000/docs`.
-
-**Frontend** (otra terminal):
-
-```powershell
-cd app
-npm run dev
-```
-
-Abrir `http://localhost:5173`.
+Sin Docker, `.\iniciar.ps1` deja la pantalla en `http://localhost:5173` y el backend en
+`http://localhost:8000`; el guion es el mismo.
 
 ---
 
@@ -54,333 +33,155 @@ Abrir `http://localhost:5173`.
 
 | Ruta | Qué hace |
 |------|----------|
-| `/` | Subir archivos y configurar la evaluación |
-| `/resultados` | Nota y desglose de **un** estudiante |
-| `/reporte` | Acta imprimible / PDF de ese estudiante |
-| `/lote` | Tabla de notas del ZIP |
-| `/lote/desglose` | Detalle de un alumno del lote |
-| `/hoja` | **Hoja de calificación**: la tabla del Excel, editable |
+| `/` | Asistente de tres pasos: rúbrica, solución y entregas, evaluar |
+| `/lote` | Tabla de notas del grupo, Excel y actas |
+| `/lote/desglose` | Detalle de un estudiante del lote |
+| `/hoja` | **Hoja de calificación**: su tabla de Excel, editable |
 
-Flujo **un estudiante**: `/` → Comparar ahora → `/resultados` → (opcional) Ver reporte → `/reporte`.
-
-Flujo **lote**: `/` → Evaluar lote → `/lote` → Abrir hoja → `/hoja`.
-
-En `/`, el badge **Un estudiante** / **Lote (ZIP de estudiantes)** elige el flujo. Expandir **Configuración de pesos** para tipos de diagrama, pesos, corrección semántica, modo de evaluación y rúbrica.
+Con un `.zip` de entregas se llega a `/lote`; con un solo `.xmi`, directo a `/hoja`.
 
 ---
 
-## 3. Los cuatro modos de evaluación
-
-Se configuran una vez en **Modo de evaluación** y aplican a toda la comparación.
-
-La app envía el perfil del **primer tipo marcado**, en este orden: Diagrama de Clases → Casos de Uso → Diagrama de Secuencia. Si vas a probar cantidades de clases, deja **Diagrama de Clases** marcado (o desmarca los otros).
-
-| Botón en la UI | Qué compara | ¿Pide cantidades? | Cómo sale el puntaje del criterio (0–100) |
-|----------------|-------------|-------------------|-------------------------------------------|
-| **Similitud** | Estudiante vs XMI del docente | No | F1: premia aciertos y ya descuenta de más o de menos de forma implícita |
-| **Similitud con descuento** | Igual, más curva de cantidades | No (usa el conteo del XMI docente) | `min(E, R) / max(E, R) × 100` |
-| **Cantidades esperadas (sin descuento)** | Contra el número que usted escribe | Sí | Cumplir el mínimo: entregar de más **no** baja la nota |
-| **Cantidades esperadas (con descuento)** | Contra el número que usted escribe | Sí | Misma curva: el 100 % solo si E y R coinciden |
-
-- **E** = cantidad esperada (XMI docente o rúbrica, según el modo).
-- **R** = cantidad que entregó el estudiante.
-
-La **nota 0–10** es el porcentaje global dividido entre 10. **Aprobado** a partir de **6.0**.
-
-### Cuándo usar cada uno
-
-- **Similitud**: evaluación “clásica” contra el modelo de referencia.
-- **Similitud con descuento**: quiere que el tamaño del diagrama coincida con el del docente, además de parecerse.
-- **Cantidades sin descuento**: usted fija cupos (por ejemplo “al menos 4 clases”); extras no castigan.
-- **Cantidades con descuento**: usted fija cupos y castiga tanto el faltante como el extra (curva del docente).
-
----
-
-## 4. Curva normal (modos con descuento)
-
-```
-factor = min(E, R) / max(E, R)
-puntaje = factor × 100
-```
-
-Es **simétrica**: entregar 9 cuando se esperaban 6 da el mismo factor que entregar 6 cuando se esperaban 9.
-
-| Esperado (E) | Entregado (R) | Factor | Puntaje del criterio |
-|--------------|---------------|--------|----------------------|
-| 4 | 4 | 1.00 | 100 |
-| 3 | 4 | 0.75 | **75** |
-| 4 | 3 | 0.75 | 75 |
-| 4 | 6 | 0.67 | 66.7 |
-| 6 | 9 | 0.67 | 66.7 |
-| 4 | 2 | 0.50 | 50 |
-| 3 | 0 | 0.00 | 0 |
-| 0 | 0 | 1.00 | 100 |
-
-En pantalla, si hubo descuento, aparece un recuadro **ámbar** junto al criterio con un texto del tipo:
-
-> Se esperaban 3 y se registraron 4: factor 0.7500 (75.0 pts).
-
-Ese recuadro **no** sale en modo **Similitud** (salvo que no haya penalización de curva). En **Cantidades sin descuento** tampoco sale por un extra, porque el extra no descuenta.
-
----
-
-## 4-bis. La hoja de calificación (flujo recomendado)
-
-Es la pantalla que reproduce la hoja de Excel: **Criterio · % · Esperados · Modelados · Nota ponderada · Observaciones**, con la fórmula `min(E,M)/max(E,M) × peso` y `Total = Σ / 10` (pesos en porcentaje).
-
-### Cómo se usa
-
-1. **Paso 1 · Rúbrica.** Subir la rúbrica `.xlsx` del docente (ej. `test_files/rubricas/2EP_Turno3_Par.xlsx`). Se muestra con la estructura de su hoja: *Clases*, la sección *Relaciones*, cada encabezado de relación con sus multiplicidades y las clases de asociación. Se ajustan el %, las clases esperadas y cada multiplicidad; *Usar esta rúbrica* se habilita solo si el total da 100. Sin Excel, *Armarla desde tu solución* la deriva del XMI.
-2. **Paso 2 · Solución y entregas.** El XMI de la solución y, en *Entregas*, un `.xmi` (un estudiante) o un `.zip` (el grupo). *Evaluar*.
-3. Con ZIP se llega a `/lote` → **Abrir hoja**. Con un solo XMI se llega directo a `/hoja`.
-4. En la hoja, la columna **Modelados** viene llena por el sistema. Donde no coincida con su criterio, se escribe el valor a mano: la nota ponderada y el total se recalculan al instante.
-
-**Prueba rápida de fidelidad:** rúbrica `test_files/calibracion/calificacion_docente.xlsx`, solución `calibracion/soluciones/Turno1Impar.xmi`, ZIP con los `.xmi` de `calibracion/T1-IMPAR/`. Las 8 notas tienen que coincidir con `scripts/reporte_calibracion.py --sin-semantica` (MR23129 = 5.00).
-
-### Qué significa cada marca
-
-| Marca | Significado |
-|-------|-------------|
-| ✨ junto a Modelados | El valor lo calculó el sistema |
-| ✏️ junto a Modelados | Usted lo corrigió; el borde de la celda queda resaltado |
-| ✏️ en la columna Nota de `/lote` | Esa nota tiene correcciones manuales |
-| *Restaurar valores del sistema* | Descarta las correcciones de ese estudiante |
-
-Debajo de cada criterio aparece el detalle que redactó el motor (`Multiplicidad esperada 1..*; modelada 0..*`), para poder decidir sin abrir Astah.
-
-### Qué se guarda
-
-Las correcciones y observaciones se guardan en el navegador: **recargar la página no las pierde**, y al volver a `/hoja` se abre en el último estudiante que estaba revisando. Se van solo si se limpian los datos del sitio o se evalúa un lote nuevo.
-
-### Exportar
-
-*Exportar Excel de notas* en `/lote` baja un `.xlsx` de cuatro hojas. La primera, **Hoja de calificación**, trae un bloque por estudiante con el mismo formato de su archivo y **con fórmulas vivas**: si corrige un `Modelados` en Excel, el total se recalcula ahí también. Las correcciones hechas en pantalla ya vienen aplicadas.
-
----
-
-## 4-ter. Qué tan parecido califica al criterio del docente
-
-El sistema está calibrado contra 46 entregas reales ya calificadas a mano (las de `Práctica 1`, 4 turnos). Para ver la comparación alumno por alumno:
-
-```powershell
-cd "uml-evaluator\backend"
-venv\Scripts\python.exe scripts\reporte_calibracion.py
-```
-
-Resultado actual: error promedio **0.39 puntos** sobre 10, **mediana 0.00** (más de la mitad recibe exactamente la nota que puso el docente), 74% dentro de ±0.5 y 89% dentro de ±1.0.
-
-El test `tests/test_calibracion_docente.py` vigila que esa correspondencia no se rompa con cambios futuros.
-
-Donde el sistema todavía no acierta solo es cuando el estudiante renombró todo el dominio (modeló `Ganadero` donde la solución dice `Afiliado`, o `Leche` donde dice `Producción`) o dejó clases repetidas. Para eso está la columna editable.
-
----
-
-## 5. Archivos de prueba
+## 3. Archivos de prueba
 
 Todos en `uml-evaluator/backend/test_files/`:
 
-| Rol | Archivo | Notas |
-|-----|---------|--------|
-| Solución de clases | `solucion_correcta.xmi` | 3 clases, baseline al 100 % si se compara consigo mismo |
-| Estudiante incompleto | `estudiante_incompleto.xmi` | Menos atributos, métodos y relaciones |
-| Casos de uso (docente) | `astah_caso_uso_docente.xmi` | |
-| Casos de uso (estudiante) | `astah_caso_uso_estudiante.xmi` | |
-| Casos de uso defectuoso | `astah_caso_uso_estudiante_malo.xmi` | Nota más baja que el “bueno” |
-| Secuencia | `secuencia_astah.xmi` | Compararlo consigo mismo → ~100 % |
-| Multi-diagrama / lote | `astah_multi_class_usecase_sequence.xmi` | Clases + casos de uso + secuencia |
+| Qué | Archivo | Para qué |
+|-----|---------|----------|
+| Rúbricas 2EP | `rubricas/2EP_Turno3_Impar.xlsx`, `rubricas/2EP_Turno3_Par.xlsx` | Formato actual (pesos en %) |
+| Su calificación de Práctica 1 | `calibracion/calificacion_docente.xlsx` | Formato anterior (pesos en fracción); la primera hoja es el Turno 1 impar |
+| Soluciones de Práctica 1 | `calibracion/soluciones/Turno1Impar.xmi`, `Turno1Par.xmi`, `Turno2Ambas.xmi` | |
+| Entregas reales de Práctica 1 | `calibracion/T1-IMPAR/*.xmi` (8), `T1-PAR/` (16), `T2-IMPAR/` (12), `T2-PAR/` (10) | El nombre del archivo es el carné |
+| Notas esperadas | `calibracion/REPORTE_CALIBRACION.txt` | Su nota y la del sistema, estudiante por estudiante |
 
-### ZIP de lote (hágalo una vez)
-
-1. Copie `astah_multi_class_usecase_sequence.xmi` como `AA00001.xmi`.
-2. Copie `estudiante_incompleto.xmi` como `AA00002.xmi` (o use el multi-diagrama y el incompleto con nombres de carné).
-3. Mételos en `lote_prueba.zip`.
-
-El nombre del archivo **sin extensión** es el carné que verá en `/lote`.
+Para el lote, comprima los `.xmi` de una carpeta en un `.zip` (clic derecho → *Enviar a →
+Carpeta comprimida*).
 
 ---
 
-## 6. Guion de pruebas (checklist)
-
-Marque cada ítem al completarlo.
+## 4. Guion de pruebas
 
 ### A. Arranque
 
-- [ ] Backend en `http://localhost:8000` (abrir `/docs` y ver la API).
-- [ ] Frontend en `http://localhost:5173`.
-- [ ] La home muestra **Nueva comparación**, **Un estudiante** y **Lote**.
+- [ ] `http://localhost:8080` muestra el paso **Rúbrica**.
+- [ ] `http://localhost:8080/docs` muestra la API.
+- [ ] El pie de la página dice *Desarrollado por davlillos*.
 
-### B. Un estudiante — modo Similitud
+### B. Rúbrica desde su Excel
 
-1. Badge **Un estudiante**.
-2. **1. Solución oficial:** `solucion_correcta.xmi`.
-3. **2. Solución del estudiante:** el **mismo** `solucion_correcta.xmi`.
-4. Expandir **Configuración de pesos**. Dejar **Similitud**. Opcional: dejar solo **Diagrama de Clases**.
-5. **Comparar ahora**.
+1. Subir `rubricas/2EP_Turno3_Par.xlsx`.
 
-**Esperado:** similitud global **~100 %**, nota **10**, veredicto aprobado. Sin recuadro ámbar de curva. **Ver reporte** abre el acta con Aprobado.
+- [ ] Se ve con la estructura de su hoja: *Clases*, la sección *Relaciones* con la suma de sus
+      pesos, cada encabezado de relación con sus multiplicidades debajo.
+- [ ] El total da 100 % y **Usar esta rúbrica** está habilitado.
+- [ ] Cambiar un % deja el total distinto de 100 y deshabilita **Usar esta rúbrica**.
+      Devolverlo a su valor lo habilita de nuevo.
+- [ ] Cambiar una multiplicidad esperada (por ejemplo `1` por `1..*`) cambia también el
+      texto del criterio.
 
-Repetir cambiando el estudiante a `estudiante_incompleto.xmi`.
+2. Repetir con `calibracion/calificacion_docente.xlsx`.
 
-**Esperado:** similitud **menor a 100 %**, aparecen faltantes (atributos, métodos, relaciones). Sigue sin recuadro ámbar de curva.
+- [ ] Se lee aunque los pesos estén en fracción (0.2, 0.05): se muestran en %.
 
-- [ ] 100 % consigo mismo
-- [ ] Nota baja con el incompleto
-- [ ] Acta `/reporte` se imprime / exporta PDF
+### C. Rúbrica desde la solución
 
-### C. Un estudiante — Similitud con descuento
+1. **Armarla desde tu solución** con `calibracion/soluciones/Turno1Impar.xmi`.
 
-Misma pareja **solución vs incompleto**. En **Modo de evaluación** elegir **Similitud con descuento**. No hace falta llenar cantidades: usa el conteo del XMI docente.
+- [ ] Aparece *Clases* con 6 esperadas y una fila por multiplicidad de cada relación.
 
-**Esperado:** la nota de cada criterio con diferencia de cantidad baja según la curva. Recuadro ámbar: *Se esperaban N y se registraron M*.
+### D. Chequeo de la solución
 
-Solución vs solución en este modo: **~100 %**, sin ámbar (E = R).
+Con la rúbrica de `calificacion_docente.xlsx` confirmada, en el paso 2 subir la solución
+`calibracion/soluciones/Turno1Impar.xmi`.
 
-- [ ] Extra o faltante baja la nota con curva
-- [ ] Archivo idéntico sigue en 100 %
+- [ ] Avisa que *tu propia solución saca 9.00 con esta rúbrica* y nombra el criterio:
+      *Multiplicidad 0..\* en Tratamiento — en tu solución esa multiplicidad es «1»; la
+      rúbrica pide «0..\*»*. Es un desajuste real de Práctica 1 entre la rúbrica y la
+      solución, y el chequeo existe para encontrar justamente eso.
+- [ ] **Ajustar rúbrica** vuelve al editor. Para seguir este guion sin mover las notas de
+      referencia de la sección E, no la cambie: la pantalla permite evaluar igual.
+- [ ] Con una rúbrica que sí corresponde a la solución, dice *Tu solución saca 10 con esta
+      rúbrica: se corresponden.*
 
-### D. Un estudiante — Cantidades sin descuento
+### E. Lote
 
-1. Modo **Cantidades esperadas (sin descuento)**.
-2. Debe aparecer **Cantidades esperadas**.
-3. En clases, poner **Clases = 3** (el resto puede quedar en 0).
-4. Comparar `solucion_correcta.xmi` contra sí mismo.
+1. Rúbrica `calificacion_docente.xlsx`, solución `Turno1Impar.xmi` y un `.zip` con los 8
+   `.xmi` de `calibracion/T1-IMPAR/`. **Evaluar grupo**.
 
-**Esperado:** criterio Clases en **100 %**. El extra no aplica aquí (mismo archivo).
+- [ ] `/lote` muestra los 8 carnés.
+- [ ] Las notas coinciden con la columna `sistema` de `REPORTE_CALIBRACION.txt` para T1-IMPAR
+      (por ejemplo EJ25001 = 3.50, MR23129 = 7.00).
+- [ ] Agregar `Turno1Impar.xmi` dentro del `.zip` y volver a evaluar: no aparece como
+      estudiante y la tabla avisa *No se calificó Turno1Impar: es la solución del docente*.
 
-Para ver que **el extra no descuenta**: hace falta un XMI con **más** clases que las 3 de la solución. Si no lo tiene, este caso queda cubierto por el modo con descuento (sección E) y por la comparación solución vs incompleto (faltante sí baja: 2 de 3 → 67 %, no 100 %).
+### F. Hoja de calificación
 
-Con `estudiante_incompleto.xmi` y Clases = 3: si el incompleto aún tiene 3 clases, el criterio Clases puede seguir alto; bajan atributos/métodos/relaciones si usted también pone esas cantidades. Para un primer pase, basta **Clases = 3** y revisar que la pantalla no muestre descuento por curva.
+1. En `/lote`, **Abrir hoja** en MR23129.
 
-- [ ] Aparece el panel de cantidades
-- [ ] Solución vs solución con Clases = 3 → 100 % en clases
+- [ ] Columnas *Criterio · % · Esperados · Modelados · Nota ponderada · Observación*.
+- [ ] Cambiar un *Modelados* recalcula al instante la nota ponderada y el total, y la celda
+      queda marcada como corregida.
+- [ ] Escribir una observación y recargar la página (F5): la corrección y la observación
+      siguen ahí, en el mismo estudiante.
+- [ ] **Restaurar valores del sistema** vuelve a la nota original.
+- [ ] En `/lote`, la nota de MR23129 muestra la corrección.
 
-### E. Un estudiante — Cantidades con descuento
+### G. Exportar
 
-1. Modo **Cantidades esperadas (con descuento)**.
-2. **Clases = 3**.
-3. Solución vs solución → factor 3/3 = **100 %**, sin ámbar.
-4. Solución vs `estudiante_incompleto.xmi`: si el incompleto tiene **menos** elementos en un criterio cuya cantidad usted fijó, el puntaje de ese criterio es `min(E,R)/max(E,R)×100` y sale el recuadro ámbar.
+En `/lote`, con al menos una corrección hecha en la hoja:
 
-Caso numérico de referencia (laboratorio): solución con **3 clases** y estudiante con **4** (una extra) → factor **0.75**, criterio Clases **75 %**, texto *Se esperaban 3 y se registraron 4*.
+- [ ] **Exportar Excel de notas** baja un `.xlsx`. La hoja *Hoja de calificación* trae un
+      bloque por estudiante con su formato y **fórmulas vivas**: cambiar un *Modelados* en
+      Excel recalcula el total. La corrección hecha en pantalla ya viene aplicada.
+- [ ] **Descargar todas las actas (ZIP, un PDF por alumno)** genera un PDF por carné.
+- [ ] El acta de MR23129 muestra la misma nota que la hoja, no la del sistema.
 
-- [ ] Idénticos → 100 %
-- [ ] Cantidades distintas → curva + recuadro ámbar
+### H. Un solo estudiante
 
-### F. Rúbrica Excel
+1. Rúbrica `calificacion_docente.xlsx`, solución `Turno1Impar.xmi` y en *Entregas* un solo
+   `.xmi` (`calibracion/T1-IMPAR/EJ25001.xmi`). **Evaluar estudiante**.
 
-1. En configuración, bloque **Rúbrica de cantidades esperadas (Excel)**.
-2. **Descargar plantilla**.
-3. Hoja **Config**, celda del modo: elija uno (para esta prueba, *Cantidades esperadas - con descuento*).
-4. Hoja **Clases**: deje **Clases = 3** (o 4 si usa los valores de ejemplo de la plantilla; entonces ajústelos a 3 para coincidir con `solucion_correcta.xmi`).
-5. **Subir rúbrica** → debe decir *Rúbrica leída correctamente* y mostrar tarjetas por tipo.
-6. **Aplicar a esta evaluación**.
-7. Comparar solución vs solución.
+- [ ] Llega directo a `/hoja` con nota 3.50.
 
-**Esperado:** el modo y las cantidades de la rúbrica quedan aplicados; resultado ~100 % si las cantidades coinciden con el XMI.
+### I. Errores que tienen que explicarse solos
 
-- [ ] Plantilla descarga un `.xlsx`
-- [ ] Parseo sin error
-- [ ] Aplicar y comparar funciona
-
-### G. Lote ZIP
-
-1. Badge **Lote (ZIP de estudiantes)**.
-2. Solución: `astah_multi_class_usecase_sequence.xmi` (o `solucion_correcta.xmi` si el ZIP solo tiene clases).
-3. ZIP: el `lote_prueba.zip` de la sección 5.
-4. Elegir un modo (probar al menos **Similitud** y **Cantidades con descuento**).
-5. **Evaluar lote**.
-
-En `/lote`:
-
-- [ ] Aparecen los carné (`AA00001`, `AA00002`, …)
-- [ ] El archivo “completo” tiene nota más alta que el incompleto
-- [ ] **Exportar Excel de notas** baja `notas_lote.xlsx` (hojas Notas / Detalle / Resumen)
-- [ ] **Descargar todas las actas (ZIP)** genera un PDF por alumno
-- [ ] **PDF consolidado** en una fila funciona
-- [ ] **Ver desglose** abre `/lote/desglose` con criterios y, si aplica, recuadros ámbar
-
-### H. Corrección semántica
-
-En configuración, interruptor **Corrección semántica** (FastText; umbral por defecto **0.65**).
-
-- [ ] Con el interruptor **activado**, comparar un par conocido (solución vs incompleto) y anotar la nota
-- [ ] Repetir con el interruptor **apagado**
-- [ ] Ambos casos terminan sin error; las notas pueden diferir si hay sinónimos o typos
-
-Si no está instalado el modelo FastText, la app sigue funcionando con heurística (typos / nombres parecidos). No es un fallo.
-
-### I. Pesos (opcional)
-
-- [ ] Subir un tipo de diagrama a 100 % y el resto a 0, comparar, y comprobar que el global se parece a ese criterio
-- [ ] Aviso “Debe sumar 100 %” si los pesos no cierran (no bloquea el botón; igual conviene dejarlos en 100)
+- [ ] Subir un `.xlsx` que no sea una rúbrica: dice que ninguna hoja tiene la tabla
+      *Criterio | % | Esperados | Modelados*.
+- [ ] Subir un `.zip` sin `.xmi` adentro: dice que no encontró archivos XMI.
 
 ---
 
-## 7. Resultados esperados (resumen)
+## 5. Qué tan parecido califica a usted
 
-Pareja base de clases: `solucion_correcta.xmi` (E clases = 3).
+El sistema está calibrado contra sus 46 entregas de Práctica 1 que tienen `.xmi` y nota.
+Para ver la comparación estudiante por estudiante:
 
-| # | Estudiante | Modo | Qué mirar |
-|---|------------|------|-----------|
-| 1 | El mismo XMI | Similitud | ~100 %, nota 10, sin ámbar |
-| 2 | `estudiante_incompleto.xmi` | Similitud | Por debajo de 100 %, faltantes, sin ámbar de curva |
-| 3 | El mismo XMI | Similitud con descuento | ~100 % |
-| 4 | Incompleto (menos elementos) | Similitud con descuento | Criterios con E ≠ R bajan con la curva; ámbar |
-| 5 | El mismo XMI, Clases = 3 | Cantidades sin descuento | Clases 100 %; extra no aplica |
-| 6 | El mismo XMI, Clases = 3 | Cantidades con descuento | 100 %, sin ámbar |
-| 7 | 4 clases vs E = 3 | Cantidades con descuento | Clases **75 %**, *Se esperaban 3 y se registraron 4* |
-| 8 | Lote 2 alumnos | Cualquier modo | Carné en tabla; Excel y PDF; desglose coherente con el modo |
-
-Nota 0–10 ≈ porcentaje / 10. Umbral de aprobado: 6.0.
-
----
-
-## 8. Limitaciones al probar
-
-No son fallos de su prueba; el motor trabaja así hoy.
-
-1. **Un solo perfil por comparación.** Aunque la rúbrica tenga hojas de clases, casos de uso y secuencia, al evaluar se envía el perfil del **primer tipo seleccionado**.
-2. **En lote, los checkboxes de tipo no filtran el API.** Desmarcar “Casos de Uso” no impide que el backend evalúe lo que encuentre en el XMI. En un estudiante sí se envían los tipos elegidos.
-3. **Campos de cantidades que sí mueven la nota**
-   - Clases: **Clases**, **Atributos totales**, **Métodos totales**. Las relaciones se puntúan como un solo criterio interno (`relationships`), no por Asociación / Agregación / etc.
-   - Casos de uso: **Include** y **Extend**. Actores, casos de uso y relaciones actor–CU en el panel usan claves que el motor todavía no lee con esos nombres; el cupo efectivo sale del XMI docente si no hay clave interna.
-   - Secuencia: **Líneas de vida** y los tres tipos de **mensajes**. **Fragmentos alt** y **Fragmentos loop** por separado no puntúan: el motor usa un solo criterio de uso de fragmentos.
-4. **Campos visibles que aún no cambian la nota:** Asociación, Agregación, Composición, Herencia, Implementación (por separado); Actores / Casos de uso / Relaciones actor-CU (con esas etiquetas); Fragmentos alt vs loop.
-5. **Origen XMI fijo a Astah** en el flujo de un estudiante. Visual Paradigm no se elige en esa pantalla.
-6. **Fragmentos combinados (`alt` / `loop`):** se extraen del XMI; la calificación fina (operador correcto, guardia, mensajes dentro del fragmento) está pendiente. Ver `fragmentos_combinados_futuro.md`.
-7. El flujo de **tres ZIP** (uno por tipo de diagrama) no está en la interfaz; solo en la API (sección 9).
-
----
-
-## 9. Prueba opcional: evaluación global en Swagger
-
-No forma parte del flujo del docente en la web. Sirve si quiere confirmar el backend.
-
-1. Abrir `http://localhost:8000/docs`.
-2. Endpoint `POST /api/compare-global`.
-3. Subir **tres** soluciones (`expected_class_file`, `expected_usecase_file`, `expected_sequence_file`) y **tres** ZIP de estudiantes, uno por tipo.
-4. Opcional: `evaluation_profile_json`, por ejemplo:
-
-```json
-{"mode": "expected_with_penalty", "expected_counts": [{"element_type": "classes", "expected_quantity": 3}]}
+```powershell
+cd uml-evaluator\backend
+venv\Scripts\python.exe scripts\reporte_calibracion.py
 ```
 
-5. La respuesta lista alumnos con `student_id`, `final_score` y corridas por tipo (`class` / `usecase` / `sequence`).
+Resultado actual: error promedio **0.39 puntos** sobre 10, mediana **0**, 28 de 46 notas
+idénticas, 34 dentro de ±0.5 y 41 dentro de ±1.0. La rúbrica se lee con el mismo código que
+usa la pantalla al subir su Excel, así que esas cifras son las de la pantalla.
 
-Plantilla de rúbrica: `GET /api/rubric-template`. Validar un Excel: `POST /api/rubric/parse`.
+Donde el sistema todavía difiere es cuando el estudiante renombró el dominio (`Ganadero`
+donde la solución dice `Afiliado`) o dejó clases repetidas o de relleno. Para eso está la
+columna *Modelados* editable.
+
+El test `tests/test_calibracion_docente.py` vigila que esa correspondencia no se rompa con
+cambios futuros.
 
 ---
 
-## 10. Si algo falla
+## 6. Si algo falla
 
 | Síntoma | Qué revisar |
 |---------|-------------|
-| Error de red / “Failed to fetch” | Backend en el puerto 8000; frontend en 5173 |
-| Botón deshabilitado | Faltan archivos o no hay ningún tipo de diagrama marcado |
-| Rúbrica 422 | Hoja `Config` con un modo de la lista; cantidades enteras ≥ 0; nombres de elemento iguales a la plantilla |
-| Lote sin carné | El ZIP debe contener `.xmi` cuyo nombre sea el carné |
-| Nota igual en todos los modos | En **Similitud** no se envía perfil; confirme que eligió otro modo **antes** de comparar y, en cantidades, que rellenó **Clases** (u otro campo que sí puntúa) |
-| Sin recuadro ámbar | Solo aparece si `penalty_applied > 0` (modos con curva y E ≠ R) |
-| ZIP / PDF vacíos | Espere a que termine la evaluación; pruebe con dos archivos pequeños |
-
-Cuando termine el guion (secciones A–G como mínimo), los cuatro modos y los dos flujos de la UI quedaron cubiertos.
+| La página no abre | `docker compose ps`: los dos servicios tienen que estar *running* y el backend *healthy* |
+| *Failed to fetch* | El backend no responde; `docker compose logs backend` |
+| La rúbrica no se lee | La hoja tiene que tener una fila con `Criterio \| % \| Esperados \| Modelados` |
+| **Usar esta rúbrica** deshabilitado | Los pesos no suman 100 % |
+| La solución no saca 10 | Rúbrica de otro turno, o un criterio que no coincide con lo que dibujó |
+| Un estudiante sin carné | El nombre del `.xmi` tiene que ser el carné (`AB12345.xmi`) |
+| Cambios de código no se ven | `docker compose up -d --build --force-recreate` |

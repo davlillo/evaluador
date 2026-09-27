@@ -21,23 +21,13 @@ import type {
 } from '@/types/comparison';
 import { isSequenceBreakdown, isUseCaseBreakdown } from '@/types/comparison';
 import { percentTextClass } from '@/lib/status-colors';
+import { getDiagramLabel } from '@/lib/diagram-labels';
 
 export interface DiagramResultEntry {
   diagram_type: string;
   similarity: number;
   comparison: ComparisonResult;
 }
-
-export function getDiagramLabel(diagramType: string): string {
-  const labels: Record<string, string> = {
-    class: 'Diagrama de Clases',
-    usecase: 'Diagrama de Casos de Uso',
-    sequence: 'Diagrama de Secuencia',
-  };
-  return labels[diagramType] || diagramType;
-}
-
-export const getSimilarityColor = percentTextClass;
 
 interface StudentDiagramSectionProps {
   diagResult: DiagramResultEntry;
@@ -106,7 +96,7 @@ export function StudentDiagramSection({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             {getDiagramLabel(diagramType)}
-            <span className={`text-base font-normal ${getSimilarityColor(diagResult.similarity)}`}>
+            <span className={`text-base font-normal ${percentTextClass(diagResult.similarity)}`}>
               ({diagResult.similarity.toFixed(1)}%)
             </span>
           </CardTitle>

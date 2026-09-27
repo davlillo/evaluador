@@ -92,6 +92,7 @@ def _rule_from_dict(raw: Dict[str, Any]) -> ClassRubricRule:
         rule_id=raw["rule_id"],
         criterion_type=raw["criterion_type"],
         label=raw["label"],
+        group_label=raw.get("group_label"),
         weight=raw["weight"],
         expected_quantity=raw.get("expected_quantity"),
         source=raw.get("source"),

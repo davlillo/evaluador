@@ -5,7 +5,7 @@
 import pytest
 from fastapi import HTTPException
 
-from app.api.main import rubric_from_solution
+from app.api.routes.rubric import rubric_from_solution
 from app.comparator.calibracion import FIXTURE_DIR
 from tests.api_helpers import run, upload_bytes, upload_xmi
 

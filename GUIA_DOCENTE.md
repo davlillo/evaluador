@@ -135,7 +135,7 @@ Para ver la comparación estudiante por estudiante:
 
 ```powershell
 cd uml-evaluator\backend
-venv\Scripts\python.exe scripts\reporte_calibracion.py --sin-semantica
+venv\Scripts\python.exe scripts\reporte_calibracion.py
 ```
 
 ## Si algo no anda

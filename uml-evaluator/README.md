@@ -20,18 +20,11 @@ El motor está **calibrado contra 46 entregas reales ya calificadas a mano**: er
 
 ## Arquitectura
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────────┐
-│   Docente   │────▶│  Frontend   │────▶│     Backend     │
-│  (Navegador)│     │  (React/TS) │     │   (FastAPI)     │
-└─────────────┘     └─────────────┘     └─────────────────┘
-                                                │
-                        ┌───────────────────────┼───────────┐
-                        ▼                       ▼           ▼
-                ┌──────────────┐      ┌─────────────┐  ┌────────┐
-                │Parser XMI/XML│      │  Comparador │  │Reporte │
-                └──────────────┘      └─────────────┘  └────────┘
-```
+La vista general (flujo del docente, arquitectura y secuencia de calificación, con
+diagramas) está en el [README de la raíz](../README.md). Este documento es la referencia del
+backend: estructura, API y algoritmo.
+
+![Arquitectura](../docs/diagramas/img/arquitectura.light.png)
 
 ## Tecnologías
 
@@ -62,37 +55,52 @@ El repositorio tiene dos proyectos independientes: el backend vive en
 ├── app/                            # Frontend React (Vite)
 │   └── src/
 │       ├── pages/
-│       │   ├── UploadPage.tsx      # Subida + configuración de la rúbrica
+│       │   ├── UploadPage.tsx      # Asistente: rúbrica, solución y entregas
 │       │   ├── BatchResultsPage.tsx# Tabla de notas del lote
 │       │   ├── GradingSheetPage.tsx# Hoja de calificación editable
 │       │   ├── ResultsPage.tsx
 │       │   └── ReportPage.tsx      # Acta imprimible
 │       ├── components/
-│       │   ├── ClassRubricPanel.tsx# Editor de reglas de rúbrica
+│       │   ├── RubricTable.tsx     # Editor de la rúbrica y hoja llena
 │       │   ├── diagram/            # Renderizadores SVG de UML
 │       │   ├── results/
 │       │   └── ui/                 # shadcn/ui
 │       ├── context/                # Estado de evaluación y de la hoja
 │       ├── lib/
-│       │   ├── grading-sheet.ts    # La fórmula del docente
+│       │   ├── grading-sheet.ts    # La fórmula del docente (+ .test.ts)
+│       │   ├── teacher-rubric.ts   # Importar, derivar y chequear la rúbrica
 │       │   ├── persisted-state.ts  # localStorage
 │       │   └── report-pdf.ts
 │       └── types/
 │
 └── uml-evaluator/backend/          # Backend FastAPI
     ├── app/
-    │   ├── api/main.py             # Todos los endpoints
+    │   ├── api/
+    │   │   ├── main.py             # La app: CORS, firma, routers
+    │   │   ├── schemas.py          # Modelos de la API y perfil de evaluación
+    │   │   ├── uploads.py          # ZIP de entregas y carnés
+    │   │   ├── evaluation.py       # Pesos por diagrama y forma de la respuesta
+    │   │   └── routes/             # rubric, batch, compare, tools
     │   ├── comparator/
-    │   │   ├── uml_comparator.py   # Motor de comparación
+    │   │   ├── uml_comparator.py   # Núcleo: nombres, clases, relaciones, nota
+    │   │   ├── class_rubric.py     # La rúbrica del docente, criterio por criterio
+    │   │   ├── usecase_comparison.py
+    │   │   ├── sequence_comparison.py
+    │   │   ├── results.py          # ComparisonResult y compañía
     │   │   ├── scoring_modes.py    # Curva del docente y perfiles
     │   │   ├── rubric_builder.py   # Rúbrica derivada de la solución
+    │   │   ├── rubric_check.py     # La solución con su rúbrica debe sacar 10
     │   │   ├── semantic_matcher.py # Sinónimos, Levenshtein, FastText
     │   │   └── calibracion.py      # Contraste contra las notas reales
     │   ├── exporters/batch_xlsx.py # Excel con el formato del docente
     │   ├── models/uml_elements.py
     │   └── parsers/
-    │       ├── xmi_parser.py       # XMI 2.x y XMI 1.1 (Astah/JUDE)
-    │       └── rubric_parser.py    # Rúbrica en .xlsx
+    │       ├── xmi_parser.py       # Detecta la versión y delega
+    │       ├── xmi11_parser.py     # XMI 1.1 de Astah/JUDE
+    │       ├── xmi2_parser.py      # XMI 2.x (StarUML, EA, Visual Paradigm...)
+    │       ├── xmi_common.py       # Qué no es clase del dominio, nombres
+    │       ├── teacher_rubric_parser.py # Rúbrica en el Excel del docente
+    │       └── rubric_parser.py    # Plantilla propia de conteos por diagrama
     ├── scripts/
     │   ├── build_calibracion_fixture.py
     │   └── reporte_calibracion.py  # Notas del docente vs del sistema
@@ -126,8 +134,8 @@ y abrir `http://localhost:8080` (API interactiva en `http://localhost:8080/docs`
 
 #### Requisitos Previos
 - Python 3.11+
-- Node.js 18+
-- npm o yarn
+- Node.js 22+
+- npm
 
 ### 1. Clonar el Repositorio
 
@@ -226,7 +234,7 @@ Un solo estudiante pasa por el mismo camino que el lote (se empaqueta en un ZIP 
 ### Herramientas Compatibles
 
 **Astah / JUDE (XMI 1.1)** es el origen por defecto y tiene su propio parser
-(`XMIParserV11`): resuelve las clases realmente dibujadas en el diagrama, las clases de
+(`XMIParserV11`, en `xmi11_parser.py`): resuelve las clases realmente dibujadas en el diagrama, las clases de
 asociación, las multiplicidades por extremo y los diagramas de casos de uso y secuencia
 que vengan en el mismo archivo.
 
@@ -276,6 +284,7 @@ Documentación interactiva en `http://localhost:8000/docs`.
 |--------|------|----------|
 | `POST` | `/api/rubric/import` | **Lee la rúbrica en el Excel del docente** (formato 2EP y Práctica 1) |
 | `POST` | `/api/rubric/from-solution` | Deriva la rúbrica del XMI de solución |
+| `POST` | `/api/rubric/check` | Califica la solución con su propia rúbrica; debe dar 10 |
 | `POST` | `/api/rubric/parse` | Lee una rúbrica en `.xlsx` |
 | `GET` | `/api/rubric-template` | Descarga la plantilla `.xlsx` de rúbrica |
 
@@ -399,25 +408,10 @@ Levenshtein y embeddings FastText en español).
 
 ## Despliegue
 
-### Backend (Railway/Render)
-
-1. Crear cuenta en Railway o Render
-2. Crear nuevo proyecto desde repositorio Git
-3. Configurar variables de entorno:
-   - `PORT`: 8000
-4. Desplegar
-
-### Frontend (Vercel)
-
-1. Crear cuenta en Vercel
-2. Importar repositorio
-3. Configurar:
-   - Framework Preset: Vite
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-4. Configurar variable de entorno:
-   - `VITE_API_URL`: URL del backend desplegado
-5. Desplegar
+La entrega es `docker compose up --build` desde la raíz (ver
+[Con Docker](#con-docker-recomendado)). Si el frontend se sirve en otro origen que el
+backend, compilarlo con `VITE_API_URL` apuntando al backend; vacío significa mismo origen
+(ver `app/src/lib/api.ts`). Ese escenario no está probado.
 
 ## Ejemplos de Prueba
 

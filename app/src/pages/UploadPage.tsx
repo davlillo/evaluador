@@ -13,7 +13,6 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import JSZip from 'jszip';
 import {
   AlertCircle, ArrowLeft, ArrowRight, CheckCircle, FileCode, FileSpreadsheet,
   FolderArchive, Loader2, PencilLine, TriangleAlert, Upload,
@@ -61,6 +60,8 @@ function studentIdFrom(file: File): string {
 /** Un XMI suelto viaja como un lote de uno: mismo endpoint, mismos resultados. */
 async function asStudentsZip(file: File): Promise<File> {
   if (fileExtension(file) === '.zip') return file;
+  // JSZip solo hace falta en este caso: se baja cuando se usa
+  const { default: JSZip } = await import('jszip');
   const zip = new JSZip();
   zip.file(file.name, file);
   const blob = await zip.generateAsync({ type: 'blob' });

@@ -1,0 +1,63 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "UML Evaluador — flujo del docente",
+    "output": "flujo-docente.html",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "external": { "label": "Docente" },
+        "frontend": { "label": "Pantalla" },
+        "backend": { "label": "Backend" },
+        "security": { "label": "Control" }
+      }
+    },
+    "views": [
+      { "id": "rubrica", "label": "1 · Rúbrica", "focus": ["sube_rubrica", "importa", "editor"], "note": "El docente sube su rúbrica .xlsx (o la deriva de la solución) y la ajusta antes de calificar." },
+      { "id": "entregas", "label": "2 · Solución y entregas", "focus": ["editor", "carga", "chequeo", "lote"], "note": "La solución calificada con su propia rúbrica debe sacar 10; si no, la rúbrica vuelve al editor." },
+      { "id": "resultados", "label": "3 · Resultados", "focus": ["lote", "hoja", "corrige", "excel", "actas"], "note": "La hoja replica su Excel: Modelados es editable y la nota se recalcula en vivo." }
+    ]
+  },
+  "lanes": [
+    { "id": "docente", "label": "Docente" },
+    { "id": "pantalla", "label": "Pantalla (SPA)" },
+    { "id": "backend", "label": "Backend (FastAPI)" }
+  ],
+  "phases": [
+    { "id": "fase_rubrica", "label": "Rúbrica", "fromCol": 0, "toCol": 1 },
+    { "id": "fase_entregas", "label": "Solución y entregas", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "fase_resultados", "label": "Resultados", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["sube_rubrica", "importa", "editor", "carga", "chequeo", "lote", "hoja", "excel"],
+  "nodes": [
+    { "id": "sube_rubrica", "lane": "docente", "col": 0, "type": "external", "label": "Sube rúbrica", "sublabel": ".xlsx o solución", "width": 132 },
+    { "id": "importa", "lane": "backend", "col": 0, "type": "backend", "label": "Importa", "sublabel": "/api/rubric/import", "width": 132 },
+    { "id": "editor", "lane": "pantalla", "col": 1, "type": "frontend", "label": "Editor", "sublabel": "% y esperados", "tag": "suma 100%", "width": 132 },
+    { "id": "carga", "lane": "pantalla", "col": 2, "type": "frontend", "label": "Carga entregas", "sublabel": "solución + .zip", "width": 132 },
+    { "id": "chequeo", "lane": "backend", "col": 2, "type": "security", "label": "Chequeo", "sublabel": "solución = 10", "tag": "/api/rubric/check", "width": 132 },
+    { "id": "lote", "lane": "backend", "col": 3, "type": "backend", "label": "Califica el lote", "sublabel": "/api/compare-batch", "width": 132 },
+    { "id": "hoja", "lane": "pantalla", "col": 4, "type": "frontend", "label": "Hoja", "sublabel": "Modelados editable", "tag": "/hoja", "width": 132 },
+    { "id": "corrige", "lane": "docente", "col": 4, "type": "external", "label": "Corrige", "sublabel": "Modelados + obs.", "width": 132 },
+    { "id": "excel", "lane": "backend", "col": 5, "type": "backend", "label": "Excel", "sublabel": "/api/export/batch-xlsx", "width": 132 },
+    { "id": "actas", "lane": "pantalla", "col": 5, "type": "frontend", "label": "Actas PDF", "sublabel": "una por estudiante", "width": 132 }
+  ],
+  "edges": [
+    { "id": "rubrica-a-import", "from": "sube_rubrica", "to": "importa", "variant": "emphasis" },
+    { "id": "import-a-editor", "from": "importa", "to": "editor", "label": "reglas" },
+    { "id": "editor-a-carga", "from": "editor", "to": "carga", "label": "confirma", "variant": "emphasis" },
+    { "id": "carga-a-chequeo", "from": "carga", "to": "chequeo" },
+    { "id": "chequeo-a-lote", "from": "chequeo", "to": "lote", "label": "10/10", "variant": "emphasis" },
+    { "id": "chequeo-falla", "from": "chequeo", "to": "editor", "label": "< 10", "variant": "security", "role": "error" },
+    { "id": "lote-a-hoja", "from": "lote", "to": "hoja", "label": "notas", "variant": "emphasis" },
+    { "id": "corrige-hoja", "from": "corrige", "to": "hoja", "variant": "dashed", "role": "branch" },
+    { "id": "hoja-a-excel", "from": "hoja", "to": "excel", "label": "ediciones" },
+    { "id": "hoja-a-actas", "from": "hoja", "to": "actas", "variant": "dashed", "role": "branch" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Fórmula del docente", "items": ["Nota por criterio = min(E,M) / max(E,M) × peso", "Los encabezados de grupo no puntúan; Relaciones suma sus pesos"] },
+    { "dot": "rose", "title": "Controles", "items": ["La solución debe sacar 10 con su rúbrica", "Las copias de la clave se excluyen del lote"] },
+    { "dot": "cyan", "title": "Salidas", "items": ["Excel con el layout y las fórmulas del docente", "Actas PDF que reflejan lo editado en la hoja"] }
+  ]
+}

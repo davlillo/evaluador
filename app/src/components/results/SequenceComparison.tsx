@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 davlillos
 // SPDX-License-Identifier: MIT
 
-import { SequenceSvg, sequenceNaturalSize } from '@/components/diagram/SequenceSvg';
+import { SequenceSvg } from '@/components/diagram/SequenceSvg';
+import { sequenceNaturalSize } from '@/components/diagram/sequence-geometry';
 import type { DiffStatus } from '@/lib/status-colors';
 import type { DiagramInfo, DiagramMessage } from '@/types/comparison';
 

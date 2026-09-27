@@ -7,7 +7,7 @@
 #     docker compose up --build
 
 # --- compilación --------------------------------------------------------
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /src
 
 COPY package.json package-lock.json ./

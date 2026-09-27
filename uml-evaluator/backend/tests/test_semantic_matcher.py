@@ -4,7 +4,6 @@
 """
 Tests del motor semántico: heurística determinista + embeddings FastText opcionales.
 """
-import os
 
 import pytest
 

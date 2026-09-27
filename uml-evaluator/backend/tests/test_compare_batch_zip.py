@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from fastapi import HTTPException
 
-from app.api.main import compare_batch
+from app.api.routes.batch import compare_batch
 from app.parsers.xmi_parser import parse_xmi_file_multi as real_parse
 from tests.api_helpers import (
     BATCH_FORM_DEFAULTS,
@@ -119,7 +119,7 @@ class TestLoteBordesZip:
                 return diagrams
             return {'class': diagrams['class']}
 
-        with patch('app.api.main.parse_xmi_file_multi', side_effect=parse_student_solo_clases):
+        with patch('app.api.routes.batch.parse_xmi_file_multi', side_effect=parse_student_solo_clases):
             body = _batch(tmp_path, {"AA00001.xmi": MULTI_DIAGRAMA})
 
         row = body["results"][0]
