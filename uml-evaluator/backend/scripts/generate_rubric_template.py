@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 CLI para generar la plantilla Excel de rúbrica de evaluación. La lógica de
 construcción vive en app/parsers/rubric_template_builder.py (también usada

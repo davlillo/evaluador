@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "UML Evaluador — calificar un lote",
+    "output": "calificar-lote.html",
+    "viewBox": [
+      1080,
+      640
+    ],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "peticion",
+        "label": "Petición",
+        "focus": [
+          "docente",
+          "spa",
+          "nginx",
+          "api"
+        ],
+        "note": "La SPA manda solución, ZIP de entregas y rúbrica en un solo multipart."
+      },
+      {
+        "id": "motor",
+        "label": "Parseo y calificación",
+        "focus": [
+          "api",
+          "parser",
+          "comparador"
+        ],
+        "note": "Se parsea la solución una vez y cada entrega por separado; el comparador aplica la rúbrica del docente."
+      },
+      {
+        "id": "respuesta",
+        "label": "Respuesta y estado",
+        "focus": [
+          "api",
+          "nginx",
+          "spa",
+          "almacen",
+          "docente"
+        ],
+        "note": "Las notas vuelven como JSON y la SPA las guarda en localStorage para no perderlas con F5."
+      }
+    ]
+  },
+  "participants": [
+    {
+      "id": "docente",
+      "type": "external",
+      "label": "Docente",
+      "sublabel": "navegador"
+    },
+    {
+      "id": "spa",
+      "type": "frontend",
+      "label": "SPA",
+      "sublabel": "UploadPage"
+    },
+    {
+      "id": "nginx",
+      "type": "cloud",
+      "label": "nginx",
+      "sublabel": ":8080"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI",
+      "sublabel": "compare_batch"
+    },
+    {
+      "id": "parser",
+      "type": "backend",
+      "label": "Parser XMI",
+      "sublabel": "Astah 1.1"
+    },
+    {
+      "id": "comparador",
+      "type": "backend",
+      "label": "Comparador",
+      "sublabel": "rúbrica + curva"
+    },
+    {
+      "id": "almacen",
+      "type": "database",
+      "label": "localStorage",
+      "sublabel": "sesión"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 235,
+      "label": "Petición"
+    },
+    {
+      "from": 244,
+      "to": 425,
+      "label": "Parseo + calificación"
+    },
+    {
+      "from": 436,
+      "to": 550,
+      "label": "Respuesta"
+    }
+  ],
+  "messages": [
+    {
+      "id": "calificar",
+      "from": "docente",
+      "to": "spa",
+      "y": 160,
+      "label": "Calificar",
+      "variant": "default"
+    },
+    {
+      "id": "post-lote",
+      "from": "spa",
+      "to": "nginx",
+      "y": 190,
+      "label": "POST /api/compare-batch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "proxy",
+      "from": "nginx",
+      "to": "api",
+      "y": 220,
+      "label": "proxy_pass",
+      "variant": "default"
+    },
+    {
+      "id": "parsea-solucion",
+      "from": "api",
+      "to": "parser",
+      "y": 254,
+      "label": "parsea solución",
+      "variant": "default"
+    },
+    {
+      "id": "diagrama-solucion",
+      "from": "parser",
+      "to": "api",
+      "y": 284,
+      "label": "diagrama esperado",
+      "variant": "return"
+    },
+    {
+      "id": "parsea-entrega",
+      "from": "api",
+      "to": "parser",
+      "y": 318,
+      "label": "parsea cada entrega",
+      "variant": "dashed",
+      "note": "descarta copias de la clave sin carné"
+    },
+    {
+      "id": "diagrama-entrega",
+      "from": "parser",
+      "to": "api",
+      "y": 348,
+      "label": "diagrama del alumno",
+      "variant": "return"
+    },
+    {
+      "id": "califica",
+      "from": "api",
+      "to": "comparador",
+      "y": 382,
+      "label": "aplica la rúbrica",
+      "variant": "emphasis"
+    },
+    {
+      "id": "desglose",
+      "from": "comparador",
+      "to": "api",
+      "y": 412,
+      "label": "desglose por criterio",
+      "variant": "return"
+    },
+    {
+      "id": "respuesta-api",
+      "from": "api",
+      "to": "nginx",
+      "y": 446,
+      "label": "results + excluidos",
+      "variant": "return"
+    },
+    {
+      "id": "respuesta-spa",
+      "from": "nginx",
+      "to": "spa",
+      "y": 476,
+      "label": "200 JSON",
+      "variant": "return"
+    },
+    {
+      "id": "guarda",
+      "from": "spa",
+      "to": "almacen",
+      "y": 506,
+      "label": "guarda la sesión",
+      "variant": "dashed"
+    },
+    {
+      "id": "muestra",
+      "from": "spa",
+      "to": "docente",
+      "y": 536,
+      "label": "tabla del lote + hoja",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "spa",
+      "from": 185,
+      "to": 542,
+      "type": "frontend"
+    },
+    {
+      "participant": "nginx",
+      "from": 190,
+      "to": 482,
+      "type": "cloud"
+    },
+    {
+      "participant": "api",
+      "from": 220,
+      "to": 452,
+      "type": "backend"
+    },
+    {
+      "participant": "parser",
+      "from": 249,
+      "to": 354,
+      "type": "backend"
+    },
+    {
+      "participant": "comparador",
+      "from": 377,
+      "to": 418,
+      "type": "backend"
+    },
+    {
+      "participant": "almacen",
+      "from": 501,
+      "to": 512,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Una sola llamada",
+      "items": [
+        "Solución + ZIP de entregas + rúbrica viajan en un multipart",
+        "El backend no guarda nada: usa un directorio temporal y lo borra"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Reglas del lote",
+      "items": [
+        "Un archivo con carné nunca se excluye, aunque sea copia de la clave",
+        "Un XMI ilegible queda como error y no frena al resto"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Estado",
+      "items": [
+        "La SPA guarda lote, rúbrica y ediciones en localStorage",
+        "El matching semántico va apagado: empeora la calibración"
+      ]
+    }
+  ]
+}

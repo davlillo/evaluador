@@ -49,9 +49,9 @@ build/
 .env.local
 .env.*.local
 
-# Uploads
-uploads/*
-!uploads/.gitkeep
+# Uploads (el backend crea la carpeta al arrancar; lo que cae ahí es temporal)
+**/uploads/*
+!**/uploads/.gitkeep
 
 # Test files (keep examples)
 test_files/*

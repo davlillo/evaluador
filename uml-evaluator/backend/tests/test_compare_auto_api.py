@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Invoca compare_files_auto (POST /api/compare-auto) con UploadFile, sin httpx.
 Cubre archivos individuales, selected_types, pesos, modos de scoring y errores.
@@ -7,7 +10,7 @@ import json
 import pytest
 from fastapi import HTTPException
 
-from app.api.main import compare_files_auto
+from app.api.routes.compare import compare_files_auto
 from tests.api_helpers import (
     AUTO_FORM_DEFAULTS,
     ESTUDIANTE_INCOMPLETO,

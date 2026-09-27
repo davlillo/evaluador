@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -10,20 +12,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function ModeToggle() {
+  // SPA sin SSR: no hay hidratación que proteger, y los íconos cambian por CSS (dark:).
   const { setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <Button variant="outline" size="icon" aria-hidden className="size-9" disabled>
-        <span className="size-[1.2rem]" />
-      </Button>
-    );
-  }
 
   return (
     <DropdownMenu>

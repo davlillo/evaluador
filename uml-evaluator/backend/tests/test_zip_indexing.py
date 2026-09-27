@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Indexación de carnés y extracción segura de ZIP (sin parsear UML).
 """
@@ -5,7 +8,7 @@ import os
 import zipfile
 from pathlib import Path
 
-from app.api.main import _index_students_from_dir, _safe_extract_zip
+from app.api.uploads import index_students_from_dir, safe_extract_zip
 from tests.api_helpers import SOLUCION_CORRECTA, write_zip
 
 
@@ -13,20 +16,20 @@ def _extract(tmp_path: Path, mapping: dict, zip_name: str = "lote.zip") -> Path:
     zip_path = write_zip(tmp_path / zip_name, mapping)
     target = tmp_path / "extracted"
     target.mkdir()
-    _safe_extract_zip(str(zip_path), str(target))
+    safe_extract_zip(str(zip_path), str(target))
     return target
 
 
 class TestIndexacionCarne:
     def test_zip_plano_usa_basename(self, tmp_path):
         target = _extract(tmp_path, {"AA00001.xmi": SOLUCION_CORRECTA})
-        indexed = _index_students_from_dir(str(target))
+        indexed = index_students_from_dir(str(target))
         assert list(indexed.keys()) == ["AA00001"]
         assert indexed["AA00001"].endswith("AA00001.xmi")
 
     def test_nombre_generico_usa_carpeta_padre(self, tmp_path):
         target = _extract(tmp_path, {"2024001/clases.xmi": SOLUCION_CORRECTA})
-        indexed = _index_students_from_dir(str(target))
+        indexed = index_students_from_dir(str(target))
         assert "2024001" in indexed
         assert "clases" not in indexed
 
@@ -36,7 +39,7 @@ class TestIndexacionCarne:
             "notas.pdf": b"%PDF-1.4 fake",
             "readme.txt": b"hola",
         })
-        indexed = _index_students_from_dir(str(target))
+        indexed = index_students_from_dir(str(target))
         assert list(indexed.keys()) == ["AA00001"]
 
     def test_duplicado_mismo_basename_el_primero_gana(self, tmp_path):
@@ -44,7 +47,7 @@ class TestIndexacionCarne:
             "AA00001.xmi": SOLUCION_CORRECTA,
             "sub/AA00001.xmi": SOLUCION_CORRECTA,
         })
-        indexed = _index_students_from_dir(str(target))
+        indexed = index_students_from_dir(str(target))
         assert list(indexed.keys()) == ["AA00001"]
         # os.walk visita primero la raíz del extracto.
         assert Path(indexed["AA00001"]).parent.name == "extracted"
@@ -55,8 +58,8 @@ class TestIndexacionCarne:
             zf.writestr("__MACOSX/._AA00001.xmi", b"junk")
         target = tmp_path / "extracted"
         target.mkdir()
-        _safe_extract_zip(str(zip_path), str(target))
-        assert _index_students_from_dir(str(target)) == {}
+        safe_extract_zip(str(zip_path), str(target))
+        assert index_students_from_dir(str(target)) == {}
 
 
 class TestExtraccionSegura:
@@ -67,11 +70,21 @@ class TestExtraccionSegura:
             zf.writestr("ok/AA00001.xmi", Path(SOLUCION_CORRECTA).read_bytes())
         target = tmp_path / "extracted"
         target.mkdir()
-        _safe_extract_zip(str(zip_path), str(target))
+        safe_extract_zip(str(zip_path), str(target))
 
         assert not (tmp_path / "escape.xmi").exists()
-        indexed = _index_students_from_dir(str(target))
+        indexed = index_students_from_dir(str(target))
         assert "AA00001" in indexed
         abs_target = os.path.abspath(str(target))
         for path in indexed.values():
             assert os.path.abspath(path).startswith(abs_target)
+
+
+def test_saca_el_carne_de_un_nombre_con_basura():
+    """En la Clave Par del 2EP vino "proyect.xmiRM25034.xmi"."""
+    from app.api.uploads import student_id_from_filename
+
+    assert student_id_from_filename("proyect.xmiRM25034.xmi") == "RM25034"
+    assert student_id_from_filename("ab12345.xmi") == "AB12345"
+    # sin carné reconocible queda el nombre tal cual
+    assert student_id_from_filename("estudiante_incompleto.xmi") == "estudiante_incompleto"

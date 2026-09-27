@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import type { DiagramClass, DiagramRelationship } from '@/types/comparison';
 
 export interface ClassBoxPos {

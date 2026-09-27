@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Contrato entre las claves visibles de la rúbrica y los criterios internos."""
 import copy
 

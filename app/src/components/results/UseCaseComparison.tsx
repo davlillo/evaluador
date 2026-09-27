@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { UseCaseSvg, type UseCaseNode, type UseCaseEdge } from '@/components/diagram/UseCaseSvg';
 import type { DiffStatus } from '@/lib/status-colors';
 import type { DiagramInfo } from '@/types/comparison';

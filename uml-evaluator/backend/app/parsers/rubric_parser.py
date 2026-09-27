@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Parser de la rúbrica Excel (.xlsx) de cantidades esperadas por tipo de
 diagrama. Produce un EvaluationProfile por tipo ('class', 'usecase',

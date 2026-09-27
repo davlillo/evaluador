@@ -1,0 +1,17 @@
+# Lo que no tiene que entrar a la imagen.
+
+# el modelo FastText pesa 7.4 GB y la app no lo usa (el matching semántico
+# va apagado: medido contra las notas del docente, empeora el resultado)
+models/
+
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+uploads/
+
+# pruebas y sus fixtures (incluye entregas reales de estudiantes)
+tests/
+test_files/
+scripts/

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Helpers para invocar endpoints de comparación sin TestClient/httpx."""
 import asyncio
 import io

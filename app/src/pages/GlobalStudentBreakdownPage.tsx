@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { useMemo } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileCheck2 } from 'lucide-react';
@@ -10,11 +13,11 @@ import {
   useGlobalEvaluation,
 } from '@/context/GlobalEvaluationContext';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
-import {
-  StudentDiagramSection,
-  getDiagramLabel,
-  getSimilarityColor,
-} from '@/components/results/StudentDiagramSection';
+import { useGradingSheet } from '@/context/GradingSheetContext';
+import { withSheetEdits } from '@/lib/student-edits';
+import { StudentDiagramSection } from '@/components/results/StudentDiagramSection';
+import { getDiagramLabel } from '@/lib/diagram-labels';
+import { percentTextClass } from '@/lib/status-colors';
 import { ExportDiagramPdfButton } from '@/components/report/ExportPdfButton';
 import { ExportStudentPdfButton } from '@/components/report/ExportStudentPdfButton';
 import type { ComparisonResult, DiagramInfo } from '@/types/comparison';
@@ -55,8 +58,18 @@ export default function GlobalStudentBreakdownPage() {
     setReportReturn,
   } = useGlobalEvaluation();
 
+  const { getOverrides, getObservations } = useGradingSheet();
+
   const studentId = (location.state as { studentId?: string } | null)?.studentId;
-  const student = studentId ? getStudentById(studentId) : null;
+  // con las correcciones de la hoja: el desglose y sus PDF dicen la misma nota
+  const student = useMemo(() => {
+    const raw = studentId ? getStudentById(studentId) : null;
+    if (!raw || !batchResult) return raw;
+    return withSheetEdits(
+      raw, getOverrides(raw.student_id), getObservations(raw.student_id),
+      batchResult.global_weights_used,
+    );
+  }, [studentId, getStudentById, batchResult, getOverrides, getObservations]);
 
   const expDiagrams = expectedDiagrams ?? {};
   const stuDiagrams = useMemo(
@@ -92,8 +105,8 @@ export default function GlobalStudentBreakdownPage() {
     if (!comparison) return;
 
     setResult(comparison, { studentFileName });
-    setReportReturn({ path: '/evaluar/global/desglose', studentId: student.student_id });
-    navigate('/evaluar/reporte');
+    setReportReturn({ path: '/lote/desglose', studentId: student.student_id });
+    navigate('/reporte');
   };
 
   const pdfEntries = detectedKinds
@@ -134,7 +147,7 @@ export default function GlobalStudentBreakdownPage() {
           </CardTitle>
           <CardDescription>
             Nota global final:{' '}
-            <strong className={`text-foreground ${getSimilarityColor(student.final_score)}`}>
+            <strong className={`text-foreground ${percentTextClass(student.final_score)}`}>
               {formatScore(student.final_score)}
             </strong>
             {!student.complete && (

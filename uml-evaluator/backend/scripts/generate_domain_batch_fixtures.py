@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Genera fixtures de lote para 5 dominios nuevos (no clínica), reutilizando
 clinica_solucion.xmi como plantilla estructural (misma topología: 7 clases,
@@ -12,7 +15,6 @@ Uso:
 from __future__ import annotations
 
 import argparse
-import re
 import shutil
 import zipfile
 from dataclasses import dataclass, field
@@ -22,17 +24,13 @@ from generate_clinica_batch_fixtures import (
     _drop_messages,
     _inject_extra_actor,
     _remove_attribute_named,
-    _remove_class_named,
     _remove_elements_by_tag,
     _remove_generalizations,
     _remove_shared_aggregation,
     _rename_attr,
-    _rename_lifeline_label,
     _reorder_first_messages,
     _reverse_extend_owner,
     _strip_to_almost_empty,
-    _strip_usecase_and_sequence_model,
-    _remove_jude_diagram,
 )
 
 CLINICA_SOURCE = Path(r"c:\Users\serda\OneDrive\Escritorio\uml-fixtures-clinica\docente\clinica_solucion.xmi")
@@ -474,7 +472,6 @@ def _build_variants(xml: str, config: DomainConfig) -> dict[str, str]:
     fecha_attr, fecha_typo = _typo_pair_for(config)
     licencia_attr = config.attr_renames.get("licencia", "licencia")
     licencia_typo = licencia_attr[:-1] + "a" if licencia_attr else licencia_attr
-    estado_attr = config.attr_renames.get("fechaHora", "fechaHora")
 
     return {
         "01_perfecto": xml,

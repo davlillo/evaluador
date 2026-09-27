@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests de los endpoints de rúbrica (GET /api/rubric-template, POST
 /api/rubric/parse), invocando las funciones async directamente (sin
@@ -12,7 +15,7 @@ import pytest
 from fastapi import UploadFile
 from starlette.datastructures import Headers
 
-from app.api.main import download_rubric_template, parse_rubric
+from app.api.routes.rubric import download_rubric_template, parse_rubric
 from app.parsers.rubric_template_builder import generate_rubric_template
 
 

@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { useState } from 'react';
 import { AlertCircle, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { downloadDetailedReportPdf } from '@/lib/report-pdf';
-import { getDiagramLabel } from '@/components/results/StudentDiagramSection';
+import { getDiagramLabel } from '@/lib/diagram-labels';
 import type { ComparisonResult } from '@/types/comparison';
 
 interface ExportDiagramPdfButtonProps {

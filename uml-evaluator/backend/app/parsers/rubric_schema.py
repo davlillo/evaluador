@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Esquema compartido de la rúbrica Excel: nombres de hoja, columnas, y el
 diccionario de alias español (lo que ve el profesor en la celda "Elemento")

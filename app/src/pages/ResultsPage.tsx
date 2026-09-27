@@ -1,18 +1,20 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Stepper } from '@/components/Stepper';
 import { ScoreGauge } from '@/components/results/ScoreGauge';
 import { EditableNota } from '@/components/results/EditableNota';
+import { RubricFilledTable } from '@/components/RubricTable';
 import { useEvaluationResult } from '@/context/EvaluationResultContext';
 import { ClassResultsView } from '@/components/results/ClassResultsView';
 import { UseCaseResultsView } from '@/components/results/UseCaseResultsView';
 import { SequenceResultsView } from '@/components/results/SequenceResultsView';
-import {
-  StudentDiagramSection,
-  getDiagramLabel,
-} from '@/components/results/StudentDiagramSection';
+import { StudentDiagramSection } from '@/components/results/StudentDiagramSection';
+import { getDiagramLabel } from '@/lib/diagram-labels';
 import type {
   ComparisonResult,
   Breakdown,
@@ -75,12 +77,82 @@ function SingleDiagramView({
     result.diagram_type === '';
 
   if (isClass) {
+    const rubricRows = result.class_rubric_breakdown ?? [];
     return (
-      <ClassResultsView
-        result={result as Omit<ComparisonResult, 'breakdown'> & { breakdown: Breakdown }}
-        onBack={onBack}
-        onViewReport={onViewReport}
-      />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Resultados de la comparación</h2>
+            <p className="text-sm text-muted-foreground">
+              Revisa la planilla con la nota desglosada por criterio.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Nueva comparación
+            </Button>
+            <Button onClick={onViewReport}>
+              <FileText className="w-4 h-4 mr-2" />
+              Ver reporte
+            </Button>
+          </div>
+        </div>
+
+        <Stepper current={3} />
+
+        <Card>
+          <CardContent className="py-6 flex flex-col sm:flex-row items-center gap-8">
+            <ScoreGauge percent={result.overall_similarity} />
+            <div className="flex-1 text-center sm:text-left space-y-3">
+              <p className="text-sm font-medium text-muted-foreground">Similitud global</p>
+              <p className="text-lg font-semibold">{result.overall_similarity.toFixed(1)}%</p>
+            </div>
+            <EditableNota percent={result.overall_similarity} />
+          </CardContent>
+        </Card>
+
+        <StudentDiagramSection
+          diagResult={{
+            diagram_type: 'class',
+            similarity: result.overall_similarity,
+            comparison: result,
+          }}
+          diagramType="class"
+          expectedDiagrams={
+            result.expected_diagram
+              ? { class: result.expected_diagram }
+              : {}
+          }
+          studentDiagrams={
+            result.student_diagram
+              ? { class: result.student_diagram }
+              : {}
+          }
+          onBack={onBack}
+          onViewReport={onViewReport}
+        />
+
+        {rubricRows.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Planilla de calificación</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <RubricFilledTable breakdown={rubricRows} showTotal />
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <ClassResultsView
+            result={result as Omit<ComparisonResult, 'breakdown'> & { breakdown: Breakdown }}
+            onBack={onBack}
+            onViewReport={onViewReport}
+            showNavActions={false}
+          />
+        )}
+      </div>
     );
   }
 

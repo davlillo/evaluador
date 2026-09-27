@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 /**
  * Fuente única de verdad de la rúbrica de evaluación (frontend).
  *

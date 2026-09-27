@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import type { ComponentProps } from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Preprocesa vectores FastText a formato nativo .kv de gensim.
 Se ejecuta UNA SOLA VEZ (fuera del servidor).

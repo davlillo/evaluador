@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Detección multi-diagrama en XMI Astah/JUDE 1.1."""
 from pathlib import Path
 

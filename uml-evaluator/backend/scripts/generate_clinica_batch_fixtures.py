@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Genera fixtures de lote a partir de clinica.xmi (Escritorio).
 

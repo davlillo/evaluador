@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Regresión: el comparador normalizaba nombres (lower + sin acentos) ANTES de
 pasarlos al SemanticMatcher, perdiendo el camelCase que el matcher necesita

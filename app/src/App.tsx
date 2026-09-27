@@ -1,11 +1,20 @@
-import { Routes, Route, Navigate, Outlet, Link } from 'react-router-dom';
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
+import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate, Outlet, Link, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
 import UploadPage from '@/pages/UploadPage';
-import ResultsPage from '@/pages/ResultsPage';
-import ReportPage from '@/pages/ReportPage';
-import BatchResultsPage from '@/pages/BatchResultsPage';
-import GlobalStudentBreakdownPage from '@/pages/GlobalStudentBreakdownPage';
 import './App.css';
+
+// La primera pantalla carga de una; el resto (y jsPDF, que solo usan las
+// actas) se baja al entrar a cada ruta.
+const ResultsPage = lazy(() => import('@/pages/ResultsPage'));
+const ReportPage = lazy(() => import('@/pages/ReportPage'));
+const BatchResultsPage = lazy(() => import('@/pages/BatchResultsPage'));
+const GlobalStudentBreakdownPage = lazy(() => import('@/pages/GlobalStudentBreakdownPage'));
+const GradingSheetPage = lazy(() => import('@/pages/GradingSheetPage'));
 
 /**
  * Franja lateral institucional roja UES. Reproduce el panel del mockup.
@@ -63,6 +72,8 @@ function UesSidebar() {
 }
 
 function AppShell() {
+  const esHoja = useLocation().pathname === '/hoja';
+
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-background via-background to-muted/20">
       <UesSidebar />
@@ -90,8 +101,17 @@ function AppShell() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-8">
-        <Outlet />
+      <main
+        className={cn(
+          'flex-1 w-full mx-auto px-4 py-8',
+          // la hoja de calificación es una planilla, no un formulario:
+          // necesita ancho para las seis columnas del docente
+          esHoja ? 'max-w-screen-2xl' : 'max-w-6xl',
+        )}
+      >
+        <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando…</p>}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <footer className="border-t pt-6 pb-3 shrink-0 print:hidden">
@@ -112,7 +132,9 @@ function AppShell() {
             <p className="font-medium text-foreground">Universidad de El Salvador</p>
             <p>Facultad de Ingeniería y Arquitectura</p>
             <p>Escuela de Sistemas Informáticos</p>
-            <p className="text-muted-foreground/90 pt-0.5">© 2026. Todos los derechos reservados.</p>
+            <p className="text-muted-foreground/90 pt-0.5">
+              Desarrollado por <span className="font-semibold text-foreground">davlillos</span> · © 2026 · Licencia MIT
+            </p>
           </div>
         </div>
       </footer>
@@ -130,6 +152,7 @@ export default function App() {
         <Route path="/reporte" element={<ReportPage />} />
         <Route path="/lote" element={<BatchResultsPage />} />
         <Route path="/lote/desglose" element={<GlobalStudentBreakdownPage />} />
+        <Route path="/hoja" element={<GradingSheetPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

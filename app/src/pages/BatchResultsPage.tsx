@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { ArrowLeft, Search, FileSpreadsheet, Loader2, PencilLine, Table2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +14,9 @@ import {
 import { DownloadBatchReportsZipButton } from '@/components/report/DownloadBatchReportsZipButton';
 import { ExportStudentPdfButton } from '@/components/report/ExportStudentPdfButton';
 import { percentToNota } from '@/lib/rubric';
+import { useGradingSheet } from '@/context/GradingSheetContext';
+import { buildGradingSheet } from '@/lib/grading-sheet';
+import { withSheetEdits } from '@/lib/student-edits';
 import { downloadBatchNotasXlsx } from '@/lib/batch-xlsx';
 import type { ConsolidatedDiagramEntry } from '@/lib/report-pdf';
 import type { BatchStudentResult } from '@/types/evaluation-session';
@@ -21,6 +27,7 @@ const DIAGRAM_KINDS = ['class', 'usecase', 'sequence'] as const;
 export default function BatchResultsPage() {
   const navigate = useNavigate();
   const { batchResult, expectedDiagrams, getStudentById, setReportReturn } = useGlobalEvaluation();
+  const { getOverrides, getObservations, overrideCount } = useGradingSheet();
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('score');
   const [sortAsc, setSortAsc] = useState(false);
@@ -43,6 +50,20 @@ export default function BatchResultsPage() {
     return <Navigate to="/" replace />;
   }
 
+  /** La nota que vale: la del motor, salvo que el docente haya corregido su hoja. */
+  const notaFor = (row: BatchStudentResult): number => {
+    const breakdown = row.runs.class?.comparison?.class_rubric_breakdown ?? [];
+    const overrides = getOverrides(row.student_id);
+    if (breakdown.length === 0 || Object.keys(overrides).length === 0) {
+      return row.nota ?? percentToNota(row.final_score);
+    }
+    return buildGradingSheet(breakdown, overrides).nota;
+  };
+
+  const openSheet = (student: BatchStudentResult) => {
+    navigate('/hoja', { state: { studentId: student.student_id } });
+  };
+
   const openStudent = (student: BatchStudentResult) => {
     setReportReturn({ path: '/lote', studentId: student.student_id });
     navigate('/lote/desglose', { state: { studentId: student.student_id } });
@@ -61,7 +82,23 @@ export default function BatchResultsPage() {
     setExportingXlsx(true);
     setExportError(null);
     try {
-      await downloadBatchNotasXlsx(batchResult);
+      // el Excel debe reflejar la hoja tal como quedó en pantalla
+      const notaOverrides: Record<string, number> = {};
+      const modeledOverrides: Record<string, Record<string, number>> = {};
+      const observations: Record<string, Record<string, string>> = {};
+      for (const row of batchResult.results) {
+        if (row.status === 'error') continue;
+        const modeled = getOverrides(row.student_id);
+        const notes = getObservations(row.student_id);
+        if (Object.keys(modeled).length > 0) {
+          notaOverrides[row.student_id] = notaFor(row);
+          modeledOverrides[row.student_id] = modeled;
+        }
+        if (Object.keys(notes).length > 0) observations[row.student_id] = notes;
+      }
+      await downloadBatchNotasXlsx(batchResult, {
+        notaOverrides, modeledOverrides, observations,
+      });
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'Error al exportar el Excel de notas.');
     } finally {
@@ -69,8 +106,20 @@ export default function BatchResultsPage() {
     }
   };
 
-  const buildConsolidatedDiagrams = (studentId: string): ConsolidatedDiagramEntry[] => {
+  /** El estudiante con las correcciones de su hoja: lo que tiene que decir el acta. */
+  const editedStudent = (studentId: string) => {
     const student = getStudentById(studentId);
+    if (!student) return null;
+    return withSheetEdits(
+      student,
+      getOverrides(studentId),
+      getObservations(studentId),
+      batchResult.global_weights_used,
+    );
+  };
+
+  const buildConsolidatedDiagrams = (studentId: string): ConsolidatedDiagramEntry[] => {
+    const student = editedStudent(studentId);
     if (!student) return [];
     const expDiagrams = expectedDiagrams ?? {};
     const stuDiagrams = buildStudentDiagramsFromRuns(student.runs);
@@ -104,6 +153,11 @@ export default function BatchResultsPage() {
           <p className="text-sm text-muted-foreground">
             {batchResult.students_total} estudiante(s) · {batchResult.students_complete} completo(s)
           </p>
+          {(batchResult.excluded_students ?? []).map((excluded) => (
+            <p key={excluded.student_id} className="text-xs text-muted-foreground">
+              No se calificó <span className="font-mono">{excluded.student_id}</span>: {excluded.reason.toLowerCase()}
+            </p>
+          ))}
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={handleExportXlsx} disabled={exportingXlsx}>
@@ -154,6 +208,7 @@ export default function BatchResultsPage() {
                   <th className="py-2 px-2">Estado</th>
                   <th className="py-2 px-2"></th>
                   <th className="py-2 px-2"></th>
+                  <th className="py-2 px-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -164,7 +219,17 @@ export default function BatchResultsPage() {
                       {r.status === 'error' ? '—' : `${r.final_score.toFixed(1)}%`}
                     </td>
                     <td className="py-2 px-2 font-semibold">
-                      {r.status === 'error' ? '—' : (r.nota ?? percentToNota(r.final_score)).toFixed(1)}
+                      {r.status === 'error' ? '—' : (
+                        <span className="inline-flex items-center gap-1.5">
+                          {notaFor(r).toFixed(1)}
+                          {overrideCount(r.student_id) > 0 && (
+                            <PencilLine
+                              className="h-3.5 w-3.5 text-primary"
+                              aria-label="Nota corregida a mano"
+                            />
+                          )}
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 px-2">
                       {r.status === 'error' ? (
@@ -179,12 +244,20 @@ export default function BatchResultsPage() {
                       {r.status !== 'error' && (
                         <ExportStudentPdfButton
                           studentId={r.student_id}
-                          finalScore={r.final_score}
+                          finalScore={editedStudent(r.student_id)?.final_score ?? r.final_score}
                           globalWeights={batchResult.global_weights_used}
                           diagrams={buildConsolidatedDiagrams(r.student_id)}
                           size="sm"
                           variant="outline"
                         />
+                      )}
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      {r.status !== 'error' && (
+                        <Button variant="outline" size="sm" onClick={() => openSheet(r)}>
+                          <Table2 className="mr-1.5 h-4 w-4" />
+                          Abrir hoja
+                        </Button>
                       )}
                     </td>
                     <td className="py-2 px-2 text-right">
@@ -198,7 +271,7 @@ export default function BatchResultsPage() {
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-6 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-6 text-center text-muted-foreground">
                       Sin resultados.
                     </td>
                   </tr>

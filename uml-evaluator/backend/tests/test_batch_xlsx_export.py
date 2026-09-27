@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Tests del export a Excel de un lote (app.exporters.batch_xlsx), que
 reemplaza al CSV plano anterior con 3 hojas: Notas, Detalle y Resumen.
@@ -54,10 +57,12 @@ def _sample_batch():
 
 
 class TestHojasPresentes:
-    def test_genera_las_tres_hojas(self):
+    def test_genera_las_cuatro_hojas(self):
         content = build_batch_xlsx(_sample_batch())
         wb = load_workbook(io.BytesIO(content))
-        assert wb.sheetnames == ["Notas", "Detalle", "Resumen"]
+        assert wb.sheetnames == [
+            "Hoja de calificación", "Notas", "Detalle", "Resumen",
+        ]
 
 
 class TestHojaNotas:
@@ -128,3 +133,122 @@ class TestHojaResumen:
         rows = {row[0].value: row[1].value for row in ws.iter_rows(min_row=2) if row[0].value}
         assert rows["Peso global — Clases (%)"] == 40.0
         assert rows["Estudiantes evaluados"] == 2
+
+
+def _batch_con_rubrica():
+    """Un lote con desglose de rúbrica, que es lo que alimenta la hoja del docente."""
+    return {
+        "results": [{
+            "student_id": "MR23129",
+            "status": "ok",
+            "complete": True,
+            "final_score": 52.0,
+            "nota": 5.2,
+            "runs": {"class": {"status": "ok", "similarity": 52.0, "comparison": {
+                "overall_similarity": 52.0,
+                "class_rubric_breakdown": [
+                    {
+                        "rule_id": "clases", "criterion_type": "classes", "label": "Clases",
+                        "group_label": None, "weight": 20.0, "expected": 6, "modeled": 6,
+                        "correct": True, "message": "Se esperaban 6 clases.",
+                    },
+                    {
+                        "rule_id": "rel1-source", "criterion_type": "multiplicity",
+                        "label": "Multiplicidad 1 en Afiliado",
+                        "group_label": "Asociación Afiliado-Ganado", "weight": 8.0,
+                        "expected": "1", "modeled": "1", "correct": True, "message": "ok",
+                    },
+                    {
+                        "rule_id": "rel1-target", "criterion_type": "multiplicity",
+                        "label": "Multiplicidad 1..* en Ganado",
+                        "group_label": "Asociación Afiliado-Ganado", "weight": 8.0,
+                        "expected": "1..*", "modeled": "1..*", "correct": True, "message": "ok",
+                    },
+                    {
+                        "rule_id": "ac1", "criterion_type": "association_class",
+                        "label": "Clase de asociación Ganado-Enfermedad",
+                        "group_label": None, "weight": 64.0,
+                        "expected": "Ganado–Enfermedad", "modeled": "No encontrada",
+                        "correct": False, "message": "No se encontró.",
+                    },
+                ],
+            }}},
+        }],
+        "global_weights_used": {"class": 100.0, "usecase": 0.0, "sequence": 0.0},
+    }
+
+
+class TestHojaDelDocente:
+    """La primera hoja replica la rúbrica del 2EP: carné, fila en blanco,
+    encabezado, Clases, sección Relaciones, grupos y Total."""
+
+    def _hoja(self, **kwargs):
+        wb = load_workbook(io.BytesIO(build_batch_xlsx(_batch_con_rubrica(), **kwargs)))
+        return wb["Hoja de calificación"]
+
+    def test_arma_un_bloque_por_estudiante_con_su_formato(self):
+        ws = self._hoja()
+
+        assert ws["A1"].value == "MR23129"
+        assert ws["A2"].value is None
+        assert [c.value for c in ws[3]] == [
+            "Criterio", "%", "Esperados", "Modelados", "Nota ponderada", "Observaciones",
+        ]
+        assert [ws["A%d" % f].value for f in range(4, 11)] == [
+            "Clases",
+            "Relaciones",
+            "Asociación Afiliado-Ganado",
+            "Multiplicidad 1 en Afiliado",
+            "Multiplicidad 1..* en Ganado",
+            "Clase de asociación Ganado-Enfermedad",
+            "Total",
+        ]
+
+    def test_escribe_la_formula_viva_del_docente(self):
+        """Fórmulas, no valores: si corrige un Modelados en Excel, la nota
+        se recalcula sola."""
+        ws = self._hoja()
+
+        assert ws["E4"].value == "=IF(C4>=D4,(D4/C4)*B4,IF(C4<D4,(C4/D4)*B4,0))"
+        assert ws["E10"].value == "=SUM(E4:E9)/10"
+
+    def test_los_pesos_van_en_porcentaje_como_en_su_hoja(self):
+        ws = self._hoja()
+
+        assert ws["B4"].value == pytest.approx(20)
+        assert ws["B7"].value == pytest.approx(8)
+
+    def test_relaciones_suma_y_el_total_no_cuenta_dos_veces(self):
+        ws = self._hoja()
+
+        assert ws["B5"].value == "=SUM(B6:B9)"
+        assert ws["B10"].value == "=B4+B5"
+
+    def test_el_encabezado_de_grupo_no_lleva_peso(self):
+        ws = self._hoja()
+
+        assert ws["A6"].value == "Asociación Afiliado-Ganado"
+        assert ws["B6"].value is None and ws["C6"].value is None
+
+    def test_respeta_los_modelados_que_corrigio_a_mano(self):
+        ws = self._hoja(
+            modeled_overrides={"MR23129": {"ac1": 1.0}},
+            observations={"MR23129": {"ac1": "La modeló como Diagnostico."}},
+        )
+
+        assert ws["A9"].value == "Clase de asociación Ganado-Enfermedad"
+        assert ws["D9"].value == 1.0
+        assert ws["F9"].value == "La modeló como Diagnostico."
+
+    def test_omite_a_quien_no_tiene_desglose_de_rubrica(self):
+        wb = load_workbook(io.BytesIO(build_batch_xlsx(_sample_batch())))
+
+        assert wb["Hoja de calificación"]["A1"].value is None
+
+
+def test_el_excel_sale_firmado_por_el_equipo():
+    wb = load_workbook(io.BytesIO(build_batch_xlsx(_sample_batch())))
+
+    assert wb.properties.creator == "davlillos"
+    firma = [fila for fila in wb["Resumen"].iter_rows(values_only=True) if fila[0] == "Generado con"]
+    assert firma and "davlillos" in firma[0][1]

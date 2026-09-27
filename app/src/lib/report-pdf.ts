@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 import { jsPDF } from 'jspdf';
-import { autoTable } from 'jspdf-autotable';
-import type { ComparisonResult } from '@/types/comparison';
+import { autoTable, type RowInput } from 'jspdf-autotable';
+import type { ClassRubricResult, ComparisonResult } from '@/types/comparison';
 import { criterionRows, autoFeedback, verdict } from '@/lib/report-criteria';
+import { buildGradingSheet } from '@/lib/grading-sheet';
 
 /**
  * Generación del "Acta de Evaluación" en PDF: portada institucional UES,
@@ -20,6 +24,8 @@ export function resolveDiagramTypeLabel(diagramType: string | undefined): string
 }
 
 function sanitizeBasename(name: string): string {
+  // los caracteres de control son justamente lo que hay que sacar de un nombre de archivo
+  // eslint-disable-next-line no-control-regex
   return name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim() || 'reporte';
 }
 
@@ -55,6 +61,18 @@ export function buildConsolidatedPdfFilename(studentId: string): string {
   return `${sanitizeBasename(studentId) || 'estudiante'}-consolidado.pdf`;
 }
 
+/** Toda acta sale firmada: en el pie y en las propiedades del archivo PDF. */
+function newActaDocument(): jsPDF {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  doc.setProperties({
+    title: 'Acta de Evaluación — UML Evaluador',
+    author: 'davlillos',
+    creator: 'UML Evaluador — davlillos',
+    subject: 'Evaluación de diagramas UML',
+  });
+  return doc;
+}
+
 function lastAutoTableY(doc: jsPDF): number {
   return (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable!.finalY;
 }
@@ -77,12 +95,28 @@ function drawHeader(doc: jsPDF, title: string): number {
   return headerH + 10;
 }
 
-/** Resumen ejecutivo (similitud + nota + chip aprobado/reprobado) + retroalimentación. */
-function drawExecutiveSummary(doc: jsPDF, y: number, pct: number): number {
+function hasRubric(result: ComparisonResult): boolean {
+  return (result.class_rubric_breakdown?.length ?? 0) > 0;
+}
+
+function formatWeight(weight: number): string {
+  const rounded = Math.round(weight * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+}
+
+/**
+ * Resumen ejecutivo: nota + chip aprobado/reprobado. Con rúbrica del docente
+ * la nota va con dos decimales, como en su hoja, y sin "similitud": es jerga
+ * del motor que no le dice nada al estudiante ni al docente.
+ */
+function drawExecutiveSummary(doc: jsPDF, y: number, pct: number, rubric = false): number {
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 14;
   const textW = pageW - margin * 2;
-  const { nota, aprobado } = verdict(pct);
+  const rubricNota = Math.round(pct * 10) / 100;
+  const { nota, aprobado } = rubric
+    ? { nota: rubricNota, aprobado: rubricNota >= 6 }
+    : verdict(pct);
 
   doc.setDrawColor(220, 226, 235);
   doc.setFillColor(248, 249, 251);
@@ -94,10 +128,14 @@ function drawExecutiveSummary(doc: jsPDF, y: number, pct: number): number {
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.text(`Similitud global: ${pct.toFixed(1)}%`, margin + 4, y + 15);
+  doc.text(
+    rubric ? 'Calificado con la rúbrica del docente.' : `Similitud global: ${pct.toFixed(1)}%`,
+    margin + 4,
+    y + 15,
+  );
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text(`Nota final: ${nota.toFixed(1)} / 10`, margin + 4, y + 24);
+  doc.text(`Nota final: ${nota.toFixed(rubric ? 2 : 1)} / 10`, margin + 4, y + 24);
   const chipLabel = aprobado ? 'APROBADO' : 'REPROBADO';
   const chipColor: [number, number, number] = aprobado ? [34, 160, 90] : [200, 45, 45];
   doc.setFillColor(...chipColor);
@@ -109,29 +147,124 @@ function drawExecutiveSummary(doc: jsPDF, y: number, pct: number): number {
   return y + 36;
 }
 
+/** Lo que va en "Observaciones": lo del docente primero; si no escribió nada, la explicación del motor. */
+function observationText(row: ClassRubricResult | undefined): string {
+  if (!row) return '';
+  if (row.edited_by_teacher) {
+    return ['Corregido por el docente.', row.observation].filter(Boolean).join(' ');
+  }
+  return row.observation || row.message || '';
+}
+
+/**
+ * El desglose con la forma de la hoja del docente: sus seis columnas, la
+ * sección "Relaciones" y cada relación como encabezado con sus
+ * multiplicidades debajo, igual que en su Excel.
+ */
+function drawRubricSheet(doc: jsPDF, y: number, result: ComparisonResult): number {
+  const margin = 14;
+  const breakdown = result.class_rubric_breakdown ?? [];
+  const sheet = buildGradingSheet(breakdown);
+  const byRule = new Map(breakdown.map((row) => [row.rule_id, row]));
+  const relationshipsWeight = sheet.rows
+    .filter((row) => row.criterionType !== 'classes')
+    .reduce((sum, row) => sum + row.weight, 0);
+  const padding = (left: number) => ({ top: 1.4, bottom: 1.4, left, right: 1.5 });
+
+  const body: RowInput[] = [];
+  let sectionDone = false;
+  for (const group of sheet.groups) {
+    const isRelationship = group.rows.some((row) => row.criterionType !== 'classes');
+    if (isRelationship && !sectionDone) {
+      sectionDone = true;
+      body.push([
+        { content: 'Relaciones', styles: { fontStyle: 'bold' } },
+        { content: formatWeight(relationshipsWeight), styles: { fontStyle: 'bold', halign: 'right' } },
+        { content: '', colSpan: 4 },
+      ]);
+    }
+    if (group.label) {
+      body.push([{
+        content: group.label,
+        colSpan: 6,
+        styles: { fontStyle: 'bold', fillColor: [243, 244, 246], cellPadding: padding(4) },
+      }]);
+    }
+    for (const row of group.rows) {
+      const topLevel = !group.label;
+      body.push([
+        {
+          content: row.label,
+          styles: {
+            fontStyle: topLevel ? 'bold' : 'normal',
+            cellPadding: padding(topLevel ? (row.criterionType === 'classes' ? 1.5 : 4) : 8),
+          },
+        },
+        formatWeight(row.weight),
+        String(row.expected),
+        String(row.modeled),
+        row.weightedScore.toFixed(2),
+        observationText(byRule.get(row.ruleId)),
+      ]);
+    }
+  }
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Criterio', '%', 'Esperados', 'Modelados', 'Nota ponderada', 'Observaciones']],
+    body,
+    // el pie no hereda la alineación de columnStyles: los números van a mano
+    foot: [[
+      'Total',
+      { content: formatWeight(sheet.totalWeight), styles: { halign: 'right' } },
+      '',
+      '',
+      { content: sheet.nota.toFixed(2), styles: { halign: 'right' } },
+      '',
+    ]],
+    showFoot: 'lastPage',
+    headStyles: { fillColor: UES_RED, textColor: [255, 255, 255], fontSize: 8 },
+    footStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 8.5 },
+    styles: { fontSize: 8, cellPadding: 1.4, overflow: 'linebreak', valign: 'top' },
+    columnStyles: {
+      0: { cellWidth: 56 },
+      1: { halign: 'right', cellWidth: 11 },
+      2: { halign: 'right', cellWidth: 17 },
+      3: { halign: 'right', cellWidth: 18 },
+      4: { halign: 'right', cellWidth: 20 },
+      5: { fontSize: 7, textColor: [85, 85, 85] },
+    },
+    margin: { left: margin, right: margin },
+  });
+  return lastAutoTableY(doc) + 8;
+}
+
 /** Tabla docente detallada para un ComparisonResult. */
 function drawCriteriaTable(doc: jsPDF, y: number, result: ComparisonResult, heading = 'Desglose por criterio'): number {
   const margin = 14;
   const rows = criterionRows(result);
+  const rubric = hasRubric(result);
 
   const fb = autoFeedback(result);
   const pageW = doc.internal.pageSize.getWidth();
   const textW = pageW - margin * 2;
+  const strengthsLabel = rubric ? 'Cumplió: ' : 'Fortalezas: ';
+  const gapsLabel = rubric ? 'Le faltó: ' : 'A mejorar: ';
   doc.setFontSize(9.5);
   if (fb.strengths.length > 0) {
     doc.setFont('helvetica', 'bold');
-    doc.text('Fortalezas: ', margin, y);
+    doc.text(strengthsLabel, margin, y);
     doc.setFont('helvetica', 'normal');
-    const t = doc.splitTextToSize(fb.strengths.join(', ') + '.', textW - 24);
+    const t = doc.splitTextToSize(fb.strengths.join('; ') + '.', textW - 24);
     doc.text(t, margin + 22, y);
     y += t.length * 5 + 2;
   }
   if (fb.gaps.length > 0) {
     doc.setFont('helvetica', 'bold');
-    doc.text('A mejorar: ', margin, y);
+    doc.text(gapsLabel, margin, y);
     doc.setFont('helvetica', 'normal');
-    const t = doc.splitTextToSize(fb.gaps.join(', ') + '.', textW - 22);
-    doc.text(t, margin + 20, y);
+    const t = doc.splitTextToSize(fb.gaps.join('; ') + '.', textW - 22);
+    doc.text(t, margin + 22, y);
     y += t.length * 5 + 2;
   }
   y += 4;
@@ -142,6 +275,7 @@ function drawCriteriaTable(doc: jsPDF, y: number, result: ComparisonResult, head
   doc.text(heading, margin, y);
   doc.setTextColor(0, 0, 0);
   y += 3;
+  if (rubric) return drawRubricSheet(doc, y, result);
   autoTable(doc, {
     startY: y,
     head: [['Criterio', 'Esperado', 'Modelado', 'Puntaje', 'Peso', 'Aporte', 'Detalle']],
@@ -174,7 +308,7 @@ function drawFooter(doc: jsPDF): void {
   doc.setFontSize(8);
   doc.setTextColor(120);
   doc.text(
-    `Generado por UML Evaluador · ${new Date().toLocaleString('es-SV', { dateStyle: 'short', timeStyle: 'short' })}`,
+    `Generado por UML Evaluador · desarrollado por davlillos · ${new Date().toLocaleString('es-SV', { dateStyle: 'short', timeStyle: 'short' })}`,
     margin,
     doc.internal.pageSize.getHeight() - 10,
   );
@@ -185,7 +319,7 @@ export function buildDetailedReportPdfDocument(params: {
   studentFileName: string | null;
 }): jsPDF {
   const { result, studentFileName } = params;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const doc = newActaDocument();
   const margin = 14;
 
   const carnet = extractCarnetFromStudentFile(studentFileName);
@@ -210,7 +344,7 @@ export function buildDetailedReportPdfDocument(params: {
   });
   y = lastAutoTableY(doc) + 8;
 
-  y = drawExecutiveSummary(doc, y, result.overall_similarity);
+  y = drawExecutiveSummary(doc, y, result.overall_similarity, hasRubric(result));
   drawCriteriaTable(doc, y, result);
   drawFooter(doc);
 
@@ -256,7 +390,7 @@ export function buildConsolidatedReportPdfDocument(params: {
   const diagrams = [...params.diagrams].sort(
     (a, b) => DIAGRAM_ORDER.indexOf(a.diagramType) - DIAGRAM_ORDER.indexOf(b.diagramType),
   );
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const doc = newActaDocument();
   const margin = 14;
   const pageH = doc.internal.pageSize.getHeight();
   const fecha = new Date().toLocaleDateString('es-SV', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -279,34 +413,39 @@ export function buildConsolidatedReportPdfDocument(params: {
   });
   y = lastAutoTableY(doc) + 8;
 
-  y = drawExecutiveSummary(doc, y, finalScore);
+  const onlyRubric = diagrams.length === 1 && hasRubric(diagrams[0].result);
+  y = drawExecutiveSummary(doc, y, finalScore, onlyRubric);
 
-  // Tabla "Resumen por diagrama" con los pesos globales configurados.
-  const weightByType: Record<string, number> = {
-    class: globalWeights.class,
-    usecase: globalWeights.usecase,
-    sequence: globalWeights.sequence,
-  };
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(...UES_RED);
-  doc.text('Resumen por diagrama', margin, y);
-  doc.setTextColor(0, 0, 0);
-  y += 3;
-  autoTable(doc, {
-    startY: y,
-    head: [['Diagrama', 'Similitud', 'Peso global']],
-    body: diagrams.map((d) => [
-      resolveDiagramTypeLabel(d.diagramType),
-      `${d.result.overall_similarity.toFixed(1)}%`,
-      `${weightByType[d.diagramType] ?? 0}%`,
-    ]),
-    headStyles: { fillColor: UES_RED, textColor: [255, 255, 255], fontSize: 10 },
-    styles: { fontSize: 9.5, cellPadding: 2 },
-    columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
-    margin: { left: margin, right: margin },
-  });
-  y = lastAutoTableY(doc) + 10;
+  // Con un solo diagrama la tabla por diagrama repite el resumen: se omite.
+  if (diagrams.length > 1) {
+    const weightByType: Record<string, number> = {
+      class: globalWeights.class,
+      usecase: globalWeights.usecase,
+      sequence: globalWeights.sequence,
+    };
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...UES_RED);
+    doc.text('Resumen por diagrama', margin, y);
+    doc.setTextColor(0, 0, 0);
+    y += 3;
+    autoTable(doc, {
+      startY: y,
+      head: [['Diagrama', 'Similitud', 'Peso global']],
+      body: diagrams.map((d) => [
+        resolveDiagramTypeLabel(d.diagramType),
+        `${d.result.overall_similarity.toFixed(1)}%`,
+        `${weightByType[d.diagramType] ?? 0}%`,
+      ]),
+      headStyles: { fillColor: UES_RED, textColor: [255, 255, 255], fontSize: 10 },
+      styles: { fontSize: 9.5, cellPadding: 2 },
+      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
+      margin: { left: margin, right: margin },
+    });
+    y = lastAutoTableY(doc) + 10;
+  } else {
+    y += 2;
+  }
 
   for (const { diagramType, result } of diagrams) {
     // Si el desglose no entra en lo que queda de página, empezar una nueva.

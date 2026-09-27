@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Parseo Astah de clase Cita: merge anti-duplicado + tipos StructuralFeature."""
 from pathlib import Path
 

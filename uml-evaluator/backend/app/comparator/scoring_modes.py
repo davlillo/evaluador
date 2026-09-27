@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """
 Modos de evaluación configurables, en capa aditiva sobre el motor de
 similitud existente (UMLComparator). Ningún modo reemplaza el cálculo de
@@ -51,6 +54,10 @@ class ClassRubricRule:
     relationship_type: str = "association"
     multiplicity_end: Optional[str] = None
     expected_multiplicity: Optional[str] = None
+    #: Encabezado del grupo al que pertenece el criterio ("Asociación A-B").
+    #: El docente agrupa asi en su Excel: el encabezado no puntua, solo ordena
+    #: las dos multiplicidades que cuelgan de el.
+    group_label: Optional[str] = None
 
 
 @dataclass

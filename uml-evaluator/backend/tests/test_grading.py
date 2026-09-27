@@ -1,5 +1,7 @@
+# SPDX-FileCopyrightText: 2026 davlillos
+# SPDX-License-Identifier: MIT
+
 """Tests de la conversión porcentaje -> nota 0-10."""
-import pytest
 
 from app.grading import percent_to_nota, is_aprobado, grade_summary
 

@@ -9,6 +9,16 @@ Monorepo with two independent projects:
 
 ## Commands
 
+### Everything with Docker (repo root)
+
+```bash
+docker compose up --build   # http://localhost:8080 (API docs at /docs)
+docker compose down
+```
+
+The frontend image is built with an empty `VITE_API_URL` (same origin; nginx proxies `/api`
+to the backend) and `--base=/`. See `app/src/lib/api.ts` before changing either.
+
 ### Frontend (`app/`)
 
 ```bash
@@ -17,10 +27,11 @@ npm install              # Install dependencies
 npm run dev              # Start dev server (Vite)
 npm run build            # Type-check + production build
 npm run lint             # Run ESLint
+npm test                 # Run Vitest once (npm run test:watch to watch)
 npm run preview          # Preview production build
 ```
 
-**No test framework is configured.** To add tests, use Vitest (`npm i -D vitest @testing-library/react @testing-library/jest-dom`) and add `"test": "vitest"` to scripts.
+Tests live next to the code as `*.test.ts` (Vitest, Node environment). Vitest 5 needs Node 22.12+.
 
 ### Backend (`uml-evaluator/backend/`)
 
@@ -110,7 +121,7 @@ Si ya tienes `models/cc.es.300.bin` (FastText Facebook), basta con `preprocess_m
 ### FastAPI Patterns
 - Use Pydantic models for request/response validation
 - Use `python-multipart` for file uploads
-- Define routes in `app/api/main.py`
+- Define routes in `app/api/routes/` (one router per area); `app/api/main.py` only builds the app and includes the routers
 - Use type hints on all function signatures
 
 ### Error Handling

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 davlillos
+// SPDX-License-Identifier: MIT
+
 /**
  * Configuración de una sesión de evaluación (incl. evaluación global multi-diagrama).
  */
@@ -85,4 +88,6 @@ export interface BatchCompareResponse {
   global_weights_used: GlobalDiagramWeights;
   detected_diagrams: string[];
   expected_diagrams?: Record<string, DiagramInfo>;
+  /** Archivos del ZIP que no se calificaron (p. ej. la solución del docente). */
+  excluded_students?: Array<{ student_id: string; reason: string }>;
 }
